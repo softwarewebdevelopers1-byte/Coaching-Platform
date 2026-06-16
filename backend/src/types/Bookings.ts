@@ -10,6 +10,6 @@ interface BookingsSessionsInterface {
   fullName: string;
   phoneNumber: string;
   programName: string;
-  bookingTime: Date;
+  bookingTime: string;
 }
 export type { BookingsInterface, BookingsSessionsInterface };

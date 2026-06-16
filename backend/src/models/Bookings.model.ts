@@ -18,7 +18,7 @@ let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>({
   fullName: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   programName: { type: String, required: true },
-  bookingTime: { type: Date, required: true },
+  bookingTime: { type: String, required: true },
 });
 // models
 let BookingsCreatedModel =

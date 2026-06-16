@@ -1,2 +1,11 @@
 POST http://localhost:8000/api/bookings/book-slot
 Content-Type: application/json
+
+{
+    "email":"carlosmaina198@gmail.com",
+    "fullName":"Carlos Maina",
+    "phoneNumber":"0751433064",
+    "programName":"Software Development",
+    "coachingId":"12",
+    "bookingTime":"13:00"
+}
