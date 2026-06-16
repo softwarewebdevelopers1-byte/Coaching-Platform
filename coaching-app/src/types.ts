@@ -12,6 +12,8 @@ export interface Program {
 export interface Coach {
   id: number;
   name: string;
+  email: string;
+  phone: string;
   specialization: string;
   experience: number;
   rating: number;
@@ -32,6 +34,8 @@ export interface Booking {
   email: string;
   program: string;
   coach: string;
+  coachEmail: string;
+  coachPhone: string;
   slot: string;
   duration: string;
   bookedAt: string;

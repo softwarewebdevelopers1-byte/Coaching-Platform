@@ -6,6 +6,7 @@ interface EmailSender {
 
 interface EmailRecipient {
   email: string;
+  name?: string;
 }
 
 interface BrevoEmailPayload {

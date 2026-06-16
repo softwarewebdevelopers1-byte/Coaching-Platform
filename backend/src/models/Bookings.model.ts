@@ -14,6 +14,9 @@ let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>({
 // bookings sessions made by users
 let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>({
   coachId: { type: String, required: true },
+  coachName: { type: String, required: false },
+  coachEmail: { type: String, required: false },
+  coachPhone: { type: String, required: false },
   email: { type: String, required: true },
   fullName: { type: String, required: true },
   phoneNumber: { type: String, required: true },

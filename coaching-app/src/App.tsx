@@ -59,6 +59,8 @@ export const COACHES: Coach[] = [
   {
     id: 1,
     name: "Sarah Johnson",
+    email: "sarah.johnson@apexcoaching.com",
+    phone: "+1 800 555 0101",
     specialization: "career",
     experience: 8,
     rating: 4.9,
@@ -73,6 +75,8 @@ export const COACHES: Coach[] = [
   {
     id: 2,
     name: "Marcus Williams",
+    email: "marcus.williams@apexcoaching.com",
+    phone: "+1 800 555 0102",
     specialization: "business",
     experience: 12,
     rating: 4.8,
@@ -87,6 +91,8 @@ export const COACHES: Coach[] = [
   {
     id: 3,
     name: "Elena Rodriguez",
+    email: "elena.rodriguez@apexcoaching.com",
+    phone: "+1 800 555 0103",
     specialization: "life",
     experience: 6,
     rating: 4.7,
@@ -101,6 +107,8 @@ export const COACHES: Coach[] = [
   {
     id: 4,
     name: "David Kim",
+    email: "david.kim@apexcoaching.com",
+    phone: "+1 800 555 0104",
     specialization: "leadership",
     experience: 15,
     rating: 4.9,
@@ -115,6 +123,8 @@ export const COACHES: Coach[] = [
   {
     id: 5,
     name: "Priya Sharma",
+    email: "priya.sharma@apexcoaching.com",
+    phone: "+1 800 555 0105",
     specialization: "career",
     experience: 9,
     rating: 4.8,
@@ -129,6 +139,8 @@ export const COACHES: Coach[] = [
   {
     id: 6,
     name: "James Thornton",
+    email: "james.thornton@apexcoaching.com",
+    phone: "+1 800 555 0106",
     specialization: "business",
     experience: 11,
     rating: 4.7,
@@ -143,6 +155,8 @@ export const COACHES: Coach[] = [
   {
     id: 7,
     name: "Aisha Okafor",
+    email: "aisha.okafor@apexcoaching.com",
+    phone: "+1 800 555 0107",
     specialization: "life",
     experience: 7,
     rating: 4.9,
@@ -157,6 +171,8 @@ export const COACHES: Coach[] = [
   {
     id: 8,
     name: "Ryan Mitchell",
+    email: "ryan.mitchell@apexcoaching.com",
+    phone: "+1 800 555 0108",
     specialization: "leadership",
     experience: 10,
     rating: 4.6,

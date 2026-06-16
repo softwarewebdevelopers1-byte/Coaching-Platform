@@ -4,6 +4,10 @@ import type { Program, Coach, Testimonial, Booking } from "../types";
 import CoachProfileModal from "./CoachProfileModal";
 import ContactForm from "./ContactForm";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
+  "http://localhost:8000";
+
 interface MainContentProps {
   programs: Program[];
   coaches: Coach[];
@@ -40,6 +44,7 @@ const MainContent: React.FC<MainContentProps> = ({
   const [showSummary, setShowSummary] = useState(false);
   const [bookingData, setBookingData] = useState<any>(null);
   const [modalCoach, setModalCoach] = useState<Coach | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Generate slots
   useEffect(() => {
@@ -174,7 +179,7 @@ const MainContent: React.FC<MainContentProps> = ({
     if (errors.slotError) setErrors({ ...errors, slotError: "" });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (formData.coachOption !== "assign" && !selectedCoach) {
       setErrors({
         ...errors,
@@ -187,21 +192,67 @@ const MainContent: React.FC<MainContentProps> = ({
       return;
     }
 
-    const coachName = selectedCoach?.name || "—";
+    if (!selectedCoach) {
+      setErrors({
+        ...errors,
+        coachSelectError: "Please select a coach to continue.",
+      });
+      return;
+    }
+
+    const coachName = selectedCoach.name;
     const booking: Booking = {
       id: Date.now(),
       name: formData.fullName,
       email: formData.email,
       program: getProgramLabel(formData.program),
       coach: coachName,
+      coachEmail: selectedCoach.email,
+      coachPhone: selectedCoach.phone,
       slot: selectedSlot,
       duration: getProgramDuration(formData.program),
       bookedAt: new Date().toLocaleString(),
     };
 
-    setBookingData(booking);
-    setShowSummary(true);
-    onAddBooking(booking);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/book-slot`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          programName: booking.program,
+          coachingId: String(selectedCoach.id),
+          coachName: selectedCoach.name,
+          coachEmail: selectedCoach.email,
+          coachPhone: selectedCoach.phone,
+          bookingTime: selectedSlot,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Could not complete booking.");
+      }
+
+      setBookingData(booking);
+      setShowSummary(true);
+      onAddBooking(booking);
+      showToast("Session booked. Confirmation email sent!", "success", 5000);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not complete booking. Please try again.";
+      showToast(message, "error", 6000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -220,6 +271,7 @@ const MainContent: React.FC<MainContentProps> = ({
     setSelectedFilteredCoach(null);
     setErrors({});
     setBookingData(null);
+    setIsSubmitting(false);
   };
 
   const downloadSummary = () => {
@@ -231,6 +283,8 @@ const MainContent: React.FC<MainContentProps> = ({
       `Client Name:     ${bookingData.name}`,
       `Program:         ${bookingData.program}`,
       `Coach:           ${bookingData.coach}`,
+      `Coach Email:     ${bookingData.coachEmail}`,
+      `Coach Phone:     ${bookingData.coachPhone}`,
       `Session Slot:    ${bookingData.slot}`,
       `Duration:        ${bookingData.duration}`,
       `Format:          1-on-1 Video Call`,
@@ -625,8 +679,9 @@ const MainContent: React.FC<MainContentProps> = ({
                       type="button"
                       className="btn btn-primary"
                       onClick={handleSubmit}
+                      disabled={isSubmitting}
                     >
-                      Confirm & Book →
+                      {isSubmitting ? "Booking..." : "Confirm & Book →"}
                     </button>
                   </div>
                 </div>
@@ -654,6 +709,18 @@ const MainContent: React.FC<MainContentProps> = ({
                   <div className="summary-row">
                     <span className="summary-key">Session Slot</span>
                     <span className="summary-val">{bookingData?.slot}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="summary-key">Coach Email</span>
+                    <span className="summary-val">
+                      {bookingData?.coachEmail}
+                    </span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="summary-key">Coach Phone</span>
+                    <span className="summary-val">
+                      {bookingData?.coachPhone}
+                    </span>
                   </div>
                   <div className="summary-row">
                     <span className="summary-key">Duration</span>
