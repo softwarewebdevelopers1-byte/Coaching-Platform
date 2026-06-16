@@ -1,0 +1,2 @@
+POST http://localhost:8000/api/bookings/book-slot
+Content-Type: application/json
