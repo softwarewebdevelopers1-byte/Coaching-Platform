@@ -1,8 +1,14 @@
 interface BookingsInterface {
   imageUrl?: string;
-  userId: string;
+  userId?: string;
+  coachId: string;
+  coachName: string;
+  coachEmail?: string;
+  programName: string;
+  title: string;
   bookingDate: Date;
   bookingEndDate: Date;
+  status: "open" | "booked" | "cancelled";
 }
 interface BookingsSessionsInterface {
   coachId: string;

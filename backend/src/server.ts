@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from "express";
 import DotEnvConfig from "./configs/DotEnv.js";
 import DatabaseConnection from "./database/ConnectDB.js";
 import BookingSlot from "./controllers/BookSlot.js";
+import Accounts from "./controllers/Accounts.js";
 import cors from "cors";
 let app = express();
 // Database connection function
@@ -17,6 +18,7 @@ app.use(
   }),
 );
 app.use("/api/bookings", BookingSlot);
+app.use("/api/accounts", Accounts);
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(500).send("Something broke!");
 });

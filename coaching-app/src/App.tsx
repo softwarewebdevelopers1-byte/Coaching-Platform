@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MainContent from "./components/MainContent";
 import Footer from "./components/Footer";
+import DashboardHub from "./components/DashboardHub";
 import type { Coach, Program, Testimonial, Booking } from "./types";
 
 // Data
@@ -274,6 +275,11 @@ function App() {
       )}
       <Navbar />
       <Hero />
+      <DashboardHub
+        coaches={COACHES}
+        programs={PROGRAMS}
+        showToast={showToast}
+      />
       <MainContent
         programs={PROGRAMS}
         coaches={COACHES}

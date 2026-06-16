@@ -40,3 +40,38 @@ export interface Booking {
   duration: string;
   bookedAt: string;
 }
+
+export interface Account {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  role: "admin" | "coach" | "user";
+  status: "active" | "disabled";
+  programName?: string;
+}
+
+export interface CoachSlot {
+  _id: string;
+  coachId: string;
+  coachName: string;
+  coachEmail?: string;
+  programName: string;
+  title: string;
+  bookingDate: string;
+  bookingEndDate: string;
+  status: "open" | "booked" | "cancelled";
+}
+
+export interface BookingSession {
+  _id: string;
+  coachId: string;
+  coachName?: string;
+  coachEmail?: string;
+  coachPhone?: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  programName: string;
+  bookingTime: string;
+}

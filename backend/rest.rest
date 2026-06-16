@@ -2,10 +2,55 @@ POST http://localhost:8000/api/bookings/book-slot
 Content-Type: application/json
 
 {
-    "email":"carlosmaina198@gmail.com",
+    "email":"softwarewebdevelopers1@gmail.com",
     "fullName":"Carlos Maina",
     "phoneNumber":"0751433064",
     "programName":"Software Development",
     "coachingId":"12",
     "bookingTime":"13:00"
 }
+
+###
+GET http://localhost:8000/api/accounts
+
+###
+POST http://localhost:8000/api/accounts
+Content-Type: application/json
+
+{
+    "fullName": "Admin User",
+    "email": "admin@apexcoaching.com",
+    "phone": "+1 800 555 0199",
+    "role": "admin",
+    "status": "active"
+}
+
+###
+POST http://localhost:8000/api/accounts/coach-invites
+Content-Type: application/json
+
+{
+    "email": "newcoach@apexcoaching.com",
+    "createdBy": "admin",
+    "baseUrl": "http://localhost:5173"
+}
+
+###
+POST http://localhost:8000/api/bookings/coach-slots
+Content-Type: application/json
+
+{
+    "coachId": "1",
+    "coachName": "Sarah Johnson",
+    "coachEmail": "sarah.johnson@apexcoaching.com",
+    "programName": "Career Coaching",
+    "title": "Career Clarity Session",
+    "bookingDate": "2026-06-20T09:00:00.000Z",
+    "bookingEndDate": "2026-06-20T10:00:00.000Z"
+}
+
+###
+GET http://localhost:8000/api/bookings/coach-slots
+
+###
+GET http://localhost:8000/api/bookings/sessions

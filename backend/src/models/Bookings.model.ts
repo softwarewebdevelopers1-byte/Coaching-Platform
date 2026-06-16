@@ -7,9 +7,19 @@ import type {
 // bookings created by coach
 let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>({
   imageUrl: { type: String, required: false },
-  userId: { type: String, required: true },
+  userId: { type: String, required: false },
+  coachId: { type: String, required: true },
+  coachName: { type: String, required: true },
+  coachEmail: { type: String, required: false },
+  programName: { type: String, required: true },
+  title: { type: String, required: true },
   bookingDate: { type: Date, required: true },
   bookingEndDate: { type: Date, required: true },
+  status: {
+    type: String,
+    enum: ["open", "booked", "cancelled"],
+    default: "open",
+  },
 });
 // bookings sessions made by users
 let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>({

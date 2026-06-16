@@ -177,6 +177,24 @@ const Navbar: React.FC = () => {
           </li>
           <li>
             <a
+              href="#dashboards"
+              className="nav-link"
+              onClick={closeMenu}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.9rem",
+                fontWeight: 500,
+                color: "var(--clr-ink-soft)",
+                transition: "var(--transition)",
+                display: "block",
+              }}
+            >
+              Dashboards
+            </a>
+          </li>
+          <li>
+            <a
               href="#testimonials"
               className="nav-link"
               onClick={closeMenu}
