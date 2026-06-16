@@ -1,9 +1,13 @@
 // components/Navbar.tsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -177,24 +181,6 @@ const Navbar: React.FC = () => {
           </li>
           <li>
             <a
-              href="#dashboards"
-              className="nav-link"
-              onClick={closeMenu}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "var(--radius-sm)",
-                fontSize: "0.9rem",
-                fontWeight: 500,
-                color: "var(--clr-ink-soft)",
-                transition: "var(--transition)",
-                display: "block",
-              }}
-            >
-              Dashboards
-            </a>
-          </li>
-          <li>
-            <a
               href="#testimonials"
               className="nav-link"
               onClick={closeMenu}
@@ -231,12 +217,19 @@ const Navbar: React.FC = () => {
           </li>
         </ul>
         <a
-          href="#select-coach"
+          href={user ? "#" : "#select-coach"}
+          onClick={(e) => {
+            if (user) {
+              e.preventDefault();
+              logout();
+              navigate("/");
+            }
+          }}
           className="btn btn-nav"
           style={{
-            background: "var(--clr-accent)",
+            background: user ? "var(--clr-gold)" : "var(--clr-accent)",
             color: "#fff",
-            borderColor: "var(--clr-accent)",
+            borderColor: user ? "var(--clr-gold)" : "var(--clr-accent)",
             padding: "10px 22px",
             fontSize: "0.875rem",
             display: window.innerWidth <= 900 ? "none" : "inline-flex",
@@ -251,7 +244,7 @@ const Navbar: React.FC = () => {
             whiteSpace: "nowrap",
           }}
         >
-          Get Started
+          {user ? `Logout (${user.fullName})` : "Get Started"}
         </a>
         <button
           className={`hamburger ${menuOpen ? "open" : ""}`}

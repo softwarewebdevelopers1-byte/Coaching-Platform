@@ -7,6 +7,7 @@ interface UserAccountInterface {
   role: "admin" | "coach" | "user";
   status: "active" | "disabled";
   programName?: string;
+  password?: string;
 }
 
 interface CoachInviteInterface {
@@ -22,6 +23,7 @@ const UserAccountSchema = new mongoose.Schema<UserAccountInterface>(
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: false },
+    password: { type: String, required: false },
     role: {
       type: String,
       enum: ["admin", "coach", "user"],

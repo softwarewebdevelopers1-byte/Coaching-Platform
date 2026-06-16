@@ -1,11 +1,14 @@
-// App.tsx
 import { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MainContent from "./components/MainContent";
 import Footer from "./components/Footer";
-import DashboardHub from "./components/DashboardHub";
+import AdminDashboard from "./components/AdminDashboard";
+import CoachDashboard from "./components/CoachDashboard";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import type { Coach, Program, Testimonial, Booking } from "./types";
 
 // Data
@@ -226,7 +229,7 @@ export const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-function App() {
+function AppContent() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [toast, setToast] = useState<{ message: string; type: string } | null>(
     null,
@@ -258,37 +261,117 @@ function App() {
   );
 
   return (
-    <div className="app">
-      {toast && (
-        <div className={`toast-container`}>
-          <div className={`toast ${toast.type}`}>
-            <span>
-              {toast.type === "success"
-                ? "✅"
-                : toast.type === "error"
-                  ? "❌"
-                  : "ℹ️"}
-            </span>
-            {toast.message}
+    <Routes>
+      {/* Admin Dashboard */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <div className="app">
+              {toast && (
+                <div className={`toast-container`}>
+                  <div className={`toast ${toast.type}`}>
+                    <span>
+                      {toast.type === "success"
+                        ? "✅"
+                        : toast.type === "error"
+                          ? "❌"
+                          : "ℹ️"}
+                    </span>
+                    {toast.message}
+                  </div>
+                </div>
+              )}
+              <Navbar />
+              <AdminDashboard
+                coaches={COACHES}
+                programs={PROGRAMS}
+                showToast={showToast}
+              />
+              <Footer />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Coach Dashboard */}
+      <Route
+        path="/coach"
+        element={
+          <ProtectedRoute requiredRole="coach">
+            <div className="app">
+              {toast && (
+                <div className={`toast-container`}>
+                  <div className={`toast ${toast.type}`}>
+                    <span>
+                      {toast.type === "success"
+                        ? "✅"
+                        : toast.type === "error"
+                          ? "❌"
+                          : "ℹ️"}
+                    </span>
+                    {toast.message}
+                  </div>
+                </div>
+              )}
+              <Navbar />
+              <CoachDashboard
+                coaches={COACHES}
+                programs={PROGRAMS}
+                showToast={showToast}
+              />
+              <Footer />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Public Home Page */}
+      <Route
+        path="/"
+        element={
+          <div className="app">
+            {toast && (
+              <div className={`toast-container`}>
+                <div className={`toast ${toast.type}`}>
+                  <span>
+                    {toast.type === "success"
+                      ? "✅"
+                      : toast.type === "error"
+                        ? "❌"
+                        : "ℹ️"}
+                  </span>
+                  {toast.message}
+                </div>
+              </div>
+            )}
+            <Navbar />
+            <Hero />
+            <MainContent
+              programs={PROGRAMS}
+              coaches={COACHES}
+              testimonials={TESTIMONIALS}
+              onAddBooking={addBooking}
+              showToast={showToast}
+            />
+            <Footer />
           </div>
-        </div>
-      )}
-      <Navbar />
-      <Hero />
-      <DashboardHub
-        coaches={COACHES}
-        programs={PROGRAMS}
-        showToast={showToast}
+        }
       />
-      <MainContent
-        programs={PROGRAMS}
-        coaches={COACHES}
-        testimonials={TESTIMONIALS}
-        onAddBooking={addBooking}
-        showToast={showToast}
-      />
-      <Footer />
-    </div>
+
+      {/* 404 - Redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
