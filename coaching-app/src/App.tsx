@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
+import "./styles/Dashboard.css";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MainContent from "./components/MainContent";
@@ -8,7 +9,7 @@ import Footer from "./components/Footer";
 import AdminDashboard from "./components/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import type { Coach, Program, Testimonial, Booking } from "./types";
 
 // Data
@@ -267,7 +268,7 @@ function AppContent() {
         path="/admin"
         element={
           <ProtectedRoute requiredRole="admin">
-            <div className="app">
+            <>
               {toast && (
                 <div className={`toast-container`}>
                   <div className={`toast ${toast.type}`}>
@@ -282,14 +283,8 @@ function AppContent() {
                   </div>
                 </div>
               )}
-              <Navbar />
-              <AdminDashboard
-                coaches={COACHES}
-                programs={PROGRAMS}
-                showToast={showToast}
-              />
-              <Footer />
-            </div>
+              <AdminDashboard showToast={showToast} />
+            </>
           </ProtectedRoute>
         }
       />
@@ -299,7 +294,7 @@ function AppContent() {
         path="/coach"
         element={
           <ProtectedRoute requiredRole="coach">
-            <div className="app">
+            <>
               {toast && (
                 <div className={`toast-container`}>
                   <div className={`toast ${toast.type}`}>
@@ -314,14 +309,12 @@ function AppContent() {
                   </div>
                 </div>
               )}
-              <Navbar />
               <CoachDashboard
                 coaches={COACHES}
                 programs={PROGRAMS}
                 showToast={showToast}
               />
-              <Footer />
-            </div>
+            </>
           </ProtectedRoute>
         }
       />

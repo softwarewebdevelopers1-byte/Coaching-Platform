@@ -1,126 +1,105 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { Account, BookingSession, Coach, CoachSlot, Program } from "../types";
+import type { Account, BookingSession, CoachSlot } from "../types";
+import "../styles/Dashboard.css";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
   "http://localhost:8000";
 
 interface AdminDashboardProps {
-  coaches: Coach[];
-  programs: Program[];
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
-const emptyAccount = {
-  _id: "",
-  fullName: "",
-  email: "",
-  phone: "",
-  role: "user" as Account["role"],
-  status: "active" as Account["status"],
-  programName: "",
-};
-
-const toAccountForm = (account: Account) => ({
-  _id: account._id,
-  fullName: account.fullName,
-  email: account.email,
-  phone: account.phone || "",
-  role: account.role,
-  status: account.status,
-  programName: account.programName || "",
-});
+type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  coaches,
-  programs,
   showToast,
 }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
-  const [accountForm, setAccountForm] = useState(emptyAccount);
+  const [accountForm, setAccountForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    role: "coach" as Account["role"],
+    status: "active" as Account["status"],
+  });
+
+  const totalCoaches = accounts.filter((account) => account.role === "coach").length;
+  const activeAccounts = accounts.filter((account) => account.status === "active").length;
+  const availableSlots = slots.filter((slot) => slot.status === "open").length;
+  const disabledAccounts = accounts.filter((account) => account.status === "disabled").length;
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
-  const [selectedCoachId, setSelectedCoachId] = useState(String(coaches[0]?.id || ""));
-  const [slotForm, setSlotForm] = useState({
-    title: "",
-    programName: programs[0]?.title || "",
-    bookingDate: "",
-    bookingEndDate: "",
-  });
-  const [userEmail, setUserEmail] = useState("");
-
-  const selectedCoach = useMemo(
-    () => coaches.find((coach) => String(coach.id) === selectedCoachId) || coaches[0],
-    [coaches, selectedCoachId],
-  );
 
   const loadDashboardData = async () => {
-    const [accountsResponse, slotsResponse, sessionsResponse] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/accounts`),
-      fetch(`${API_BASE_URL}/api/bookings/coach-slots`),
-      fetch(`${API_BASE_URL}/api/bookings/sessions`),
-    ]);
+    try {
+      const [accountsResponse, slotsResponse, sessionsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/accounts`),
+        fetch(`${API_BASE_URL}/api/bookings/coach-slots`),
+        fetch(`${API_BASE_URL}/api/bookings/sessions`),
+      ]);
 
-    if (accountsResponse.ok) {
-      const data = await accountsResponse.json();
-      setAccounts(data.accounts || []);
-    }
-    if (slotsResponse.ok) {
-      const data = await slotsResponse.json();
-      setSlots(data.slots || []);
-    }
-    if (sessionsResponse.ok) {
-      const data = await sessionsResponse.json();
-      setSessions(data.sessions || []);
+      if (accountsResponse.ok) {
+        const data = await accountsResponse.json();
+        setAccounts(data.accounts || []);
+      }
+      if (slotsResponse.ok) {
+        const data = await slotsResponse.json();
+        setSlots(data.slots || []);
+      }
+      if (sessionsResponse.ok) {
+        const data = await sessionsResponse.json();
+        setSessions(data.sessions || []);
+      }
+    } catch {
+      showToast("Error loading dashboard data", "error", 5000);
     }
   };
 
   useEffect(() => {
-    loadDashboardData().catch(() => {
-      showToast("Could not load dashboard data.", "error", 5000);
-    });
-  }, [showToast]);
+    loadDashboardData();
+  }, []);
 
   const saveAccount = async () => {
-    const isEditing = Boolean(accountForm._id);
-    const response = await fetch(
-      `${API_BASE_URL}/api/accounts${isEditing ? `/${accountForm._id}` : ""}`,
-      {
-        method: isEditing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(accountForm),
-      },
-    );
+    const response = await fetch(`${API_BASE_URL}/api/accounts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(accountForm),
+    });
 
-    const result = await response.json().catch(() => null);
-    if (!response.ok) {
-      showToast(result?.message || "Could not save account.", "error", 5000);
-      return;
+    if (response.ok) {
+      showToast("Account saved successfully", "success", 3500);
+      setAccountForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        role: "coach",
+        status: "active",
+      });
+      loadDashboardData();
+    } else {
+      showToast("Error saving account", "error", 5000);
     }
-
-    setAccountForm(emptyAccount);
-    await loadDashboardData();
-    showToast("Account saved.", "success", 3500);
   };
 
   const deleteAccount = async (accountId: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}`, {
-      method: "DELETE",
-    });
+    if (confirm("Are you sure you want to delete this account?")) {
+      const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}`, {
+        method: "DELETE",
+      });
 
-    if (!response.ok) {
-      showToast("Could not delete account.", "error", 5000);
-      return;
+      if (response.ok) {
+        showToast("Account deleted", "success", 3500);
+        loadDashboardData();
+      }
     }
-
-    await loadDashboardData();
-    showToast("Account deleted.", "success", 3500);
   };
 
   const createInvite = async () => {
@@ -134,275 +113,350 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }),
     });
 
-    const result = await response.json().catch(() => null);
-    if (!response.ok) {
-      showToast(result?.message || "Could not create invite.", "error", 5000);
-      return;
+    const result = await response.json();
+    if (response.ok) {
+      setInviteLink(result.link);
+      showToast("Invite link created", "success", 4000);
     }
-
-    setInviteLink(result.link);
-    showToast("One-time coach link created.", "success", 4000);
   };
-
-  const createCoachSlot = async () => {
-    if (!selectedCoach) {
-      showToast("Select a coach first.", "error", 4000);
-      return;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/api/bookings/coach-slots`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        coachId: String(selectedCoach.id),
-        coachName: selectedCoach.name,
-        coachEmail: selectedCoach.email,
-        programName: slotForm.programName,
-        title: slotForm.title,
-        bookingDate: slotForm.bookingDate,
-        bookingEndDate: slotForm.bookingEndDate,
-      }),
-    });
-
-    const result = await response.json().catch(() => null);
-    if (!response.ok) {
-      showToast(result?.message || "Could not create coach booking.", "error", 5000);
-      return;
-    }
-
-    setSlotForm({
-      title: "",
-      programName: programs[0]?.title || "",
-      bookingDate: "",
-      bookingEndDate: "",
-    });
-    await loadDashboardData();
-    showToast("Coach booking slot created.", "success", 4000);
-  };
-
-  const visibleSessions = userEmail
-    ? sessions.filter((session) =>
-        session.email.toLowerCase().includes(userEmail.toLowerCase()),
-      )
-    : sessions;
 
   return (
-    <section id="admin-dashboard" className="section dashboard-section">
-      <div className="container">
-        <div className="section-header">
-          <span className="section-label">Admin Only</span>
-          <h2 className="section-title">
-            Admin <em>Dashboard</em>
-          </h2>
-          <p className="section-sub">
-            Manage accounts, coach availability, and client booking activity.
-          </p>
+    <div className="dashboard-wrapper admin-dashboard-wrapper">
+      {/* Sidebar */}
+      <aside className="dashboard-sidebar admin-sidebar">
+        <div className="dashboard-sidebar-header">
+          <div className="dashboard-sidebar-title">
+            <div className="dashboard-sidebar-icon">⚙️</div>
+            Admin Panel
+          </div>
+        </div>
+
+        <nav className="dashboard-sidebar-nav">
+          {[
+            { id: "overview", label: "Overview", icon: "📊" },
+            { id: "accounts", label: "Accounts", icon: "👥" },
+            { id: "coaches", label: "Coaches", icon: "🎓" },
+            { id: "bookings", label: "Bookings", icon: "📅" },
+          ].map((item) => (
+            <li key={item.id} className="dashboard-sidebar-item">
+              <button
+                className={`dashboard-sidebar-link ${activeTab === item.id ? "active" : ""}`}
+                onClick={() => setActiveTab(item.id as AdminTab)}
+              >
+                <span className="dashboard-sidebar-link-icon">{item.icon}</span>
+                {item.label}
+              </button>
+            </li>
+          ))}
+        </nav>
+
+        <div className="dashboard-sidebar-footer">
+          <div className="dashboard-user-info">
+            <p className="dashboard-user-name">Logged in as</p>
+            <p className="dashboard-user-email">{user?.fullName}</p>
+          </div>
           <button
-            className="btn btn-outline"
+            className="dashboard-logout-btn"
             onClick={() => {
               logout();
               navigate("/");
             }}
-            style={{ marginTop: "16px", marginLeft: "auto" }}
           >
-            Logout ({user?.fullName})
+            Logout
           </button>
         </div>
+      </aside>
 
-        <div className="dashboard-grid">
-          <div className="dashboard-panel">
-            <h3>Manage Accounts</h3>
-            <div className="dashboard-form">
-              <input
-                placeholder="Full name"
-                value={accountForm.fullName}
-                onChange={(event) =>
-                  setAccountForm({ ...accountForm, fullName: event.target.value })
-                }
-              />
-              <input
-                placeholder="Email"
-                value={accountForm.email}
-                onChange={(event) =>
-                  setAccountForm({ ...accountForm, email: event.target.value })
-                }
-              />
-              <input
-                placeholder="Phone"
-                value={accountForm.phone}
-                onChange={(event) =>
-                  setAccountForm({ ...accountForm, phone: event.target.value })
-                }
-              />
-              <select
-                value={accountForm.role}
-                onChange={(event) =>
-                  setAccountForm({
-                    ...accountForm,
-                    role: event.target.value as Account["role"],
-                  })
-                }
-              >
-                <option value="user">User</option>
-                <option value="coach">Coach</option>
-                <option value="admin">Admin</option>
-              </select>
-              <select
-                value={accountForm.status}
-                onChange={(event) =>
-                  setAccountForm({
-                    ...accountForm,
-                    status: event.target.value as Account["status"],
-                  })
-                }
-              >
-                <option value="active">Active</option>
-                <option value="disabled">Disabled</option>
-              </select>
-              <button className="btn btn-primary" onClick={saveAccount}>
-                Save Account
-              </button>
-            </div>
-          </div>
-
-          <div className="dashboard-panel">
-            <h3>Coach Invite Link</h3>
-            <div className="dashboard-form">
-              <input
-                placeholder="coach@email.com"
-                value={inviteEmail}
-                onChange={(event) => setInviteEmail(event.target.value)}
-              />
-              <button className="btn btn-primary" onClick={createInvite}>
-                Create One-Time Link
-              </button>
-              {inviteLink && <p className="link-box">{inviteLink}</p>}
-            </div>
-          </div>
-
-          <div className="dashboard-panel dashboard-wide">
-            <h3>Accounts</h3>
-            <div className="dashboard-table">
-              {accounts.map((account) => (
-                <div className="dashboard-row" key={account._id}>
-                  <div>
-                    <strong>{account.fullName}</strong>
-                    <span>{account.email}</span>
-                  </div>
-                  <span>{account.role}</span>
-                  <span>{account.status}</span>
-                  <div className="row-actions">
-                    <button
-                      className="btn-outline-sm"
-                      onClick={() => setAccountForm(toAccountForm(account))}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn-outline-sm danger"
-                      onClick={() => deleteAccount(account._id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="dashboard-panel">
-            <h3>Create Booking Slot</h3>
-            <div className="dashboard-form">
-              <select
-                value={selectedCoachId}
-                onChange={(event) => setSelectedCoachId(event.target.value)}
-              >
-                {coaches.map((coach) => (
-                  <option key={coach.id} value={coach.id}>
-                    {coach.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                placeholder="Slot title"
-                value={slotForm.title}
-                onChange={(event) =>
-                  setSlotForm({ ...slotForm, title: event.target.value })
-                }
-              />
-              <select
-                value={slotForm.programName}
-                onChange={(event) =>
-                  setSlotForm({ ...slotForm, programName: event.target.value })
-                }
-              >
-                {programs.map((program) => (
-                  <option key={program.id} value={program.title}>
-                    {program.title}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="datetime-local"
-                value={slotForm.bookingDate}
-                onChange={(event) =>
-                  setSlotForm({ ...slotForm, bookingDate: event.target.value })
-                }
-              />
-              <input
-                type="datetime-local"
-                value={slotForm.bookingEndDate}
-                onChange={(event) =>
-                  setSlotForm({
-                    ...slotForm,
-                    bookingEndDate: event.target.value,
-                  })
-                }
-              />
-              <button className="btn btn-primary" onClick={createCoachSlot}>
-                Publish Slot
-              </button>
-            </div>
-          </div>
-
-          <div className="dashboard-panel">
-            <h3>Published Slots</h3>
-            <div className="slot-list">
-              {slots.map((slot) => (
-                <div className="slot-item" key={slot._id}>
-                  <strong>{slot.title}</strong>
-                  <span>{slot.coachName}</span>
-                  <span>{new Date(slot.bookingDate).toLocaleString()}</span>
-                  <small>{slot.status}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="dashboard-panel dashboard-wide">
-            <h3>User Booking Sessions</h3>
-            <div className="dashboard-form">
-              <input
-                placeholder="Filter by user email"
-                value={userEmail}
-                onChange={(event) => setUserEmail(event.target.value)}
-              />
-            </div>
-            <div className="slot-list">
-              {visibleSessions.map((session) => (
-                <div className="slot-item" key={session._id}>
-                  <strong>{session.fullName}</strong>
-                  <span>{session.programName}</span>
-                  <span>{session.coachName || session.coachId}</span>
-                  <span>{session.bookingTime}</span>
-                  <small>{session.email}</small>
-                </div>
-              ))}
-            </div>
+      {/* Main Content */}
+      <main className="dashboard-main">
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">Admin Dashboard</h1>
+            <p className="dashboard-subtitle">Manage platform accounts, coaches, and bookings</p>
           </div>
         </div>
-      </div>
-    </section>
+
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <div className="dashboard-overview-grid">
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <p className="stat-card-label">Total Accounts</p>
+                <p className="stat-card-value">{accounts.length}</p>
+                <p className="stat-card-change">{totalCoaches} coaches</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card-label">Booking Slots</p>
+                <p className="stat-card-value">{slots.length}</p>
+                <p className="stat-card-change">{availableSlots} available</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card-label">Total Sessions</p>
+                <p className="stat-card-value">{sessions.length}</p>
+                <p className="stat-card-change">Active bookings</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card-label">Active Accounts</p>
+                <p className="stat-card-value">{activeAccounts}</p>
+                <p className="stat-card-change">{disabledAccounts} disabled</p>
+              </div>
+            </div>
+
+            <div className="dashboard-card dashboard-card-highlight">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">Platform health</h2>
+              </div>
+              <div className="dashboard-card-body">
+                <p className="dashboard-highlight-copy">
+                  The admin workspace gives you full platform visibility: team capacity, open slots,
+                  and session activity in one place.
+                </p>
+                <div className="dashboard-badge-list">
+                  <span className="dashboard-badge success">{activeAccounts} active accounts</span>
+                  <span className="dashboard-badge warning">{availableSlots} open slots</span>
+                  <span className="dashboard-badge error">{disabledAccounts} accounts review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Accounts Tab */}
+        {activeTab === "accounts" && (
+          <div>
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">Create New Account</h2>
+              </div>
+              <div className="dashboard-card-body">
+                <div className="dashboard-form">
+                  <input
+                    placeholder="Full Name"
+                    value={accountForm.fullName}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, fullName: e.target.value })
+                    }
+                  />
+                  <input
+                    placeholder="Email"
+                    type="email"
+                    value={accountForm.email}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, email: e.target.value })
+                    }
+                  />
+                  <input
+                    placeholder="Phone"
+                    value={accountForm.phone}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, phone: e.target.value })
+                    }
+                  />
+                  <select
+                    value={accountForm.role}
+                    onChange={(e) =>
+                      setAccountForm({
+                        ...accountForm,
+                        role: e.target.value as Account["role"],
+                      })
+                    }
+                  >
+                    <option value="user">User</option>
+                    <option value="coach">Coach</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <select
+                    value={accountForm.status}
+                    onChange={(e) =>
+                      setAccountForm({
+                        ...accountForm,
+                        status: e.target.value as Account["status"],
+                      })
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="disabled">Disabled</option>
+                  </select>
+                </div>
+                <button className="dashboard-btn dashboard-btn-primary" onClick={saveAccount}>
+                  Create Account
+                </button>
+              </div>
+            </div>
+
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">All Accounts</h2>
+              </div>
+              <div className="dashboard-card-body">
+                {accounts.length === 0 ? (
+                  <div className="dashboard-empty">
+                    <p className="dashboard-empty-text">No accounts yet</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-table-wrapper">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {accounts.map((account) => (
+                          <tr key={account._id}>
+                            <td>{account.fullName}</td>
+                            <td>{account.email}</td>
+                            <td>{account.role}</td>
+                            <td>{account.status}</td>
+                            <td>
+                              <button
+                                className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                onClick={() =>
+                                  setAccountForm({
+                                    fullName: account.fullName,
+                                    email: account.email,
+                                    phone: account.phone || "",
+                                    role: account.role,
+                                    status: account.status,
+                                  })
+                                }
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="dashboard-btn dashboard-btn-danger dashboard-btn-small"
+                                onClick={() => deleteAccount(account._id)}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Coaches Tab */}
+        {activeTab === "coaches" && (
+          <div>
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">Send Coach Invite</h2>
+              </div>
+              <div className="dashboard-card-body">
+                <div className="dashboard-form">
+                  <input
+                    placeholder="Coach Email"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                  />
+                </div>
+                <button className="dashboard-btn dashboard-btn-primary" onClick={createInvite}>
+                  Generate Invite Link
+                </button>
+                {inviteLink && (
+                  <div className="dashboard-alert dashboard-alert-success" style={{ marginTop: "16px" }}>
+                    <strong>Invite Link:</strong>
+                    <div style={{ wordBreak: "break-all", marginTop: "8px", fontFamily: "monospace" }}>
+                      {inviteLink}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">Coach Availability Slots</h2>
+              </div>
+              <div className="dashboard-card-body">
+                {slots.length === 0 ? (
+                  <div className="dashboard-empty">
+                    <p className="dashboard-empty-text">No slots created yet</p>
+                  </div>
+                ) : (
+                  <div className="dashboard-table-wrapper">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Title</th>
+                          <th>Coach</th>
+                          <th>Program</th>
+                          <th>Date & Time</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {slots.map((slot) => (
+                          <tr key={slot._id}>
+                            <td>{slot.title}</td>
+                            <td>{slot.coachName}</td>
+                            <td>{slot.programName}</td>
+                            <td>{new Date(slot.bookingDate).toLocaleString()}</td>
+                            <td>{slot.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bookings Tab */}
+        {activeTab === "bookings" && (
+          <div className="dashboard-card">
+            <div className="dashboard-card-header">
+              <h2 className="dashboard-card-title">User Booking Sessions</h2>
+            </div>
+            <div className="dashboard-card-body">
+              {sessions.length === 0 ? (
+                <div className="dashboard-empty">
+                  <p className="dashboard-empty-text">No bookings yet</p>
+                </div>
+              ) : (
+                <div className="dashboard-table-wrapper">
+                  <table className="dashboard-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Coach</th>
+                        <th>Program</th>
+                        <th>Booking Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sessions.map((session) => (
+                        <tr key={session._id}>
+                          <td>{session.fullName}</td>
+                          <td>{session.email}</td>
+                          <td>{session.coachName || "N/A"}</td>
+                          <td>{session.programName}</td>
+                          <td>{session.bookingTime}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   );
 };
 
