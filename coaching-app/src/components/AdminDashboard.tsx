@@ -14,9 +14,102 @@ interface AdminDashboardProps {
 
 type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  showToast,
-}) => {
+/* ── SVG Icons ───────────────────────────────────────────────── */
+const Icons = {
+  grid: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+  ),
+  users: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  coach: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+    </svg>
+  ),
+  calendar: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  ),
+  logout: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  ),
+  shield: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  ),
+  mail: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+      <polyline points="22,6 12,13 2,6"/>
+    </svg>
+  ),
+  link: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+  ),
+  copy: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  ),
+  refresh: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+  ),
+  plus: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  ),
+  trash: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  ),
+  edit: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  ),
+};
+
+/* ── Status pill helper ──────────────────────────────────────── */
+const StatusPill = ({ status }: { status: string }) => (
+  <span className={`status-pill status-${status}`}>
+    {status === "open" ? "Available" : status === "active" ? "Active" : status === "booked" ? "Booked" : status}
+  </span>
+);
+
+const RolePill = ({ role }: { role: string }) => (
+  <span className={`role-pill role-${role}`}>{role}</span>
+);
+
+/* ── Component ───────────────────────────────────────────────── */
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
@@ -30,380 +123,457 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
   });
-
-  const totalCoaches = accounts.filter((account) => account.role === "coach").length;
-  const activeAccounts = accounts.filter((account) => account.status === "active").length;
-  const availableSlots = slots.filter((slot) => slot.status === "open").length;
-  const disabledAccounts = accounts.filter((account) => account.status === "disabled").length;
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const totalCoaches = accounts.filter((a) => a.role === "coach").length;
+  const activeAccounts = accounts.filter((a) => a.status === "active").length;
+  const availableSlots = slots.filter((s) => s.status === "open").length;
+  const disabledAccounts = accounts.filter((a) => a.status === "disabled").length;
 
   const loadDashboardData = async () => {
     try {
-      const [accountsResponse, slotsResponse, sessionsResponse] = await Promise.all([
+      const [accountsRes, slotsRes, sessionsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/accounts`),
         fetch(`${API_BASE_URL}/api/bookings/coach-slots`),
         fetch(`${API_BASE_URL}/api/bookings/sessions`),
       ]);
-
-      if (accountsResponse.ok) {
-        const data = await accountsResponse.json();
-        setAccounts(data.accounts || []);
-      }
-      if (slotsResponse.ok) {
-        const data = await slotsResponse.json();
-        setSlots(data.slots || []);
-      }
-      if (sessionsResponse.ok) {
-        const data = await sessionsResponse.json();
-        setSessions(data.sessions || []);
-      }
+      if (accountsRes.ok) setAccounts((await accountsRes.json()).accounts || []);
+      if (slotsRes.ok) setSlots((await slotsRes.json()).slots || []);
+      if (sessionsRes.ok) setSessions((await sessionsRes.json()).sessions || []);
     } catch {
       showToast("Error loading dashboard data", "error", 5000);
     }
   };
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  useEffect(() => { loadDashboardData(); }, []);
 
   const saveAccount = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/accounts`, {
+    const res = await fetch(`${API_BASE_URL}/api/accounts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(accountForm),
     });
-
-    if (response.ok) {
-      showToast("Account saved successfully", "success", 3500);
-      setAccountForm({
-        fullName: "",
-        email: "",
-        phone: "",
-        role: "coach",
-        status: "active",
-      });
+    if (res.ok) {
+      showToast("Account created successfully", "success", 3500);
+      setAccountForm({ fullName: "", email: "", phone: "", role: "coach", status: "active" });
       loadDashboardData();
     } else {
       showToast("Error saving account", "error", 5000);
     }
   };
 
-  const deleteAccount = async (accountId: string) => {
-    if (confirm("Are you sure you want to delete this account?")) {
-      const response = await fetch(`${API_BASE_URL}/api/accounts/${accountId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        showToast("Account deleted", "success", 3500);
-        loadDashboardData();
-      }
-    }
+  const deleteAccount = async (id: string) => {
+    if (!confirm("Delete this account? This cannot be undone.")) return;
+    const res = await fetch(`${API_BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
+    if (res.ok) { showToast("Account deleted", "success", 3500); loadDashboardData(); }
   };
 
   const createInvite = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/accounts/coach-invites`, {
+    const res = await fetch(`${API_BASE_URL}/api/accounts/coach-invites`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: inviteEmail,
-        createdBy: user?.fullName || "admin",
-        baseUrl: window.location.origin,
-      }),
+      body: JSON.stringify({ email: inviteEmail, createdBy: user?.fullName || "admin", baseUrl: window.location.origin }),
     });
+    const result = await res.json();
+    if (res.ok) { setInviteLink(result.link); showToast("Invite link created", "success", 4000); }
+  };
 
-    const result = await response.json();
-    if (response.ok) {
-      setInviteLink(result.link);
-      showToast("Invite link created", "success", 4000);
-    }
+  const copyInvite = () => {
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const initials = user?.fullName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "AD";
+
+  const navItems = [
+    { id: "overview", label: "Overview", icon: Icons.grid },
+    { id: "accounts", label: "Accounts", icon: Icons.users },
+    { id: "coaches", label: "Coaches", icon: Icons.coach },
+    { id: "bookings", label: "Bookings", icon: Icons.calendar },
+  ];
+
+  const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {
+    overview: { title: "Dashboard Overview", subtitle: "Platform health at a glance" },
+    accounts: { title: "Account Management", subtitle: "Create and manage platform accounts" },
+    coaches: { title: "Coach Management", subtitle: "Invite coaches and view availability slots" },
+    bookings: { title: "Booking Sessions", subtitle: "All user booking sessions across the platform" },
   };
 
   return (
     <div className="dashboard-wrapper admin-dashboard-wrapper">
-      {/* Sidebar */}
+      {/* ── Sidebar ─────────────────────────────── */}
       <aside className="dashboard-sidebar admin-sidebar">
+        {/* Header */}
         <div className="dashboard-sidebar-header">
           <div className="dashboard-sidebar-title">
-            <div className="dashboard-sidebar-icon">⚙️</div>
+            <div className="dashboard-sidebar-icon">{Icons.shield}</div>
             Admin Panel
           </div>
         </div>
 
-        <nav className="dashboard-sidebar-nav">
-          {[
-            { id: "overview", label: "Overview", icon: "📊" },
-            { id: "accounts", label: "Accounts", icon: "👥" },
-            { id: "coaches", label: "Coaches", icon: "🎓" },
-            { id: "bookings", label: "Bookings", icon: "📅" },
-          ].map((item) => (
-            <li key={item.id} className="dashboard-sidebar-item">
-              <button
-                className={`dashboard-sidebar-link ${activeTab === item.id ? "active" : ""}`}
-                onClick={() => setActiveTab(item.id as AdminTab)}
-              >
-                <span className="dashboard-sidebar-link-icon">{item.icon}</span>
-                {item.label}
-              </button>
-            </li>
-          ))}
+        {/* Nav */}
+        <nav style={{ flex: 1, overflowY: "auto" }}>
+          <p className="sidebar-section-label">Navigation</p>
+          <ul className="dashboard-sidebar-nav">
+            {navItems.map((item) => (
+              <li key={item.id} className="dashboard-sidebar-item">
+                <button
+                  className={`dashboard-sidebar-link ${activeTab === item.id ? "active" : ""}`}
+                  onClick={() => setActiveTab(item.id as AdminTab)}
+                >
+                  <span className="sidebar-active-indicator" />
+                  <span className="dashboard-sidebar-link-icon">{item.icon}</span>
+                  <span className="sidebar-link-label">{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </nav>
 
+        {/* Footer */}
         <div className="dashboard-sidebar-footer">
           <div className="dashboard-user-info">
-            <p className="dashboard-user-name">Logged in as</p>
-            <p className="dashboard-user-email">{user?.fullName}</p>
+            <div className="dashboard-user-avatar">{initials}</div>
+            <div className="dashboard-user-text">
+              <p className="dashboard-user-name">Logged in as</p>
+              <p className="dashboard-user-email">{user?.fullName}</p>
+            </div>
           </div>
           <button
             className="dashboard-logout-btn"
-            onClick={() => {
-              logout();
-              navigate("/");
-            }}
+            onClick={() => { logout(); navigate("/"); }}
           >
-            Logout
+            {Icons.logout} Sign Out
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main ────────────────────────────────── */}
       <main className="dashboard-main">
-        <div className="dashboard-header">
-          <div>
-            <h1 className="dashboard-title">Admin Dashboard</h1>
-            <p className="dashboard-subtitle">Manage platform accounts, coaches, and bookings</p>
+        {/* Topbar */}
+        <div className="dashboard-topbar">
+          <div className="dashboard-topbar-left">
+            <h1 className="dashboard-topbar-title">{tabTitles[activeTab].title}</h1>
+            <p className="dashboard-topbar-subtitle">{tabTitles[activeTab].subtitle}</p>
+          </div>
+          <div className="dashboard-topbar-right">
+            <button className="topbar-icon-btn" onClick={loadDashboardData} title="Refresh data">
+              {Icons.refresh}
+            </button>
+            <span className="topbar-badge topbar-badge-admin">
+              {Icons.shield} Administrator
+            </span>
           </div>
         </div>
 
-        {/* Overview Tab */}
-        {activeTab === "overview" && (
-          <div className="dashboard-overview-grid">
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <p className="stat-card-label">Total Accounts</p>
-                <p className="stat-card-value">{accounts.length}</p>
-                <p className="stat-card-change">{totalCoaches} coaches</p>
-              </div>
-              <div className="stat-card">
-                <p className="stat-card-label">Booking Slots</p>
-                <p className="stat-card-value">{slots.length}</p>
-                <p className="stat-card-change">{availableSlots} available</p>
-              </div>
-              <div className="stat-card">
-                <p className="stat-card-label">Total Sessions</p>
-                <p className="stat-card-value">{sessions.length}</p>
-                <p className="stat-card-change">Active bookings</p>
-              </div>
-              <div className="stat-card">
-                <p className="stat-card-label">Active Accounts</p>
-                <p className="stat-card-value">{activeAccounts}</p>
-                <p className="stat-card-change">{disabledAccounts} disabled</p>
-              </div>
-            </div>
+        {/* Content */}
+        <div className="dashboard-content">
 
-            <div className="dashboard-card dashboard-card-highlight">
-              <div className="dashboard-card-header">
-                <h2 className="dashboard-card-title">Platform health</h2>
-              </div>
-              <div className="dashboard-card-body">
-                <p className="dashboard-highlight-copy">
-                  The admin workspace gives you full platform visibility: team capacity, open slots,
-                  and session activity in one place.
-                </p>
-                <div className="dashboard-badge-list">
-                  <span className="dashboard-badge success">{activeAccounts} active accounts</span>
-                  <span className="dashboard-badge warning">{availableSlots} open slots</span>
-                  <span className="dashboard-badge error">{disabledAccounts} accounts review</span>
+          {/* ── OVERVIEW TAB ──────────────────────── */}
+          {activeTab === "overview" && (
+            <>
+              <div className="dashboard-stats">
+                <div className="stat-card">
+                  <div className="stat-card-icon">👥</div>
+                  <p className="stat-card-label">Total Accounts</p>
+                  <p className="stat-card-value">{accounts.length}</p>
+                  <p className="stat-card-change">{totalCoaches} coaches registered</p>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-icon">📅</div>
+                  <p className="stat-card-label">Booking Slots</p>
+                  <p className="stat-card-value">{slots.length}</p>
+                  <p className="stat-card-change positive">↑ {availableSlots} available</p>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-icon">📋</div>
+                  <p className="stat-card-label">Total Sessions</p>
+                  <p className="stat-card-value">{sessions.length}</p>
+                  <p className="stat-card-change">Active bookings</p>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-icon">✅</div>
+                  <p className="stat-card-label">Active Accounts</p>
+                  <p className="stat-card-value">{activeAccounts}</p>
+                  <p className="stat-card-change negative">↓ {disabledAccounts} disabled</p>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Accounts Tab */}
-        {activeTab === "accounts" && (
-          <div>
-            <div className="dashboard-card">
-              <div className="dashboard-card-header">
-                <h2 className="dashboard-card-title">Create New Account</h2>
-              </div>
-              <div className="dashboard-card-body">
-                <div className="dashboard-form">
-                  <input
-                    placeholder="Full Name"
-                    value={accountForm.fullName}
-                    onChange={(e) =>
-                      setAccountForm({ ...accountForm, fullName: e.target.value })
-                    }
-                  />
-                  <input
-                    placeholder="Email"
-                    type="email"
-                    value={accountForm.email}
-                    onChange={(e) =>
-                      setAccountForm({ ...accountForm, email: e.target.value })
-                    }
-                  />
-                  <input
-                    placeholder="Phone"
-                    value={accountForm.phone}
-                    onChange={(e) =>
-                      setAccountForm({ ...accountForm, phone: e.target.value })
-                    }
-                  />
-                  <select
-                    value={accountForm.role}
-                    onChange={(e) =>
-                      setAccountForm({
-                        ...accountForm,
-                        role: e.target.value as Account["role"],
-                      })
-                    }
-                  >
-                    <option value="user">User</option>
-                    <option value="coach">Coach</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <select
-                    value={accountForm.status}
-                    onChange={(e) =>
-                      setAccountForm({
-                        ...accountForm,
-                        status: e.target.value as Account["status"],
-                      })
-                    }
-                  >
-                    <option value="active">Active</option>
-                    <option value="disabled">Disabled</option>
-                  </select>
+              <div className="dashboard-card dashboard-card-highlight">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">🔍</span>
+                    Platform Health
+                  </h2>
                 </div>
-                <button className="dashboard-btn dashboard-btn-primary" onClick={saveAccount}>
-                  Create Account
-                </button>
-              </div>
-            </div>
-
-            <div className="dashboard-card">
-              <div className="dashboard-card-header">
-                <h2 className="dashboard-card-title">All Accounts</h2>
-              </div>
-              <div className="dashboard-card-body">
-                {accounts.length === 0 ? (
-                  <div className="dashboard-empty">
-                    <p className="dashboard-empty-text">No accounts yet</p>
+                <div className="dashboard-card-body">
+                  <p className="dashboard-highlight-copy">
+                    Full platform visibility: monitor team capacity, open slots, and session activity — all in one place. Stay on top of your coaching operations with real-time metrics.
+                  </p>
+                  <div className="dashboard-badge-list">
+                    <span className="dashboard-badge success">✓ {activeAccounts} active accounts</span>
+                    <span className="dashboard-badge warning">⏳ {availableSlots} open slots</span>
+                    <span className="dashboard-badge error">⚠ {disabledAccounts} under review</span>
                   </div>
-                ) : (
-                  <div className="dashboard-table-wrapper">
-                    <table className="dashboard-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {accounts.map((account) => (
-                          <tr key={account._id}>
-                            <td>{account.fullName}</td>
-                            <td>{account.email}</td>
-                            <td>{account.role}</td>
-                            <td>{account.status}</td>
-                            <td>
-                              <button
-                                className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
-                                onClick={() =>
-                                  setAccountForm({
-                                    fullName: account.fullName,
-                                    email: account.email,
-                                    phone: account.phone || "",
-                                    role: account.role,
-                                    status: account.status,
-                                  })
-                                }
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="dashboard-btn dashboard-btn-danger dashboard-btn-small"
-                                onClick={() => deleteAccount(account._id)}
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Coaches Tab */}
-        {activeTab === "coaches" && (
-          <div>
-            <div className="dashboard-card">
-              <div className="dashboard-card-header">
-                <h2 className="dashboard-card-title">Send Coach Invite</h2>
-              </div>
-              <div className="dashboard-card-body">
-                <div className="dashboard-form">
-                  <input
-                    placeholder="Coach Email"
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                  />
                 </div>
-                <button className="dashboard-btn dashboard-btn-primary" onClick={createInvite}>
-                  Generate Invite Link
-                </button>
-                {inviteLink && (
-                  <div className="dashboard-alert dashboard-alert-success" style={{ marginTop: "16px" }}>
-                    <strong>Invite Link:</strong>
-                    <div style={{ wordBreak: "break-all", marginTop: "8px", fontFamily: "monospace" }}>
-                      {inviteLink}
+              </div>
+            </>
+          )}
+
+          {/* ── ACCOUNTS TAB ──────────────────────── */}
+          {activeTab === "accounts" && (
+            <>
+              <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">➕</span>
+                    Create New Account
+                  </h2>
+                </div>
+                <div className="dashboard-card-body">
+                  <div className="dashboard-form">
+                    <input
+                      placeholder="Full name"
+                      value={accountForm.fullName}
+                      onChange={(e) => setAccountForm({ ...accountForm, fullName: e.target.value })}
+                    />
+                    <input
+                      placeholder="Email address"
+                      type="email"
+                      value={accountForm.email}
+                      onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                    />
+                    <input
+                      placeholder="Phone number"
+                      value={accountForm.phone}
+                      onChange={(e) => setAccountForm({ ...accountForm, phone: e.target.value })}
+                    />
+                    <select
+                      value={accountForm.role}
+                      onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as Account["role"] })}
+                    >
+                      <option value="user">User</option>
+                      <option value="coach">Coach</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <select
+                      value={accountForm.status}
+                      onChange={(e) => setAccountForm({ ...accountForm, status: e.target.value as Account["status"] })}
+                    >
+                      <option value="active">Active</option>
+                      <option value="disabled">Disabled</option>
+                    </select>
+                  </div>
+                  <button className="dashboard-btn dashboard-btn-primary" onClick={saveAccount}>
+                    {Icons.plus} Create Account
+                  </button>
+                </div>
+              </div>
+
+              <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">👥</span>
+                    All Accounts
+                  </h2>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>
+                    {accounts.length} total
+                  </span>
+                </div>
+                <div className="dashboard-card-body" style={{ padding: 0 }}>
+                  {accounts.length === 0 ? (
+                    <div className="dashboard-empty">
+                      <span className="dashboard-empty-icon">👤</span>
+                      <p className="dashboard-empty-text">No accounts yet</p>
+                      <p className="dashboard-empty-sub">Create the first account above</p>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                      <table className="dashboard-table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {accounts.map((account) => (
+                            <tr key={account._id}>
+                              <td className="td-name">{account.fullName}</td>
+                              <td className="td-email">{account.email}</td>
+                              <td><RolePill role={account.role} /></td>
+                              <td><StatusPill status={account.status} /></td>
+                              <td>
+                                <div className="td-actions">
+                                  <button
+                                    className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                    onClick={() => setAccountForm({
+                                      fullName: account.fullName,
+                                      email: account.email,
+                                      phone: account.phone || "",
+                                      role: account.role,
+                                      status: account.status,
+                                    })}
+                                  >
+                                    {Icons.edit} Edit
+                                  </button>
+                                  <button
+                                    className="dashboard-btn dashboard-btn-danger dashboard-btn-small"
+                                    onClick={() => deleteAccount(account._id)}
+                                  >
+                                    {Icons.trash} Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
+          )}
 
+          {/* ── COACHES TAB ───────────────────────── */}
+          {activeTab === "coaches" && (
+            <>
+              <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">✉️</span>
+                    Send Coach Invite
+                  </h2>
+                </div>
+                <div className="dashboard-card-body">
+                  <div className="dashboard-form">
+                    <input
+                      placeholder="Coach email address"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className="dashboard-form-full"
+                    />
+                  </div>
+                  <button className="dashboard-btn dashboard-btn-primary" onClick={createInvite}>
+                    {Icons.link} Generate Invite Link
+                  </button>
+
+                  {inviteLink && (
+                    <div className="dashboard-alert dashboard-alert-success" style={{ marginTop: "20px", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <strong style={{ fontSize: "13px" }}>✓ Invite link generated</strong>
+                        <button
+                          className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                          onClick={copyInvite}
+                          style={{ padding: "5px 10px" }}
+                        >
+                          {Icons.copy} {copied ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                      <div className="invite-link-box">{inviteLink}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">📅</span>
+                    Coach Availability Slots
+                  </h2>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>
+                    {slots.length} slots
+                  </span>
+                </div>
+                <div className="dashboard-card-body" style={{ padding: 0 }}>
+                  {slots.length === 0 ? (
+                    <div className="dashboard-empty">
+                      <span className="dashboard-empty-icon">📅</span>
+                      <p className="dashboard-empty-text">No availability slots yet</p>
+                      <p className="dashboard-empty-sub">Slots appear when coaches create availability</p>
+                    </div>
+                  ) : (
+                    <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                      <table className="dashboard-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Coach</th>
+                            <th>Program</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {slots.map((slot) => (
+                            <tr key={slot._id}>
+                              <td className="td-name">{slot.title}</td>
+                              <td>{slot.coachName}</td>
+                              <td style={{ color: "var(--text-secondary)" }}>{slot.programName}</td>
+                              <td style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                                {new Date(slot.bookingDate).toLocaleString()}
+                              </td>
+                              <td><StatusPill status={slot.status} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── BOOKINGS TAB ──────────────────────── */}
+          {activeTab === "bookings" && (
             <div className="dashboard-card">
               <div className="dashboard-card-header">
-                <h2 className="dashboard-card-title">Coach Availability Slots</h2>
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">📋</span>
+                  User Booking Sessions
+                </h2>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>
+                  {sessions.length} sessions
+                </span>
               </div>
-              <div className="dashboard-card-body">
-                {slots.length === 0 ? (
+              <div className="dashboard-card-body" style={{ padding: 0 }}>
+                {sessions.length === 0 ? (
                   <div className="dashboard-empty">
-                    <p className="dashboard-empty-text">No slots created yet</p>
+                    <span className="dashboard-empty-icon">📋</span>
+                    <p className="dashboard-empty-text">No bookings yet</p>
+                    <p className="dashboard-empty-sub">Booking sessions will appear here</p>
                   </div>
                 ) : (
-                  <div className="dashboard-table-wrapper">
+                  <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
                     <table className="dashboard-table">
                       <thead>
                         <tr>
-                          <th>Title</th>
+                          <th>User</th>
+                          <th>Email</th>
                           <th>Coach</th>
                           <th>Program</th>
-                          <th>Date & Time</th>
-                          <th>Status</th>
+                          <th>Booking Date</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {slots.map((slot) => (
-                          <tr key={slot._id}>
-                            <td>{slot.title}</td>
-                            <td>{slot.coachName}</td>
-                            <td>{slot.programName}</td>
-                            <td>{new Date(slot.bookingDate).toLocaleString()}</td>
-                            <td>{slot.status}</td>
+                        {sessions.map((session) => (
+                          <tr key={session._id}>
+                            <td className="td-name">{session.fullName}</td>
+                            <td className="td-email">{session.email}</td>
+                            <td>{session.coachName || "—"}</td>
+                            <td style={{ color: "var(--text-secondary)" }}>{session.programName}</td>
+                            <td style={{ color: "var(--text-secondary)", fontSize: "12px" }}>{session.bookingTime}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -412,49 +582,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Bookings Tab */}
-        {activeTab === "bookings" && (
-          <div className="dashboard-card">
-            <div className="dashboard-card-header">
-              <h2 className="dashboard-card-title">User Booking Sessions</h2>
-            </div>
-            <div className="dashboard-card-body">
-              {sessions.length === 0 ? (
-                <div className="dashboard-empty">
-                  <p className="dashboard-empty-text">No bookings yet</p>
-                </div>
-              ) : (
-                <div className="dashboard-table-wrapper">
-                  <table className="dashboard-table">
-                    <thead>
-                      <tr>
-                        <th>User</th>
-                        <th>Email</th>
-                        <th>Coach</th>
-                        <th>Program</th>
-                        <th>Booking Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sessions.map((session) => (
-                        <tr key={session._id}>
-                          <td>{session.fullName}</td>
-                          <td>{session.email}</td>
-                          <td>{session.coachName || "N/A"}</td>
-                          <td>{session.programName}</td>
-                          <td>{session.bookingTime}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
       </main>
     </div>
   );
