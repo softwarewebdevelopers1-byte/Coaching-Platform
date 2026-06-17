@@ -13,15 +13,12 @@ DatabaseConnection();
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
-    methods: ["POST", "GET", "DELETE", "PUT"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
   }),
 );
 app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.status(500).send("Something broke!");
-});
 app.listen(DotEnvConfig.ServerPort, () => {
   console.log("Server started...", DotEnvConfig.ServerPort);
 });
