@@ -51,6 +51,225 @@ export async function sendBookingConfirmationEmail(
   }
 }
 
+// ── Slot Request: received by user ────────────────────────────────────────────
+interface SlotRequestReceivedDetails {
+  email: string;
+  fullName: string;
+  programName: string;
+  coachName: string;
+  coachEmail: string;
+}
+
+export async function sendSlotRequestReceivedEmail(
+  details: SlotRequestReceivedDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Request Received</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .brand span { color: #e8b96a; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .status-box { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 10px; padding: 18px; margin: 24px 0; text-align: center; }
+    .status-box h2 { margin: 0 0 8px; font-size: 18px; color: #b45309; }
+    .status-box p { margin: 0; color: #92400e; font-size: 14px; }
+    .panel { border: 1px solid #e7ded2; border-radius: 10px; overflow: hidden; margin: 24px 0; }
+    .row { display: flex; gap: 18px; padding: 14px 16px; border-bottom: 1px solid #eee8df; }
+    .row:last-child { border-bottom: 0; }
+    .label { min-width: 140px; color: #6d6258; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size: 15px; color: #1a1612; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+    a { color: #9b6a17; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">Apex<span>Coaching</span></p>
+      <p>We've received your session request.</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.fullName)},</p>
+      <p>Thank you for your interest in coaching with us! We've received your session request and your coach has been notified.</p>
+
+      <div class="status-box">
+        <h2>⏳ Request Pending</h2>
+        <p>Your coach will review your request and get back to you with available times shortly.</p>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <div class="label">Program</div>
+          <div class="value">${escapeHtml(details.programName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Coach</div>
+          <div class="value">${escapeHtml(details.coachName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Coach Email</div>
+          <div class="value"><a href="mailto:${escapeHtml(details.coachEmail)}">${escapeHtml(details.coachEmail)}</a></div>
+        </div>
+      </div>
+
+      <p>You'll receive another email once your coach confirms a session time. If you have any questions in the meantime, feel free to reach out.</p>
+      <p>Thank you for choosing Apex Coaching!</p>
+    </div>
+    <div class="footer">
+      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    to: [{ email: details.email, name: details.fullName }],
+    subject: "Your session request has been received — Apex Coaching",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      { headers: { "api-key": apiKey, "Content-Type": "application/json" } },
+    );
+    console.log("Slot request received email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
+// ── Slot Request: approved by coach ───────────────────────────────────────────
+interface SlotRequestApprovedDetails {
+  email: string;
+  fullName: string;
+  programName: string;
+  coachName: string;
+  coachEmail: string;
+  coachPhone?: string;
+  scheduledTime: string;
+  coachNotes?: string;
+}
+
+export async function sendSlotRequestApprovedEmail(
+  details: SlotRequestApprovedDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+  const coachPhone = details.coachPhone || "+1 800 555 0100";
+  const notes = details.coachNotes
+    ? `<p style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:8px;font-size:14px;color:#166534;"><strong>Coach's note:</strong> ${escapeHtml(details.coachNotes)}</p>`
+    : "";
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Scheduled</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .brand span { color: #e8b96a; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .status-box { background: #f0fdf4; border: 1px solid #22c55e; border-radius: 10px; padding: 18px; margin: 24px 0; text-align: center; }
+    .status-box h2 { margin: 0 0 8px; font-size: 18px; color: #166534; }
+    .status-box p { margin: 0; color: #15803d; font-size: 14px; }
+    .panel { border: 1px solid #e7ded2; border-radius: 10px; overflow: hidden; margin: 24px 0; }
+    .row { display: flex; gap: 18px; padding: 14px 16px; border-bottom: 1px solid #eee8df; }
+    .row:last-child { border-bottom: 0; }
+    .label { min-width: 140px; color: #6d6258; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size: 15px; color: #1a1612; }
+    .coach-box { background: #fbf4e7; border: 1px solid #e8b96a; border-radius: 10px; padding: 18px; margin: 24px 0; }
+    .coach-box h2 { margin: 0 0 10px; font-size: 18px; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+    a { color: #9b6a17; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">Apex<span>Coaching</span></p>
+      <p>Great news — your session has been scheduled!</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.fullName)},</p>
+      <p>Your coach has reviewed your request and scheduled your coaching session. Here are the details:</p>
+
+      <div class="status-box">
+        <h2>✅ Session Confirmed</h2>
+        <p>Your coaching session has been scheduled successfully.</p>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <div class="label">Program</div>
+          <div class="value">${escapeHtml(details.programName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Coach</div>
+          <div class="value">${escapeHtml(details.coachName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Scheduled Time</div>
+          <div class="value"><strong>${escapeHtml(details.scheduledTime)}</strong></div>
+        </div>
+      </div>
+
+      ${notes}
+
+      <div class="coach-box">
+        <h2>Coach Contact Details</h2>
+        <p>Email: <a href="mailto:${escapeHtml(details.coachEmail)}">${escapeHtml(details.coachEmail)}</a></p>
+        <p>Phone: <a href="tel:${escapeHtml(coachPhone)}">${escapeHtml(coachPhone)}</a></p>
+      </div>
+
+      <p>Your coach may reach out to share a meeting link or any preparation notes before the session.</p>
+      <p>Thank you for choosing Apex Coaching!</p>
+    </div>
+    <div class="footer">
+      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    to: [{ email: details.email, name: details.fullName }],
+    subject: "Your coaching session is scheduled — Apex Coaching",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      { headers: { "api-key": apiKey, "Content-Type": "application/json" } },
+    );
+    console.log("Slot request approved email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
 function generateBookingEmailTemplate(booking: BookingConfirmationDetails): string {
   const currentYear = new Date().getFullYear();
   const coachName = booking.coachName || `Coach #${booking.coachId}`;

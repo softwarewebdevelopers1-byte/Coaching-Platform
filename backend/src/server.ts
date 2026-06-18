@@ -5,6 +5,7 @@ import DotEnvConfig from "./configs/DotEnv.js";
 import DatabaseConnection from "./database/ConnectDB.js";
 import BookingSlot from "./controllers/BookSlot.js";
 import Accounts from "./controllers/Accounts.js";
+import SlotRequests from "./controllers/SlotRequests.js";
 import cors from "cors";
 let app = express();
 // Database connection function
@@ -19,6 +20,7 @@ app.use(
 );
 app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
+app.use("/api/slot-requests", SlotRequests);
 app.listen(DotEnvConfig.ServerPort, () => {
   console.log("Server started...", DotEnvConfig.ServerPort);
 });
