@@ -10,7 +10,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
-import type { Coach, Program, Testimonial, Booking } from "./types";
+import type {  Program, Testimonial, Booking } from "./types";
 
 // Data
 export const PROGRAMS: Program[] = [
@@ -60,136 +60,7 @@ export const PROGRAMS: Program[] = [
   },
 ];
 
-export const COACHES: Coach[] = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@apexcoaching.com",
-    phone: "+1 800 555 0101",
-    specialization: "career",
-    experience: 8,
-    rating: 4.9,
-    bio: "Former HR Director at Fortune 500 firms. Sarah has helped over 400 professionals navigate career transitions, negotiate senior roles, and build compelling personal brands. She combines data-driven coaching with deep human insight.",
-    tags: [
-      "Career Transitions",
-      "Salary Negotiation",
-      "Personal Branding",
-      "Interview Prep",
-    ],
-  },
-  {
-    id: 2,
-    name: "Marcus Williams",
-    email: "marcus.williams@apexcoaching.com",
-    phone: "+1 800 555 0102",
-    specialization: "business",
-    experience: 12,
-    rating: 4.8,
-    bio: "Serial entrepreneur and startup advisor with 3 successful exits. Marcus brings first-hand experience in scaling businesses from zero to eight figures. His coaching blends operational rigor with entrepreneurial mindset.",
-    tags: [
-      "Revenue Growth",
-      "Startup Strategy",
-      "Team Building",
-      "Fundraising",
-    ],
-  },
-  {
-    id: 3,
-    name: "Elena Rodriguez",
-    email: "elena.rodriguez@apexcoaching.com",
-    phone: "+1 800 555 0103",
-    specialization: "life",
-    experience: 6,
-    rating: 4.7,
-    bio: "ICF-certified holistic life coach with backgrounds in positive psychology and mindfulness. Elena helps clients redesign their lives with intention, moving from burnout to balance with measurable, lasting change.",
-    tags: [
-      "Mindfulness",
-      "Work-Life Balance",
-      "Habit Design",
-      "Clarity & Purpose",
-    ],
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    email: "david.kim@apexcoaching.com",
-    phone: "+1 800 555 0104",
-    specialization: "leadership",
-    experience: 15,
-    rating: 4.9,
-    bio: "Ex-C-suite executive coach and TEDx speaker. David has advised Fortune 100 boards and coached over 200 leaders across 18 countries. His approach integrates neuroscience, systems thinking, and executive presence.",
-    tags: [
-      "Executive Presence",
-      "Board Communication",
-      "Emotional Intelligence",
-      "Strategic Vision",
-    ],
-  },
-  {
-    id: 5,
-    name: "Priya Sharma",
-    email: "priya.sharma@apexcoaching.com",
-    phone: "+1 800 555 0105",
-    specialization: "career",
-    experience: 9,
-    rating: 4.8,
-    bio: "LinkedIn Top Career Coach with 500+ successful placements. Priya specializes in competitive job markets, tech sector transitions, and building powerful networks that open doors others don't even see.",
-    tags: [
-      "LinkedIn Optimization",
-      "Tech Careers",
-      "Networking",
-      "Job Search Strategy",
-    ],
-  },
-  {
-    id: 6,
-    name: "James Thornton",
-    email: "james.thornton@apexcoaching.com",
-    phone: "+1 800 555 0106",
-    specialization: "business",
-    experience: 11,
-    rating: 4.7,
-    bio: "MBA coach and revenue growth strategist. James works with established business owners who want to scale without losing what makes them great — culture, quality, and founder identity.",
-    tags: [
-      "Scale Strategy",
-      "Operational Excellence",
-      "Culture Building",
-      "Profitability",
-    ],
-  },
-  {
-    id: 7,
-    name: "Aisha Okafor",
-    email: "aisha.okafor@apexcoaching.com",
-    phone: "+1 800 555 0107",
-    specialization: "life",
-    experience: 7,
-    rating: 4.9,
-    bio: "Mindfulness and resilience specialist who blends ancient wisdom with modern behavioral science. Aisha helps high-achievers reconnect with their values and build extraordinary resilience for the long game.",
-    tags: [
-      "Resilience",
-      "Stress Management",
-      "Values Alignment",
-      "Relationship Health",
-    ],
-  },
-  {
-    id: 8,
-    name: "Ryan Mitchell",
-    email: "ryan.mitchell@apexcoaching.com",
-    phone: "+1 800 555 0108",
-    specialization: "leadership",
-    experience: 10,
-    rating: 4.6,
-    bio: "Agile leadership and team culture expert. Ryan partners with managers and directors who want to lead high-performance teams with authenticity, psychological safety, and results that speak for themselves.",
-    tags: [
-      "Agile Teams",
-      "Psychological Safety",
-      "Feedback Culture",
-      "Change Management",
-    ],
-  },
-];
+
 
 export const TESTIMONIALS: Testimonial[] = [
   {
@@ -310,7 +181,6 @@ function AppContent() {
                 </div>
               )}
               <CoachDashboard
-                coaches={COACHES}
                 programs={PROGRAMS}
                 showToast={showToast}
               />
@@ -342,7 +212,6 @@ function AppContent() {
             <Hero />
             <MainContent
               programs={PROGRAMS}
-              coaches={COACHES}
               testimonials={TESTIMONIALS}
               onAddBooking={addBooking}
               showToast={showToast}

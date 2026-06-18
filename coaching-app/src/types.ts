@@ -9,16 +9,19 @@ export interface Program {
   color: string;
 }
 
+// DB-backed coach (fetched from /api/accounts with role=coach)
 export interface Coach {
-  id: number;
-  name: string;
+  _id: string;        // MongoDB _id
+  id?: number;        // legacy static id (unused for DB coaches)
+  name: string;       // maps to fullName in DB
   email: string;
   phone: string;
-  specialization: string;
-  experience: number;
-  rating: number;
-  bio: string;
-  tags: string[];
+  specialization: string;  // maps to programName in DB
+  experience?: number;
+  rating?: number;
+  bio?: string;
+  tags?: string[];
+  status?: string;
 }
 
 export interface Testimonial {
@@ -74,4 +77,20 @@ export interface BookingSession {
   phoneNumber: string;
   programName: string;
   bookingTime: string;
+}
+
+export interface SlotRequest {
+  _id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  programName: string;
+  coachId: string;
+  coachName: string;
+  coachEmail: string;
+  message?: string;
+  status: "pending" | "approved" | "declined";
+  scheduledTime?: string;
+  coachNotes?: string;
+  createdAt?: string;
 }

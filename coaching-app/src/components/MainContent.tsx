@@ -1,6 +1,6 @@
 // components/MainContent.tsx
-import React, { useState, useEffect, useRef } from "react";
-import type { Program, Coach, Testimonial, Booking } from "../types";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import type { Program, Coach, Testimonial, Booking, CoachSlot } from "../types";
 import CoachProfileModal from "./CoachProfileModal";
 import ContactForm from "./ContactForm";
 
@@ -10,7 +10,6 @@ const API_BASE_URL =
 
 interface MainContentProps {
   programs: Program[];
-  coaches: Coach[];
   testimonials: Testimonial[];
   onAddBooking: (booking: Booking) => void;
   showToast: (message: string, type: string, duration?: number) => void;
@@ -18,14 +17,22 @@ interface MainContentProps {
 
 const MainContent: React.FC<MainContentProps> = ({
   programs,
-  coaches,
   testimonials,
   onAddBooking,
   showToast,
 }) => {
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [coachesLoading, setCoachesLoading] = useState(true);
+
   const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+
+  // Real DB slots for the selected coach
+  const [coachSlots, setCoachSlots] = useState<CoachSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<CoachSlot | null>(null);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -34,46 +41,88 @@ const MainContent: React.FC<MainContentProps> = ({
     coachOption: "" as "choose" | "assign" | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [autoAssignedCoach, setAutoAssignedCoach] = useState<Coach | null>(
-    null,
-  );
+  const [autoAssignedCoach, setAutoAssignedCoach] = useState<Coach | null>(null);
   const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
-  const [selectedFilteredCoach, setSelectedFilteredCoach] =
-    useState<Coach | null>(null);
-  const [slots, setSlots] = useState<{ day: string; time: string }[]>([]);
+  const [selectedFilteredCoach, setSelectedFilteredCoach] = useState<Coach | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [bookingData, setBookingData] = useState<any>(null);
   const [modalCoach, setModalCoach] = useState<Coach | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate slots
-  useEffect(() => {
-    const days = [
-      "Mon Jun 9",
-      "Tue Jun 10",
-      "Wed Jun 11",
-      "Thu Jun 12",
-      "Fri Jun 13",
-      "Mon Jun 16",
-      "Tue Jun 17",
-    ];
-    const times = ["9:00 AM", "11:00 AM", "2:00 PM", "4:00 PM"];
-    const allSlots: { day: string; time: string }[] = [];
-    days.forEach((d) =>
-      times.forEach((t) => allSlots.push({ day: d, time: t })),
-    );
-    setSlots(allSlots.sort(() => Math.random() - 0.5).slice(0, 8));
+  // Slot request state (when no slots available)
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+
+  // ── Fetch coaches from DB ──────────────────────────────────────────────────
+  const loadCoaches = useCallback(async () => {
+    setCoachesLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/accounts`);
+      if (res.ok) {
+        const data = await res.json();
+        // Filter only active coaches and map DB fields to Coach interface
+        const dbCoaches: Coach[] = (data.accounts || [])
+          .filter((a: any) => a.role === "coach" && a.status === "active")
+          .map((a: any) => ({
+            _id: a._id,
+            name: a.fullName,
+            email: a.email,
+            phone: a.phone || "",
+            specialization: a.programName || "",
+            status: a.status,
+          }));
+        setCoaches(dbCoaches);
+      }
+    } catch {
+      // Silently fail — coaches section will be empty
+    } finally {
+      setCoachesLoading(false);
+    }
   }, []);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((p) => p[0])
-      .join("")
-      .toUpperCase();
-  };
+  useEffect(() => {
+    loadCoaches();
+  }, [loadCoaches]);
 
-  const renderStars = (rating: number) => {
+  // ── Fetch real slots for a coach ───────────────────────────────────────────
+  const loadCoachSlots = useCallback(async (coachEmail: string) => {
+    if (!coachEmail) return;
+    setSlotsLoading(true);
+    setCoachSlots([]);
+    setSelectedSlot(null);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/bookings/coach-slots?coachEmail=${encodeURIComponent(coachEmail)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // Only show open slots
+        const openSlots = (data.slots || []).filter(
+          (s: CoachSlot) => s.status === "open"
+        );
+        setCoachSlots(openSlots);
+      }
+    } catch {
+      showToast("Could not load available slots", "error", 4000);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  // Reload slots whenever selectedCoach changes in step 2
+  useEffect(() => {
+    if (currentStep === 2 && selectedCoach?.email) {
+      loadCoachSlots(selectedCoach.email);
+    }
+  }, [selectedCoach, currentStep, loadCoachSlots]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const getInitials = (name: string) =>
+    name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2);
+
+  const renderStars = (rating: number = 0) => {
     const full = Math.floor(rating);
     const half = rating % 1 >= 0.5 ? 1 : 0;
     const empty = 5 - full - half;
@@ -81,8 +130,8 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   const getProgramLabel = (id: string) => {
-    const p = programs.find((p) => p.id === id);
-    return p ? p.title : id;
+    const p = programs.find((p) => p.id === id || p.title === id);
+    return p ? p.title : id || "—";
   };
 
   const getProgramDuration = (id: string) => {
@@ -92,44 +141,38 @@ const MainContent: React.FC<MainContentProps> = ({
 
   const scrollToForm = (programId: string) => {
     setFormData((prev) => ({ ...prev, program: programId }));
-    document
-      .getElementById("select-coach")
-      ?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("select-coach")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
+  const formatSlotTime = (slot: CoachSlot) => {
+    const start = new Date(slot.bookingDate);
+    const end = slot.bookingEndDate ? new Date(slot.bookingEndDate) : null;
+    const dateStr = start.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    const startTime = start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const endTime = end ? " – " + end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+    return { dateStr, timeStr: startTime + endTime, full: `${dateStr} at ${startTime}` };
+  };
+
+  // ── Form handlers ──────────────────────────────────────────────────────────
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
-    if (errors[e.target.id]) {
-      setErrors({ ...errors, [e.target.id]: "" });
-    }
+    if (errors[e.target.id]) setErrors({ ...errors, [e.target.id]: "" });
   };
 
   const handleRadioChange = (value: "choose" | "assign") => {
     setFormData({ ...formData, coachOption: value });
-    if (errors.optionError) {
-      setErrors({ ...errors, optionError: "" });
-    }
+    if (errors.optionError) setErrors({ ...errors, optionError: "" });
   };
 
   const validateStep1 = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.fullName.trim())
-      newErrors.nameError = "Full name is required.";
-    if (
-      !formData.email.trim() ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
-    )
+    if (!formData.fullName.trim()) newErrors.nameError = "Full name is required.";
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       newErrors.emailError = "Enter a valid email address.";
-    if (
-      !formData.phone.trim() ||
-      !/^\+?[\d\s\-().]{7,20}$/.test(formData.phone)
-    )
+    if (!formData.phone.trim() || !/^\+?[\d\s\-().]{7,20}$/.test(formData.phone))
       newErrors.phoneError = "Enter a valid phone number.";
     if (!formData.program) newErrors.programError = "Please select a program.";
-    if (!formData.coachOption)
-      newErrors.optionError = "Please choose an option.";
+    if (!formData.coachOption) newErrors.optionError = "Please choose an option.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -137,23 +180,22 @@ const MainContent: React.FC<MainContentProps> = ({
   const handleNextStep = () => {
     if (!validateStep1()) return;
 
+    // Filter coaches by program specialization (or show all if none match)
+    const candidates = coaches.filter(
+      (c) => c.specialization === formData.program ||
+             c.specialization === getProgramLabel(formData.program)
+    );
+    const pool = candidates.length > 0 ? candidates : coaches;
+
     if (formData.coachOption === "assign") {
-      const candidates = coaches.filter(
-        (c) => c.specialization === formData.program,
-      );
-      const best = candidates.reduce(
-        (a, b) => (a.rating >= b.rating ? a : b),
-        candidates[0] || coaches[0],
-      );
+      // Pick the first available coach (or random if no rating)
+      const best = pool[0] || coaches[0];
       setAutoAssignedCoach(best);
       setSelectedCoach(best);
       setFilteredCoaches([]);
       setSelectedFilteredCoach(null);
     } else {
-      const filtered = coaches.filter(
-        (c) => c.specialization === formData.program,
-      );
-      setFilteredCoaches(filtered);
+      setFilteredCoaches(pool);
       setAutoAssignedCoach(null);
       setSelectedCoach(null);
       setSelectedFilteredCoach(null);
@@ -164,9 +206,7 @@ const MainContent: React.FC<MainContentProps> = ({
     if (errors.slotError) setErrors({ ...errors, slotError: "" });
   };
 
-  const handleBackStep = () => {
-    setCurrentStep(1);
-  };
+  const handleBackStep = () => setCurrentStep(1);
 
   const selectFilteredCoach = (coach: Coach) => {
     setSelectedFilteredCoach(coach);
@@ -174,42 +214,37 @@ const MainContent: React.FC<MainContentProps> = ({
     if (errors.coachSelectError) setErrors({ ...errors, coachSelectError: "" });
   };
 
-  const selectSlot = (slot: { day: string; time: string }) => {
-    setSelectedSlot(`${slot.day} at ${slot.time}`);
+  const selectSlot = (slot: CoachSlot) => {
+    setSelectedSlot(slot);
     if (errors.slotError) setErrors({ ...errors, slotError: "" });
   };
 
+  // ── Submit booking ─────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (formData.coachOption !== "assign" && !selectedCoach) {
-      setErrors({
-        ...errors,
-        coachSelectError: "Please select a coach to continue.",
-      });
+      setErrors({ ...errors, coachSelectError: "Please select a coach to continue." });
       return;
     }
     if (!selectedSlot) {
       setErrors({ ...errors, slotError: "Please choose a session time slot." });
       return;
     }
-
     if (!selectedCoach) {
-      setErrors({
-        ...errors,
-        coachSelectError: "Please select a coach to continue.",
-      });
+      setErrors({ ...errors, coachSelectError: "Please select a coach to continue." });
       return;
     }
 
-    const coachName = selectedCoach.name;
+    const slotLabel = formatSlotTime(selectedSlot).full;
+
     const booking: Booking = {
       id: Date.now(),
       name: formData.fullName,
       email: formData.email,
       program: getProgramLabel(formData.program),
-      coach: coachName,
+      coach: selectedCoach.name,
       coachEmail: selectedCoach.email,
       coachPhone: selectedCoach.phone,
-      slot: selectedSlot,
+      slot: slotLabel,
       duration: getProgramDuration(formData.program),
       bookedAt: new Date().toLocaleString(),
     };
@@ -218,19 +253,18 @@ const MainContent: React.FC<MainContentProps> = ({
     try {
       const response = await fetch(`${API_BASE_URL}/api/bookings/book-slot`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: formData.fullName,
           email: formData.email,
           phoneNumber: formData.phone,
           programName: booking.program,
-          coachingId: String(selectedCoach.id),
+          coachId: selectedCoach._id || String(selectedCoach.id),
           coachName: selectedCoach.name,
           coachEmail: selectedCoach.email,
           coachPhone: selectedCoach.phone,
-          bookingTime: selectedSlot,
+          bookingTime: slotLabel,
+          slotId: selectedSlot._id,  // marks the slot as booked in DB
         }),
       });
 
@@ -243,37 +277,74 @@ const MainContent: React.FC<MainContentProps> = ({
       setBookingData(booking);
       setShowSummary(true);
       onAddBooking(booking);
-      showToast("Session booked. Confirmation email sent!", "success", 5000);
+      showToast("🎉 Session booked! Confirmation email sent.", "success", 5000);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Could not complete booking. Please try again.";
+        error instanceof Error ? error.message : "Could not complete booking. Please try again.";
       showToast(message, "error", 6000);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ── Reset form ─────────────────────────────────────────────────────────────
+  // ── Submit slot request (no available slots) ───────────────────────────────
+  const handleSlotRequest = async () => {
+    if (!selectedCoach) return;
+    setRequestSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/slot-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          programName: getProgramLabel(formData.program),
+          coachId: selectedCoach._id || String(selectedCoach.id),
+          coachName: selectedCoach.name,
+          coachEmail: selectedCoach.email,
+          message: requestMessage,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.message || "Could not submit request.");
+      }
+
+      setRequestSubmitted(true);
+      setShowRequestForm(false);
+      showToast("📩 Session request sent! Check your email for confirmation.", "success", 5000);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not submit request. Please try again.";
+      showToast(message, "error", 6000);
+    } finally {
+      setRequestSubmitting(false);
+    }
+  };
+
+  // ── Reset form ─────────────────────────────────────────────────────────────
   const resetForm = () => {
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      program: "",
-      coachOption: "",
-    });
+    setFormData({ fullName: "", email: "", phone: "", program: "", coachOption: "" });
     setSelectedCoach(null);
     setSelectedSlot(null);
     setCurrentStep(1);
     setShowSummary(false);
     setAutoAssignedCoach(null);
     setSelectedFilteredCoach(null);
+    setCoachSlots([]);
     setErrors({});
     setBookingData(null);
     setIsSubmitting(false);
+    setShowRequestForm(false);
+    setRequestMessage("");
+    setRequestSubmitted(false);
+    setRequestSubmitting(false);
   };
 
+  // ── Download summary ───────────────────────────────────────────────────────
   const downloadSummary = () => {
     if (!bookingData) return;
     const content = [
@@ -307,7 +378,7 @@ const MainContent: React.FC<MainContentProps> = ({
     showToast("Summary downloaded!", "success");
   };
 
-  // Testimonials Slider
+  // ── Testimonials Slider ────────────────────────────────────────────────────
   const [currentSlide, setCurrentSlide] = useState(0);
   const [visibleCards, setVisibleCards] = useState(3);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -338,20 +409,15 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   }, [currentSlide, visibleCards]);
 
-  const goToSlide = (index: number) => {
+  const goToSlide = (index: number) =>
     setCurrentSlide(Math.min(index, testimonials.length - visibleCards));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide(Math.max(0, currentSlide - 1));
-  };
-
+  const prevSlide = () => setCurrentSlide(Math.max(0, currentSlide - 1));
   const nextSlide = () => {
     const maxSlide = Math.max(0, testimonials.length - visibleCards);
     setCurrentSlide(currentSlide >= maxSlide ? 0 : currentSlide + 1);
   };
 
-  // Scroll reveal
+  // ── Scroll reveal ──────────────────────────────────────────────────────────
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -366,21 +432,19 @@ const MainContent: React.FC<MainContentProps> = ({
     );
     document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [coaches]); // re-run when coaches load so new cards animate in
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Programs Section */}
+      {/* ── Programs Section ──────────────────────── */}
       <section id="programs" className="section programs-section">
         <div className="container">
           <div className="section-header">
             <span className="section-label">What We Offer</span>
-            <h2 className="section-title">
-              Coaching <em>Programs</em>
-            </h2>
+            <h2 className="section-title">Coaching <em>Programs</em></h2>
             <p className="section-sub">
-              Structured pathways designed to unlock your potential at every
-              stage of life.
+              Structured pathways designed to unlock your potential at every stage of life.
             </p>
           </div>
           <div className="programs-grid">
@@ -391,12 +455,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
                 <div className="program-img-wrap">
-                  <img
-                    src={prog.image}
-                    alt={prog.title}
-                    className="program-img"
-                    loading="lazy"
-                  />
+                  <img src={prog.image} alt={prog.title} className="program-img" loading="lazy" />
                 </div>
                 <div className="program-body">
                   <span className="program-tag">{prog.tag}</span>
@@ -406,10 +465,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     <span>🕐</span>
                     <span>{prog.duration}</span>
                   </div>
-                  <button
-                    className="btn-outline-sm"
-                    onClick={() => scrollToForm(prog.id)}
-                  >
+                  <button className="btn-outline-sm" onClick={() => scrollToForm(prog.id)}>
                     Learn More →
                   </button>
                 </div>
@@ -419,76 +475,74 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </section>
 
-      {/* Coaches Section */}
+      {/* ── Coaches Section ───────────────────────── */}
       <section id="coaches" className="section coaches-section">
         <div className="container">
           <div className="section-header">
             <span className="section-label">Meet the Team</span>
-            <h2 className="section-title">
-              Our <em>Expert Coaches</em>
-            </h2>
+            <h2 className="section-title">Our <em>Expert Coaches</em></h2>
             <p className="section-sub">
-              Certified professionals with proven track records and deep
-              specialization.
+              Certified professionals with proven track records and deep specialization.
             </p>
           </div>
-          <div className="coaches-grid">
-            {coaches.map((coach, i) => (
-              <article
-                key={coach.id}
-                className="coach-card reveal"
-                style={{ transitionDelay: `${i * 60}ms` }}
-                onClick={() => setModalCoach(coach)}
-              >
-                <div className="coach-avatar-placeholder">
-                  {getInitials(coach.name)}
-                </div>
-                <h3 className="coach-name">{coach.name}</h3>
-                <span className="coach-spec">
-                  {getProgramLabel(coach.specialization)}
-                </span>
-                <div className="coach-meta">
-                  <span>👤 {coach.experience} yrs</span>
-                  <span>
-                    <span className="stars">{renderStars(coach.rating)}</span>{" "}
-                    {coach.rating}
-                  </span>
-                </div>
-                <button
-                  className="btn-outline-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setModalCoach(coach);
-                  }}
+
+          {coachesLoading ? (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>
+              <div style={{
+                width: 36, height: 36, border: "3px solid #e2e8f0",
+                borderTopColor: "#6366f1", borderRadius: "50%",
+                animation: "spin 0.8s linear infinite", margin: "0 auto 16px"
+              }} />
+              <p style={{ fontSize: 14 }}>Loading coaches…</p>
+            </div>
+          ) : coaches.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>
+              <p style={{ fontSize: 16, fontWeight: 600 }}>No coaches available yet</p>
+              <p style={{ fontSize: 14, marginTop: 6 }}>Check back soon — our team is growing!</p>
+            </div>
+          ) : (
+            <div className="coaches-grid">
+              {coaches.map((coach, i) => (
+                <article
+                  key={coach._id}
+                  className="coach-card reveal"
+                  style={{ transitionDelay: `${i * 60}ms` }}
+                  onClick={() => setModalCoach(coach)}
                 >
-                  View Profile
-                </button>
-              </article>
-            ))}
-          </div>
+                  <div className="coach-avatar-placeholder">{getInitials(coach.name)}</div>
+                  <h3 className="coach-name">{coach.name}</h3>
+                  <span className="coach-spec">{getProgramLabel(coach.specialization)}</span>
+                  <div className="coach-meta">
+                    <span>✉️ {coach.email}</span>
+                  </div>
+                  <button
+                    className="btn-outline-sm"
+                    onClick={(e) => { e.stopPropagation(); setModalCoach(coach); }}
+                  >
+                    View Profile
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Coach Selection Form */}
+      {/* ── Booking Form ──────────────────────────── */}
       <section id="select-coach" className="section form-section">
         <div className="container">
           <div className="section-header">
             <span className="section-label">Start Your Journey</span>
-            <h2 className="section-title">
-              Choose Your <em>Coach</em>
-            </h2>
+            <h2 className="section-title">Choose Your <em>Coach</em></h2>
             <p className="section-sub">
-              Fill in your details and we'll pair you with the perfect coaching
-              match.
+              Fill in your details and we'll pair you with the perfect coaching match.
             </p>
           </div>
           <div className="form-wrapper">
             {!showSummary ? (
               <>
-                {/* Step 1 */}
-                <div
-                  className={`form-step ${currentStep === 1 ? "active" : ""}`}
-                >
+                {/* Step 1 — Personal Details */}
+                <div className={`form-step ${currentStep === 1 ? "active" : ""}`}>
                   <h3 className="step-title">
                     <span className="step-num">01</span> Personal Details
                   </h3>
@@ -530,29 +584,19 @@ const MainContent: React.FC<MainContentProps> = ({
                     </div>
                     <div className="form-group">
                       <label htmlFor="program">Coaching Program</label>
-                      <select
-                        id="program"
-                        value={formData.program}
-                        onChange={handleInputChange}
-                      >
+                      <select id="program" value={formData.program} onChange={handleInputChange}>
                         <option value="">— Select a program —</option>
                         {programs.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.title}
-                          </option>
+                          <option key={p.id} value={p.id}>{p.title}</option>
                         ))}
                       </select>
                       <span className="field-error">{errors.programError}</span>
                     </div>
                   </div>
                   <div className="form-group full">
-                    <label className="radio-label">
-                      How would you like to choose your coach?
-                    </label>
+                    <label className="radio-label">How would you like to choose your coach?</label>
                     <div className="radio-group">
-                      <label
-                        className={`radio-card ${formData.coachOption === "choose" ? "selected" : ""}`}
-                      >
+                      <label className={`radio-card ${formData.coachOption === "choose" ? "selected" : ""}`}>
                         <input
                           type="radio"
                           name="coachOption"
@@ -561,16 +605,10 @@ const MainContent: React.FC<MainContentProps> = ({
                           onChange={() => handleRadioChange("choose")}
                         />
                         <span className="radio-icon">🎯</span>
-                        <span className="radio-title">
-                          I'll choose my coach
-                        </span>
-                        <span className="radio-desc">
-                          Browse coaches filtered by your program
-                        </span>
+                        <span className="radio-title">I'll choose my coach</span>
+                        <span className="radio-desc">Browse coaches filtered by your program</span>
                       </label>
-                      <label
-                        className={`radio-card ${formData.coachOption === "assign" ? "selected" : ""}`}
-                      >
+                      <label className={`radio-card ${formData.coachOption === "assign" ? "selected" : ""}`}>
                         <input
                           type="radio"
                           name="coachOption"
@@ -579,32 +617,24 @@ const MainContent: React.FC<MainContentProps> = ({
                           onChange={() => handleRadioChange("assign")}
                         />
                         <span className="radio-icon">✨</span>
-                        <span className="radio-title">
-                          Assign me the best coach
-                        </span>
-                        <span className="radio-desc">
-                          We'll recommend the top-rated match
-                        </span>
+                        <span className="radio-title">Assign me the best coach</span>
+                        <span className="radio-desc">We'll recommend the top-rated match</span>
                       </label>
                     </div>
                     <span className="field-error">{errors.optionError}</span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleNextStep}
-                  >
+                  <button type="button" className="btn btn-primary" onClick={handleNextStep}>
                     Continue →
                   </button>
                 </div>
 
-                {/* Step 2 */}
-                <div
-                  className={`form-step ${currentStep === 2 ? "active" : ""}`}
-                >
+                {/* Step 2 — Select Coach & Slot */}
+                <div className={`form-step ${currentStep === 2 ? "active" : ""}`}>
                   <h3 className="step-title">
-                    <span className="step-num">02</span> Select Your Coach
+                    <span className="step-num">02</span> Select Your Coach &amp; Slot
                   </h3>
+
+                  {/* Auto-assigned */}
                   {autoAssignedCoach && (
                     <div className="auto-assign-card">
                       <div className="assign-icon">🏆</div>
@@ -612,137 +642,237 @@ const MainContent: React.FC<MainContentProps> = ({
                         <p className="assign-label">Recommended Coach</p>
                         <p className="assign-name">{autoAssignedCoach.name}</p>
                         <p className="assign-spec">
-                          {getProgramLabel(autoAssignedCoach.specialization)} ·{" "}
-                          {autoAssignedCoach.experience} yrs exp · ★{" "}
-                          {autoAssignedCoach.rating}
+                          {getProgramLabel(autoAssignedCoach.specialization)} · {autoAssignedCoach.email}
                         </p>
                       </div>
                       <div className="assign-badge">Best Match</div>
                     </div>
                   )}
+
+                  {/* Manual coach picker */}
                   {filteredCoaches.length > 0 && (
-                    <div className="filtered-coaches-grid">
-                      {filteredCoaches.map((coach) => (
-                        <div
-                          key={coach.id}
-                          className={`filtered-coach-card ${selectedFilteredCoach?.id === coach.id ? "selected" : ""}`}
-                          onClick={() => selectFilteredCoach(coach)}
-                        >
-                          <div className="coach-avatar-placeholder">
-                            {getInitials(coach.name)}
+                    <>
+                      {filteredCoaches.length === 0 && (
+                        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 12 }}>
+                          No coaches found for this program — showing all coaches.
+                        </p>
+                      )}
+                      <div className="filtered-coaches-grid">
+                        {filteredCoaches.map((coach) => (
+                          <div
+                            key={coach._id}
+                            className={`filtered-coach-card ${selectedFilteredCoach?._id === coach._id ? "selected" : ""}`}
+                            onClick={() => selectFilteredCoach(coach)}
+                          >
+                            <div className="coach-avatar-placeholder">{getInitials(coach.name)}</div>
+                            <p className="mini-name">{coach.name}</p>
+                            <p className="mini-meta">{getProgramLabel(coach.specialization)}</p>
+                            <p className="mini-meta" style={{ fontSize: 11, color: "#94a3b8" }}>
+                              {coach.email}
+                            </p>
                           </div>
-                          <p className="mini-name">{coach.name}</p>
-                          <p className="mini-meta">
-                            {coach.experience} yrs experience
-                          </p>
-                          <p className="mini-rating">★ {coach.rating}</p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                   <span className="field-error">{errors.coachSelectError}</span>
 
-                  <div>
-                    <h4
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontWeight: 700,
-                        marginBottom: "14px",
-                      }}
-                    >
+                  {/* Real slots from DB */}
+                  <div style={{ marginTop: 24 }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 14 }}>
                       Pick a Session Slot
+                      {selectedCoach && (
+                        <span style={{ fontWeight: 400, fontSize: 13, color: "#64748b", marginLeft: 8 }}>
+                          — {selectedCoach.name}'s available times
+                        </span>
+                      )}
                     </h4>
-                    <div className="schedule-grid">
-                      {slots.map((slot, idx) => (
-                        <div
-                          key={idx}
-                          className={`time-slot ${selectedSlot === `${slot.day} at ${slot.time}` ? "selected" : ""}`}
-                          onClick={() => selectSlot(slot)}
-                        >
-                          <div className="slot-day">{slot.day}</div>
-                          <div className="slot-time">{slot.time}</div>
-                        </div>
-                      ))}
-                    </div>
+
+                    {!selectedCoach && (
+                      <p style={{ color: "#94a3b8", fontSize: 14 }}>
+                        Select a coach above to see their available slots.
+                      </p>
+                    )}
+
+                    {selectedCoach && slotsLoading && (
+                      <div style={{ textAlign: "center", padding: "24px 0", color: "#64748b" }}>
+                        <div style={{
+                          width: 28, height: 28, border: "3px solid #e2e8f0",
+                          borderTopColor: "#6366f1", borderRadius: "50%",
+                          animation: "spin 0.8s linear infinite", margin: "0 auto 10px"
+                        }} />
+                        <p style={{ fontSize: 13 }}>Loading available slots…</p>
+                      </div>
+                    )}
+
+                    {selectedCoach && !slotsLoading && coachSlots.length === 0 && (
+                      <div className="slot-request-section">
+                        {!requestSubmitted ? (
+                          <>
+                            <div className="slot-request-empty">
+                              <div className="slot-request-empty-icon">📭</div>
+                              <p className="slot-request-empty-title">No available slots</p>
+                              <p className="slot-request-empty-desc">
+                                {selectedCoach.name} hasn't created any open slots yet.
+                              </p>
+                            </div>
+
+                            {!showRequestForm ? (
+                              <div className="slot-request-cta">
+                                <p className="slot-request-cta-text">
+                                  Want to work with {selectedCoach.name}? Request a session and they'll get back to you with available times.
+                                </p>
+                                <button
+                                  type="button"
+                                  className="btn btn-request-session"
+                                  onClick={() => setShowRequestForm(true)}
+                                >
+                                  📩 Request a Session
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="slot-request-form">
+                                <h4 className="slot-request-form-title">
+                                  <span>📩</span> Request a Session with {selectedCoach.name}
+                                </h4>
+                                <div className="slot-request-form-prefilled">
+                                  <div className="slot-request-prefilled-row">
+                                    <span className="slot-request-prefilled-label">Name</span>
+                                    <span className="slot-request-prefilled-value">{formData.fullName}</span>
+                                  </div>
+                                  <div className="slot-request-prefilled-row">
+                                    <span className="slot-request-prefilled-label">Email</span>
+                                    <span className="slot-request-prefilled-value">{formData.email}</span>
+                                  </div>
+                                  <div className="slot-request-prefilled-row">
+                                    <span className="slot-request-prefilled-label">Program</span>
+                                    <span className="slot-request-prefilled-value">{getProgramLabel(formData.program)}</span>
+                                  </div>
+                                </div>
+                                <div className="slot-request-form-field">
+                                  <label htmlFor="requestMessage" className="slot-request-form-label">
+                                    Message for your coach <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span>
+                                  </label>
+                                  <textarea
+                                    id="requestMessage"
+                                    className="slot-request-message-input"
+                                    placeholder="e.g. I prefer morning sessions, or any day after 3pm works for me…"
+                                    value={requestMessage}
+                                    onChange={(e) => setRequestMessage(e.target.value)}
+                                    rows={3}
+                                  />
+                                </div>
+                                <div className="slot-request-form-actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={() => setShowRequestForm(false)}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-request-session"
+                                    onClick={handleSlotRequest}
+                                    disabled={requestSubmitting}
+                                  >
+                                    {requestSubmitting ? "Sending…" : "Send Request →"}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="slot-request-success">
+                            <div className="slot-request-success-icon">✅</div>
+                            <h4 className="slot-request-success-title">Request Sent!</h4>
+                            <p className="slot-request-success-desc">
+                              Your session request has been sent to <strong>{selectedCoach.name}</strong>.
+                              You'll receive a confirmation email shortly, and your coach will reach out with available times.
+                            </p>
+                            <div className="slot-request-success-status">
+                              <span className="slot-request-status-pill pending">⏳ Pending</span>
+                              <span className="slot-request-success-note">Your coach will review this request</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              style={{ marginTop: 16 }}
+                              onClick={resetForm}
+                            >
+                              ← Start Over
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedCoach && !slotsLoading && coachSlots.length > 0 && (
+                      <div className="schedule-grid">
+                        {coachSlots.map((slot) => {
+                          const { dateStr, timeStr } = formatSlotTime(slot);
+                          return (
+                            <div
+                              key={slot._id}
+                              className={`time-slot ${selectedSlot?._id === slot._id ? "selected" : ""}`}
+                              onClick={() => selectSlot(slot)}
+                            >
+                              <div className="slot-day">{dateStr}</div>
+                              <div className="slot-time">{timeStr}</div>
+                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                                {slot.title}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                     <span className="field-error">{errors.slotError}</span>
                   </div>
 
                   <div className="form-nav">
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={handleBackStep}
-                    >
+                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
                       ← Back
                     </button>
                     <button
                       type="button"
                       className="btn btn-primary"
                       onClick={handleSubmit}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !selectedCoach || !selectedSlot}
                     >
-                      {isSubmitting ? "Booking..." : "Confirm & Book →"}
+                      {isSubmitting ? "Booking…" : "Confirm & Book →"}
                     </button>
                   </div>
                 </div>
               </>
             ) : (
+              /* ── Booking Summary ── */
               <div className="booking-summary">
                 <div className="summary-icon">🎉</div>
                 <h3>You're All Set!</h3>
-                <p className="summary-subtitle">
-                  Here's a recap of your coaching booking:
-                </p>
+                <p className="summary-subtitle">Here's a recap of your coaching booking:</p>
                 <div className="summary-details">
-                  <div className="summary-row">
-                    <span className="summary-key">Name</span>
-                    <span className="summary-val">{bookingData?.name}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Program</span>
-                    <span className="summary-val">{bookingData?.program}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Coach</span>
-                    <span className="summary-val">{bookingData?.coach}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Session Slot</span>
-                    <span className="summary-val">{bookingData?.slot}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Coach Email</span>
-                    <span className="summary-val">
-                      {bookingData?.coachEmail}
-                    </span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Coach Phone</span>
-                    <span className="summary-val">
-                      {bookingData?.coachPhone}
-                    </span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Duration</span>
-                    <span className="summary-val">{bookingData?.duration}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span className="summary-key">Format</span>
-                    <span className="summary-val">1-on-1 Video Call</span>
-                  </div>
+                  {[
+                    { key: "Name", val: bookingData?.name },
+                    { key: "Program", val: bookingData?.program },
+                    { key: "Coach", val: bookingData?.coach },
+                    { key: "Session Slot", val: bookingData?.slot },
+                    { key: "Coach Email", val: bookingData?.coachEmail },
+                    { key: "Coach Phone", val: bookingData?.coachPhone || "—" },
+                    { key: "Duration", val: bookingData?.duration },
+                    { key: "Format", val: "1-on-1 Video Call" },
+                  ].map(({ key, val }) => (
+                    <div key={key} className="summary-row">
+                      <span className="summary-key">{key}</span>
+                      <span className="summary-val">{val}</span>
+                    </div>
+                  ))}
                 </div>
                 <p className="summary-note">
-                  A confirmation email will be sent to your inbox. Your coach
-                  will reach out within 24 hours to confirm the session details.
+                  A confirmation email will be sent to your inbox. Your coach will reach out
+                  within 24 hours to confirm the session details.
                 </p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    justifyContent: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                   <button className="btn btn-primary" onClick={resetForm}>
                     Book Another Session
                   </button>
@@ -756,14 +886,12 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* ── Testimonials ──────────────────────────── */}
       <section id="testimonials" className="section testimonials-section">
         <div className="container">
           <div className="section-header">
             <span className="section-label">Client Stories</span>
-            <h2 className="section-title">
-              What Our <em>Clients Say</em>
-            </h2>
+            <h2 className="section-title">What Our <em>Clients Say</em></h2>
           </div>
           <div className="testimonials-slider" ref={containerRef}>
             <div className="testimonials-track" ref={trackRef}>
@@ -772,50 +900,41 @@ const MainContent: React.FC<MainContentProps> = ({
                   <div className="testimonial-quote">"</div>
                   <p className="testimonial-text">{t.text}</p>
                   <div className="testimonial-author">
-                    <div className="testimonial-avatar">
-                      {getInitials(t.name)}
-                    </div>
+                    <div className="testimonial-avatar">{getInitials(t.name)}</div>
                     <div>
                       <p className="testimonial-name">{t.name}</p>
                       <p className="testimonial-role">{t.role}</p>
                     </div>
-                    <div className="testimonial-stars">
-                      {"★".repeat(t.rating)}
-                    </div>
+                    <div className="testimonial-stars">{"★".repeat(t.rating)}</div>
                   </div>
                 </article>
               ))}
             </div>
             <div className="slider-controls">
-              <button className="slider-btn" onClick={prevSlide}>
-                ←
-              </button>
+              <button className="slider-btn" onClick={prevSlide}>←</button>
               <div className="slider-dots">
-                {Array.from({
-                  length: Math.max(1, testimonials.length - visibleCards + 1),
-                }).map((_, idx) => (
-                  <button
-                    key={idx}
-                    className={`slider-dot ${currentSlide === idx ? "active" : ""}`}
-                    onClick={() => goToSlide(idx)}
-                  ></button>
-                ))}
+                {Array.from({ length: Math.max(1, testimonials.length - visibleCards + 1) }).map(
+                  (_, idx) => (
+                    <button
+                      key={idx}
+                      className={`slider-dot ${currentSlide === idx ? "active" : ""}`}
+                      onClick={() => goToSlide(idx)}
+                    />
+                  )
+                )}
               </div>
-              <button className="slider-btn" onClick={nextSlide}>
-                →
-              </button>
+              <button className="slider-btn" onClick={nextSlide}>→</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact Section */}
+      {/* ── Contact ───────────────────────────────── */}
       <ContactForm showToast={showToast} />
 
-      {/* Coach Profile Modal */}
+      {/* ── Coach Profile Modal ───────────────────── */}
       <CoachProfileModal
         coach={modalCoach}
-        coaches={coaches}
         getInitials={getInitials}
         getProgramLabel={getProgramLabel}
         renderStars={renderStars}

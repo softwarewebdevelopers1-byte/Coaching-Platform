@@ -4,7 +4,6 @@ import type { Coach } from "../types";
 
 interface CoachProfileModalProps {
   coach: Coach | null;
-  coaches: Coach[];
   getInitials: (name: string) => string;
   getProgramLabel: (id: string) => string;
   renderStars: (rating: number) => string;
@@ -39,26 +38,33 @@ const CoachProfileModal: React.FC<CoachProfileModalProps> = ({
         </div>
         <div className="modal-stats">
           <div className="modal-stat">
-            <span className="modal-stat-val">{coach.experience}</span>
+            <span className="modal-stat-val">{coach.experience ?? "—"}</span>
             <span className="modal-stat-label">Years Exp.</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-val">{renderStars(coach.rating)}</span>
+            <span className="modal-stat-val">{coach.rating ? renderStars(coach.rating) : "—"}</span>
             <span className="modal-stat-label">Rating</span>
           </div>
           <div className="modal-stat">
-            <span className="modal-stat-val">{coach.rating}</span>
-            <span className="modal-stat-label">Score</span>
+            <span className="modal-stat-val">{coach.email}</span>
+            <span className="modal-stat-label">Email</span>
           </div>
         </div>
-        <p className="modal-bio">{coach.bio}</p>
-        <div className="modal-tags">
-          {coach.tags.map((tag, idx) => (
-            <span key={idx} className="modal-tag">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {coach.bio && <p className="modal-bio">{coach.bio}</p>}
+        {coach.phone && (
+          <p className="modal-bio" style={{ fontSize: 13, color: "#94a3b8" }}>
+            📞 {coach.phone}
+          </p>
+        )}
+        {coach.tags && coach.tags.length > 0 && (
+          <div className="modal-tags">
+            {coach.tags.map((tag, idx) => (
+              <span key={idx} className="modal-tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="modal-actions">
           <button className="btn btn-primary" onClick={() => onBook(coach)}>
             Book a Session
