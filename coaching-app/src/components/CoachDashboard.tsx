@@ -99,10 +99,30 @@ const StatusPill = ({ status }: { status: string }) => (
 );
 
 /* ── Component ───────────────────────────────────────────────── */
+const PasswordVisibilityIcon = ({ hidden }: { hidden: boolean }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {hidden ? (
+      <>
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12a18.45 18.45 0 0 1 5.06-6.94" />
+        <path d="M9.9 4.24A10.7 10.7 0 0 1 12 4c5 0 9.27 3.11 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
+        <path d="M1 1l22 22" />
+      </>
+    ) : (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    )}
+  </svg>
+);
+
 const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) => {
   const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CoachTab>("overview");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1054,21 +1074,43 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   </div>
                   <div className="form-field">
                     <label className="form-label">New Password</label>
-                    <input
-                      type="password"
-                      value={settingsForm.password}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
-                      placeholder="Leave blank to keep current password"
-                    />
+                    <div className="password-input-wrapper">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={settingsForm.password}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                        placeholder="Leave blank to keep current password"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                        title={showNewPassword ? "Hide new password" : "Show new password"}
+                        onClick={() => setShowNewPassword((value) => !value)}
+                      >
+                        <PasswordVisibilityIcon hidden={showNewPassword} />
+                      </button>
+                    </div>
                   </div>
                   <div className="form-field">
                     <label className="form-label">Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={settingsForm.confirmPassword}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
-                      placeholder="Confirm new password"
-                    />
+                    <div className="password-input-wrapper">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={settingsForm.confirmPassword}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                        title={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                        onClick={() => setShowConfirmPassword((value) => !value)}
+                      >
+                        <PasswordVisibilityIcon hidden={showConfirmPassword} />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button

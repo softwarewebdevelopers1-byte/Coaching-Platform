@@ -116,10 +116,29 @@ const RolePill = ({ role }: { role: string }) => (
 );
 
 /* ── Component ───────────────────────────────────────────────── */
+const PasswordVisibilityIcon = ({ hidden }: { hidden: boolean }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {hidden ? (
+      <>
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12a18.45 18.45 0 0 1 5.06-6.94" />
+        <path d="M9.9 4.24A10.7 10.7 0 0 1 12 4c5 0 9.27 3.11 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
+        <path d="M1 1l22 22" />
+      </>
+    ) : (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    )}
+  </svg>
+);
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [showAccountPassword, setShowAccountPassword] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
@@ -370,12 +389,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                       value={accountForm.phone}
                       onChange={(e) => setAccountForm({ ...accountForm, phone: e.target.value })}
                     />
-                    <input
-                      placeholder="Password"
-                      type="password"
-                      value={accountForm.password}
-                      onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
-                    />
+                    <div className="password-input-wrapper">
+                      <input
+                        placeholder="Password"
+                        type={showAccountPassword ? "text" : "password"}
+                        value={accountForm.password}
+                        onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        aria-label={showAccountPassword ? "Hide password" : "Show password"}
+                        title={showAccountPassword ? "Hide password" : "Show password"}
+                        onClick={() => setShowAccountPassword((value) => !value)}
+                      >
+                        <PasswordVisibilityIcon hidden={showAccountPassword} />
+                      </button>
+                    </div>
                     {accountForm.role === "coach" && (
                       <select
                         value={accountForm.programName}
