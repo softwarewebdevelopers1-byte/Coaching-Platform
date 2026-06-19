@@ -419,8 +419,6 @@ const MainContent: React.FC<MainContentProps> = ({
       `Coach Email:     ${bookingData.coachEmail}`,
       `Coach Phone:     ${bookingData.coachPhone}`,
       `Session Slot:    ${bookingData.slot}`,
-      `Duration:        ${bookingData.duration}`,
-      `Format:          1-on-1 Video Call`,
       "",
       "A confirmation email will be sent to your inbox.",
       "Your coach will reach out within 24 hours.",
@@ -428,7 +426,7 @@ const MainContent: React.FC<MainContentProps> = ({
       `Booked on: ${bookingData.bookedAt}`,
       "",
       "— ApexCoaching Team",
-      "hello@apexcoaching.com | +1 800 555 0100",
+      "wanjita.home@gmail.com | 0712281552 | Nairobi",
     ].join("\n");
 
     const blob = new Blob([content], { type: "text/plain" });
@@ -914,7 +912,6 @@ const MainContent: React.FC<MainContentProps> = ({
                     { key: "Session Slot", val: bookingData?.slot },
                     { key: "Coach Email", val: bookingData?.coachEmail },
                     { key: "Coach Phone", val: bookingData?.coachPhone || "—" },
-                    { key: "Duration", val: bookingData?.duration },
                     { key: "Format", val: "1-on-1 Video Call" },
                   ].map(({ key, val }) => (
                     <div key={key} className="summary-row">
