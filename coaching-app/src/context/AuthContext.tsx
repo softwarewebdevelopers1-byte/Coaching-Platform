@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000";
+    "https://coaching-platform-38p5.onrender.com";
 
   useEffect(() => {
     const savedUser = localStorage.getItem("authUser");
