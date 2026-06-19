@@ -6,12 +6,17 @@ interface LoginProps {
   onLoginSuccess?: () => void;
 }
 
+const getDashboardPath = (role: string) => {
+  if (role === "admin") return "/admin";
+  if (role === "coach") return "/coach";
+  return "/";
+};
+
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "coach">("coach");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,12 +26,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
 
     try {
-      await login(email, password, role);
+      const account = await login(email, password);
       onLoginSuccess?.();
-      // Redirect to appropriate dashboard
-      setTimeout(() => {
-        navigate(role === "admin" ? "/admin" : "/coach");
-      }, 100);
+      navigate(getDashboardPath(account.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -46,30 +48,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }}
     >
       <h2 style={{ marginBottom: "24px", textAlign: "center" }}>
-        Admin & Coach Login
+        Staff Login
       </h2>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
-            Role
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as "admin" | "coach")}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid var(--clr-border)",
-              borderRadius: "var(--radius-sm)",
-              fontSize: "1rem",
-            }}
-          >
-            <option value="admin">Admin</option>
-            <option value="coach">Coach</option>
-          </select>
-        </div>
-
         <div>
           <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
             Email
@@ -141,7 +123,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       </form>
 
       <p style={{ marginTop: "16px", fontSize: "0.85rem", color: "var(--clr-ink-soft)", textAlign: "center" }}>
-        💡 Users cannot login. Admins and coaches can access their dashboards here.
+        Sign in with your account credentials. You will be routed to the correct dashboard automatically.
       </p>
     </div>
   );

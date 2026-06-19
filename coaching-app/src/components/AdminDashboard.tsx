@@ -14,6 +14,13 @@ interface AdminDashboardProps {
 
 type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 
+const COACH_PROGRAMS = [
+  { id: "career", title: "Career Coaching" },
+  { id: "business", title: "Business Coaching" },
+  { id: "life", title: "Life Coaching" },
+  { id: "leadership", title: "Leadership Coaching" },
+];
+
 /* ── SVG Icons ───────────────────────────────────────────────── */
 const Icons = {
   grid: (
@@ -120,6 +127,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     fullName: "",
     email: "",
     phone: "",
+    password: "",
+    programName: "career",
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
   });
@@ -157,10 +166,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     });
     if (res.ok) {
       showToast("Account created successfully", "success", 3500);
-      setAccountForm({ fullName: "", email: "", phone: "", role: "coach", status: "active" });
+      setAccountForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        password: "",
+        programName: "career",
+        role: "coach",
+        status: "active",
+      });
       loadDashboardData();
     } else {
-      showToast("Error saving account", "error", 5000);
+      const error = await res.json().catch(() => null);
+      showToast(error?.message || "Error saving account", "error", 5000);
     }
   };
 
@@ -352,6 +370,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                       value={accountForm.phone}
                       onChange={(e) => setAccountForm({ ...accountForm, phone: e.target.value })}
                     />
+                    <input
+                      placeholder="Password"
+                      type="password"
+                      value={accountForm.password}
+                      onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                    />
+                    {accountForm.role === "coach" && (
+                      <select
+                        value={accountForm.programName}
+                        onChange={(e) => setAccountForm({ ...accountForm, programName: e.target.value })}
+                      >
+                        {COACH_PROGRAMS.map((program) => (
+                          <option key={program.id} value={program.id}>
+                            {program.title}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <select
                       value={accountForm.role}
                       onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as Account["role"] })}
@@ -418,6 +454,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                       fullName: account.fullName,
                                       email: account.email,
                                       phone: account.phone || "",
+                                      password: "",
+                                      programName: account.programName || "career",
                                       role: account.role,
                                       status: account.status,
                                     })}

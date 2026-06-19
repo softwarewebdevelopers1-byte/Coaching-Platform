@@ -270,6 +270,210 @@ export async function sendSlotRequestApprovedEmail(
   }
 }
 
+// ── Slot Request: declined by coach ───────────────────────────────────────────
+interface SlotRequestDeclinedDetails {
+  email: string;
+  fullName: string;
+  programName: string;
+  coachName: string;
+  coachEmail: string;
+}
+
+export async function sendSlotRequestDeclinedEmail(
+  details: SlotRequestDeclinedDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Request Declined</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .brand span { color: #e8b96a; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .status-box { background: #fef2f2; border: 1px solid #ef4444; border-radius: 10px; padding: 18px; margin: 24px 0; text-align: center; }
+    .status-box h2 { margin: 0 0 8px; font-size: 18px; color: #b91c1c; }
+    .status-box p { margin: 0; color: #991b1b; font-size: 14px; }
+    .panel { border: 1px solid #e7ded2; border-radius: 10px; overflow: hidden; margin: 24px 0; }
+    .row { display: flex; gap: 18px; padding: 14px 16px; border-bottom: 1px solid #eee8df; }
+    .row:last-child { border-bottom: 0; }
+    .label { min-width: 140px; color: #6d6258; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size: 15px; color: #1a1612; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+    a { color: #9b6a17; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">Apex<span>Coaching</span></p>
+      <p>Update on your session request.</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.fullName)},</p>
+      <p>Thank you for your interest in coaching with us. Unfortunately, your coach was unable to accommodate your session request at this time.</p>
+
+      <div class="status-box">
+        <h2>Request Declined</h2>
+        <p>Your session request has been declined. You may submit a new request or choose another coach.</p>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <div class="label">Program</div>
+          <div class="value">${escapeHtml(details.programName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Coach</div>
+          <div class="value">${escapeHtml(details.coachName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Coach Email</div>
+          <div class="value"><a href="mailto:${escapeHtml(details.coachEmail)}">${escapeHtml(details.coachEmail)}</a></div>
+        </div>
+      </div>
+
+      <p>If you have questions, feel free to reach out or browse other available coaches on our website.</p>
+      <p>Thank you for choosing Apex Coaching!</p>
+    </div>
+    <div class="footer">
+      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    to: [{ email: details.email, name: details.fullName }],
+    subject: "Your session request was declined — Apex Coaching",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      { headers: { "api-key": apiKey, "Content-Type": "application/json" } },
+    );
+    console.log("Slot request declined email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
+// ── Slot Request: notify coach of new request ─────────────────────────────────
+interface SlotRequestCoachNotificationDetails {
+  coachEmail: string;
+  coachName: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  programName: string;
+  message: string;
+}
+
+export async function sendSlotRequestCoachNotificationEmail(
+  details: SlotRequestCoachNotificationDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+  const clientMessage = details.message
+    ? `<p style="margin-top:14px;padding:12px;background:#fffbeb;border-radius:8px;font-size:14px;color:#92400e;"><strong>Client message:</strong> ${escapeHtml(details.message)}</p>`
+    : "";
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Session Request</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .brand span { color: #e8b96a; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .panel { border: 1px solid #e7ded2; border-radius: 10px; overflow: hidden; margin: 24px 0; }
+    .row { display: flex; gap: 18px; padding: 14px 16px; border-bottom: 1px solid #eee8df; }
+    .row:last-child { border-bottom: 0; }
+    .label { min-width: 140px; color: #6d6258; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size: 15px; color: #1a1612; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+    a { color: #9b6a17; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">Apex<span>Coaching</span></p>
+      <p>You have a new session request.</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.coachName)},</p>
+      <p>A client has requested a coaching session with you. Please review the request in your coach dashboard.</p>
+
+      <div class="panel">
+        <div class="row">
+          <div class="label">Client</div>
+          <div class="value">${escapeHtml(details.fullName)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Email</div>
+          <div class="value"><a href="mailto:${escapeHtml(details.email)}">${escapeHtml(details.email)}</a></div>
+        </div>
+        <div class="row">
+          <div class="label">Phone</div>
+          <div class="value">${escapeHtml(details.phoneNumber)}</div>
+        </div>
+        <div class="row">
+          <div class="label">Program</div>
+          <div class="value">${escapeHtml(details.programName)}</div>
+        </div>
+      </div>
+
+      ${clientMessage}
+
+      <p>Log in to your coach portal to approve or decline this request.</p>
+    </div>
+    <div class="footer">
+      &copy; ${currentYear} Apex Coaching. Coach portal notification.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    to: [{ email: details.coachEmail, name: details.coachName }],
+    subject: "New session request — Apex Coaching",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      { headers: { "api-key": apiKey, "Content-Type": "application/json" } },
+    );
+    console.log("Coach notification email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
 function generateBookingEmailTemplate(booking: BookingConfirmationDetails): string {
   const currentYear = new Date().getFullYear();
   const coachName = booking.coachName || `Coach #${booking.coachId}`;

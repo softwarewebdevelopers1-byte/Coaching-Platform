@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { BookingSession, CoachSlot, Program, SlotRequest } from "../types";
@@ -13,7 +13,7 @@ interface CoachDashboardProps {
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
-type CoachTab = "overview" | "availability" | "bookings" | "requests";
+type CoachTab = "overview" | "availability" | "bookings" | "requests" | "rejected" | "settings";
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
 const Icons = {
@@ -78,6 +78,17 @@ const Icons = {
       <polyline points="12 6 12 12 16 14"/>
     </svg>
   ),
+  settings: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
+  x: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  ),
 };
 
 /* ── Status pill ─────────────────────────────────────────────── */
@@ -89,7 +100,7 @@ const StatusPill = ({ status }: { status: string }) => (
 
 /* ── Component ───────────────────────────────────────────────── */
 const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) => {
-  const { logout, user } = useAuth();
+  const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CoachTab>("overview");
   const [slots, setSlots] = useState<CoachSlot[]>([]);
@@ -98,10 +109,19 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [slotForm, setSlotForm] = useState({
     title: "",
-    programName: programs[0]?.title || "",
+    programName: user?.programName || programs[0]?.id || "",
     bookingDate: "",
     bookingEndDate: "",
   });
+
+  const [settingsForm, setSettingsForm] = useState({
+    email: user?.email || "",
+    phone: user?.phone || "",
+    programName: user?.programName || programs[0]?.id || "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Slot requests state
   const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
@@ -117,6 +137,30 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const coachName = user?.fullName || "";
   const coachEmail = user?.email || "";
   const coachPhone = user?.phone || "";
+
+  const getProgramLabel = (value: string) => {
+    const program = programs.find((p) => p.id === value || p.title === value);
+    return program?.title || value || "—";
+  };
+
+  const coachSlotPrograms = user?.programName
+    ? programs.filter((p) => p.id === user.programName || p.title === user.programName)
+    : programs;
+
+  useEffect(() => {
+    if (user) {
+      setSettingsForm((prev) => ({
+        ...prev,
+        email: user.email || "",
+        phone: user.phone || "",
+        programName: user.programName || programs[0]?.id || "",
+      }));
+      setSlotForm((prev) => ({
+        ...prev,
+        programName: user.programName || programs[0]?.id || "",
+      }));
+    }
+  }, [user, programs]);
 
   const initials = coachName
     .split(" ")
@@ -212,7 +256,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     if (res.ok) {
       setSlotForm({
         title: "",
-        programName: programs[0]?.title || "",
+        programName: user?.programName || programs[0]?.id || "",
         bookingDate: "",
         bookingEndDate: "",
       });
@@ -255,7 +299,10 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
   const openSlots = slots.filter((s) => s.status === "open").length;
   const bookedSlots = slots.filter((s) => s.status === "booked").length;
-  const pendingRequests = slotRequests.filter((r) => r.status === "pending").length;
+  const pendingRequests = slotRequests.filter((r) => r.status === "pending");
+  const declinedRequests = slotRequests.filter((r) => r.status === "declined");
+  const pendingCount = pendingRequests.length;
+  const declinedCount = declinedRequests.length;
 
   /* ── Approve slot request ──────────────────────────────── */
   const approveRequest = async (requestId: string) => {
@@ -283,6 +330,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         setApprovingId(null);
         setApproveForm({ scheduledTime: "", coachNotes: "" });
         await loadDashboardData();
+        setActiveTab("bookings");
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.message || "Error approving request", "error", 5000);
@@ -302,8 +350,9 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       });
 
       if (res.ok) {
-        showToast("Request declined", "success", 3000);
+        showToast("Request declined — client has been notified by email", "success", 3000);
         await loadDashboardData();
+        setActiveTab("rejected");
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.message || "Error declining request", "error", 5000);
@@ -315,18 +364,84 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     }
   };
 
+  const saveSettings = async () => {
+    if (!coachId) return;
+
+    if (!settingsForm.email.trim()) {
+      showToast("Email is required", "error", 3000);
+      return;
+    }
+
+    if (settingsForm.password && settingsForm.password !== settingsForm.confirmPassword) {
+      showToast("Passwords do not match", "error", 3000);
+      return;
+    }
+
+    if (settingsForm.password && settingsForm.password.length < 6) {
+      showToast("Password must be at least 6 characters", "error", 3000);
+      return;
+    }
+
+    setIsSavingSettings(true);
+    try {
+      const payload: Record<string, string> = {
+        email: settingsForm.email.trim(),
+        phone: settingsForm.phone.trim(),
+        programName: settingsForm.programName,
+      };
+
+      if (settingsForm.password) {
+        payload.password = settingsForm.password;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/accounts/${coachId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(result?.message || "Could not update settings");
+      }
+
+      updateUser({
+        email: result.account.email,
+        phone: result.account.phone,
+        programName: result.account.programName,
+      });
+
+      setSettingsForm((prev) => ({
+        ...prev,
+        password: "",
+        confirmPassword: "",
+      }));
+
+      showToast("Settings updated successfully", "success", 4000);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update settings", "error", 5000);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   const navItems = [
     { id: "overview", label: "Overview", icon: Icons.grid },
     { id: "availability", label: "My Availability", icon: Icons.calendar },
     { id: "bookings", label: "Client Bookings", icon: Icons.users },
-    { id: "requests", label: `Requests${pendingRequests > 0 ? ` (${pendingRequests})` : ""}`, icon: Icons.clock },
+    { id: "requests", label: `Requests${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: Icons.clock },
+    { id: "rejected", label: `Rejected${declinedCount > 0 ? ` (${declinedCount})` : ""}`, icon: Icons.x },
+    { id: "settings", label: "Settings", icon: Icons.settings },
   ];
 
   const tabTitles: Record<CoachTab, { title: string; subtitle: string }> = {
     overview: { title: "Coach Dashboard", subtitle: "Your coaching performance at a glance" },
     availability: { title: "Manage Availability", subtitle: "Create and manage your coaching slots" },
     bookings: { title: "Client Bookings", subtitle: "All clients who booked sessions with you" },
-    requests: { title: "Session Requests", subtitle: "Review and approve session requests from clients" },
+    requests: { title: "Session Requests", subtitle: "Review and approve pending session requests from clients" },
+    rejected: { title: "Rejected Requests", subtitle: "Session requests you have declined" },
+    settings: { title: "Account Settings", subtitle: "Update your contact details, password, and coaching program" },
   };
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -452,9 +567,9 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       📋 {bookedSlots} booked
                     </span>
                     <span className="dashboard-badge warning">👥 {sessions.length} clients</span>
-                    {pendingRequests > 0 && (
+                    {pendingCount > 0 && (
                       <span className="dashboard-badge" style={{ background: "rgba(245,158,11,0.10)", color: "#f59e0b", borderColor: "rgba(245,158,11,0.25)" }}>
-                        📩 {pendingRequests} pending requests
+                        📩 {pendingCount} pending requests
                       </span>
                     )}
                   </div>
@@ -501,6 +616,10 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       <p className="dashboard-detail-value">{coachPhone || "Not set"}</p>
                     </div>
                     <div>
+                      <p className="dashboard-detail-label">Coaching Program</p>
+                      <p className="dashboard-detail-value">{getProgramLabel(user?.programName || "")}</p>
+                    </div>
+                    <div>
                       <p className="dashboard-detail-label">Role</p>
                       <p className="dashboard-detail-value">
                         <span className="role-pill role-coach">Coach</span>
@@ -536,8 +655,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       onChange={(e) => setSlotForm({ ...slotForm, programName: e.target.value })}
                     >
                       <option value="">Select Program</option>
-                      {programs.map((p) => (
-                        <option key={p.id} value={p.title}>{p.title}</option>
+                      {coachSlotPrograms.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
                       ))}
                     </select>
                     <div className="form-field">
@@ -704,20 +823,17 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
               <div className="dashboard-card-header">
                 <h2 className="dashboard-card-title">
                   <span className="card-title-icon">📩</span>
-                  Session Requests
+                  Pending Session Requests
                 </h2>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span className="dashboard-badge warning">{pendingRequests} pending</span>
-                  <span className="dashboard-badge success">
-                    {slotRequests.filter((r) => r.status === "approved").length} approved
-                  </span>
+                  <span className="dashboard-badge warning">{pendingCount} pending</span>
                 </div>
               </div>
               <div className="dashboard-card-body" style={{ padding: 0 }}>
-                {slotRequests.length === 0 ? (
+                {pendingRequests.length === 0 ? (
                   <div className="dashboard-empty">
                     <span className="dashboard-empty-icon">📩</span>
-                    <p className="dashboard-empty-text">No session requests yet</p>
+                    <p className="dashboard-empty-text">No pending session requests</p>
                     <p className="dashboard-empty-sub">
                       When clients request sessions with you, they'll appear here for your review
                     </p>
@@ -736,7 +852,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                         </tr>
                       </thead>
                       <tbody>
-                        {slotRequests.map((request) => (
+                        {pendingRequests.map((request) => (
                           <tr key={request._id}>
                             <td className="td-name">
                               {request.fullName}
@@ -836,6 +952,133 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── REJECTED REQUESTS ───────────────────── */}
+          {!isLoading && activeTab === "rejected" && (
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">❌</span>
+                  Rejected Session Requests
+                </h2>
+                <span className="dashboard-badge" style={{ background: "rgba(239,68,68,0.10)", color: "#ef4444", borderColor: "rgba(239,68,68,0.25)" }}>
+                  {declinedCount} rejected
+                </span>
+              </div>
+              <div className="dashboard-card-body" style={{ padding: 0 }}>
+                {declinedRequests.length === 0 ? (
+                  <div className="dashboard-empty">
+                    <span className="dashboard-empty-icon">❌</span>
+                    <p className="dashboard-empty-text">No rejected requests</p>
+                    <p className="dashboard-empty-sub">
+                      Declined session requests will appear here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          <th>Email</th>
+                          <th>Program</th>
+                          <th>Message</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {declinedRequests.map((request) => (
+                          <tr key={request._id}>
+                            <td className="td-name">{request.fullName}</td>
+                            <td className="td-email">{request.email}</td>
+                            <td style={{ color: "var(--text-secondary)" }}>{request.programName}</td>
+                            <td style={{ color: "var(--text-secondary)", fontSize: "12px", maxWidth: 180 }}>
+                              {request.message || "—"}
+                            </td>
+                            <td>
+                              <span className="status-pill status-declined">❌ Declined</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── SETTINGS ────────────────────────────── */}
+          {!isLoading && activeTab === "settings" && (
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">⚙️</span>
+                  Account Settings
+                </h2>
+              </div>
+              <div className="dashboard-card-body">
+                <div className="dashboard-form">
+                  <div className="form-field">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      value={settingsForm.email}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={settingsForm.phone}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                      placeholder="+1 555 000 0000"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Coaching Program / Field</label>
+                    <select
+                      value={settingsForm.programName}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, programName: e.target.value })}
+                    >
+                      <option value="">Select Program</option>
+                      {programs.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">New Password</label>
+                    <input
+                      type="password"
+                      value={settingsForm.password}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                      placeholder="Leave blank to keep current password"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={settingsForm.confirmPassword}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                </div>
+                <button
+                  className="dashboard-btn dashboard-btn-primary"
+                  onClick={saveSettings}
+                  disabled={isSavingSettings}
+                  style={{ marginTop: 8 }}
+                >
+                  {isSavingSettings ? "Saving…" : "Save Settings"}
+                </button>
               </div>
             </div>
           )}
