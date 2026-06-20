@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { SlotRequestModel } from "../models/SlotRequests.model.js";
 import { BookingsSessionsModel } from "../models/Bookings.model.js";
-import { UserAccountsModel } from "../models/users,model.js";
 import {
   sendSlotRequestReceivedEmail,
   sendSlotRequestApprovedEmail,
+  sendSlotRequestDeclinedEmail,
+  sendSlotRequestCoachNotificationEmail,
 } from "../services/Brevo.emailSender.js";
 import { programsMatch } from "../utils/programs.js";
 
@@ -53,7 +54,6 @@ router.post("/", async (req, res): Promise<void> => {
     status: "pending",
   });
 
-  // Send confirmation email to user (fire-and-forget)
   sendSlotRequestReceivedEmail({
     email,
     fullName,
@@ -62,6 +62,18 @@ router.post("/", async (req, res): Promise<void> => {
     coachEmail,
   }).catch((error) => {
     console.log("Error sending slot request received email:", error);
+  });
+
+  sendSlotRequestCoachNotificationEmail({
+    coachEmail,
+    coachName,
+    fullName,
+    email,
+    phoneNumber,
+    programName,
+    message: message || "",
+  }).catch((error) => {
+    console.log("Error sending coach notification email:", error);
   });
 
   res.status(201).json({
@@ -75,6 +87,12 @@ router.get("/", async (req, res): Promise<void> => {
   const filter: Record<string, string> = {};
   if (req.query.coachEmail) {
     filter.coachEmail = String(req.query.coachEmail);
+  }
+  if (req.query.email) {
+    filter.email = String(req.query.email);
+  }
+  if (req.query.status) {
+    filter.status = String(req.query.status);
   }
 
   const slotRequests = await SlotRequestModel.find(filter).sort({ _id: -1 });
@@ -107,7 +125,7 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
   slotRequest.coachNotes = coachNotes || "";
   await slotRequest.save();
 
-  const booking = await BookingsSessionsModel.create({
+  await BookingsSessionsModel.create({
     email: slotRequest.email,
     fullName: slotRequest.fullName,
     phoneNumber: slotRequest.phoneNumber,
@@ -119,7 +137,6 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
     bookingTime: scheduledTime,
   });
 
-  // Send approval email to user with the scheduled time
   sendSlotRequestApprovedEmail({
     email: slotRequest.email,
     fullName: slotRequest.fullName,
@@ -156,6 +173,16 @@ router.patch("/:id/decline", async (req, res): Promise<void> => {
 
   slotRequest.status = "declined";
   await slotRequest.save();
+
+  sendSlotRequestDeclinedEmail({
+    email: slotRequest.email,
+    fullName: slotRequest.fullName,
+    programName: slotRequest.programName,
+    coachName: slotRequest.coachName,
+    coachEmail: slotRequest.coachEmail,
+  }).catch((error) => {
+    console.log("Error sending slot request declined email:", error);
+  });
 
   res.status(200).json({
     message: "Slot request declined",

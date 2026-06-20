@@ -831,6 +831,41 @@
   color: var(--text-muted);
 }
 
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.dashboard-form .password-input-wrapper input {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition), background var(--transition);
+}
+
+.password-toggle-btn:hover,
+.password-toggle-btn:focus-visible {
+  color: var(--text-primary);
+  background: rgba(15, 23, 42, 0.06);
+  outline: none;
+}
+
 .dashboard-form input:hover,
 .dashboard-form select:hover,
 .dashboard-form textarea:hover {

@@ -4,7 +4,7 @@ import type { Account } from "../types";
 interface AuthContextType {
   user: Account | null;
   isLoading: boolean;
-  login: (email: string, password: string, role: "admin" | "coach") => Promise<void>;
+  login: (email: string, password: string) => Promise<Account>;
   logout: () => void;
   updateUser: (updates: Partial<Account>) => void;
   isAuthenticated: boolean;
@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-    "http://localhost:8000";
+    "https://coaching-platform-38p5.onrender.com";
 
   useEffect(() => {
     const savedUser = localStorage.getItem("authUser");
@@ -35,11 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string, role: "admin" | "coach") => {
+    async (email: string, password: string) => {
       const response = await fetch(`${API_BASE_URL}/api/accounts/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, password }),
       });
 
       const result = await response.json().catch(() => null);
@@ -48,9 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(result?.message || "Login failed");
       }
 
-      const userData = result.account;
+      const userData = result.account as Account;
       setUser(userData);
       localStorage.setItem("authUser", JSON.stringify(userData));
+      return userData;
     },
     [API_BASE_URL],
   );
@@ -61,11 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const updateUser = useCallback((updates: Partial<Account>) => {
-    setUser((prevUser) => {
-      if (!prevUser) return prevUser;
-      const nextUser = { ...prevUser, ...updates };
-      localStorage.setItem("authUser", JSON.stringify(nextUser));
-      return nextUser;
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      localStorage.setItem("authUser", JSON.stringify(updated));
+      return updated;
     });
   }, []);
 
@@ -76,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoading,
         login,
         logout,
-          updateUser,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >

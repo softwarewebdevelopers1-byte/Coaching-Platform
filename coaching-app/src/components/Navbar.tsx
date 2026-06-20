@@ -215,6 +215,30 @@ const Navbar: React.FC = () => {
               Contact
             </a>
           </li>
+          {!user && (
+            <li>
+              <a
+                href="/login"
+                className="nav-link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  navigate("/login");
+                }}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                  color: "var(--clr-ink-soft)",
+                  transition: "var(--transition)",
+                  display: "block",
+                }}
+              >
+                Staff Login
+              </a>
+            </li>
+          )}
         </ul>
         <a
           href={user ? "#" : "#select-coach"}

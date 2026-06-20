@@ -6,27 +6,27 @@ import { CoachInviteModel, UserAccountsModel } from "../models/users,model.js";
 const router = Router();
 
 router.post("/login", async (req, res): Promise<void> => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !password || !role) {
+  if (!email || !password) {
     res.status(400).json({
-      message: "Email, password, and role are required",
+      message: "Email and password are required",
     });
     return;
   }
 
-  if (role === "user") {
-    res.status(403).json({
-      message: "Users cannot login. Please contact support if you need assistance.",
-    });
-    return;
-  }
-
-  const account = await UserAccountsModel.findOne({ email, role });
+  const account = await UserAccountsModel.findOne({ email });
 
   if (!account) {
     res.status(401).json({
-      message: "Invalid email or role.",
+      message: "Invalid email or password.",
+    });
+    return;
+  }
+
+  if (account.role === "user") {
+    res.status(403).json({
+      message: "Users cannot login. Please contact support if you need assistance.",
     });
     return;
   }
@@ -48,7 +48,7 @@ router.post("/login", async (req, res): Promise<void> => {
   const passwordMatch = await bcrypt.compare(password, account.password);
   if (!passwordMatch) {
     res.status(401).json({
-      message: "Invalid password.",
+      message: "Invalid email or password.",
     });
     return;
   }
@@ -60,9 +60,9 @@ router.post("/login", async (req, res): Promise<void> => {
       fullName: account.fullName,
       email: account.email,
       phone: account.phone,
-      programName: account.programName,
       role: account.role,
       status: account.status,
+      programName: account.programName,
     },
   });
 });
@@ -115,41 +115,90 @@ router.post("/register", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/", async (_req, res): Promise<void> => {
-  const accounts = await UserAccountsModel.find().sort({ createdAt: -1 });
+router.get("/", async (req, res): Promise<void> => {
+  const filter: Record<string, string> = {};
+  if (req.query.role) {
+    filter.role = String(req.query.role);
+  }
+  if (req.query.status) {
+    filter.status = String(req.query.status);
+  }
+  if (req.query.programName) {
+    filter.programName = String(req.query.programName);
+  }
+
+  const accounts = await UserAccountsModel.find(filter)
+    .select("-password")
+    .sort({ createdAt: -1 });
   res.status(200).json({ accounts });
 });
 
 router.post("/", async (req, res): Promise<void> => {
-  const { fullName, email, phone, role, status, programName } = req.body;
+  const { fullName, email, phone, role, status, programName, password } = req.body;
 
   if (!fullName || !email || !role) {
     res.status(400).json({ message: "Full name, email, and role are required" });
     return;
   }
 
-  const account = await UserAccountsModel.findOneAndUpdate(
-    { email },
-    {
-      fullName,
-      email,
-      phone,
-      role,
-      status: status || "active",
-      programName,
-    },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
-  );
+  const existingAccount = await UserAccountsModel.findOne({ email });
+
+  if (!existingAccount && role !== "user" && !password) {
+    res.status(400).json({ message: "Password is required for coach and admin accounts" });
+    return;
+  }
+
+  const update: Record<string, unknown> = {
+    fullName,
+    email,
+    phone,
+    role,
+    status: status || "active",
+    programName,
+  };
+
+  if (password) {
+    update.password = await bcrypt.hash(password, 10);
+  }
+
+  const account = await UserAccountsModel.findOneAndUpdate({ email }, update, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true,
+  }).select("-password");
 
   res.status(201).json({ message: "Account saved", account });
 });
 
 router.put("/:id", async (req, res): Promise<void> => {
+  const { fullName, email, phone, programName, password } = req.body;
+  const update: Record<string, unknown> = {};
+
+  if (fullName !== undefined) update.fullName = fullName;
+  if (email !== undefined) update.email = email;
+  if (phone !== undefined) update.phone = phone;
+  if (programName !== undefined) update.programName = programName;
+
+  if (password) {
+    update.password = await bcrypt.hash(password, 10);
+  }
+
+  if (email) {
+    const existingAccount = await UserAccountsModel.findOne({
+      email,
+      _id: { $ne: req.params.id },
+    });
+    if (existingAccount) {
+      res.status(409).json({ message: "Email already in use." });
+      return;
+    }
+  }
+
   const account = await UserAccountsModel.findByIdAndUpdate(
     req.params.id,
-    req.body,
+    update,
     { new: true },
-  );
+  ).select("-password");
 
   if (!account) {
     res.status(404).json({ message: "Account not found" });

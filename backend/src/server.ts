@@ -21,6 +21,6 @@ app.use(
 app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
 app.use("/api/slot-requests", SlotRequests);
-app.listen(DotEnvConfig.ServerPort, () => {
+app.listen(DotEnvConfig.ServerPort||process.env.PORT, () => {
   console.log("Server started...", DotEnvConfig.ServerPort);
 });

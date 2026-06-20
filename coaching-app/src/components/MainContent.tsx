@@ -55,31 +55,42 @@ const MainContent: React.FC<MainContentProps> = ({
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
 
+  // User session tracker
+  const [trackerEmail, setTrackerEmail] = useState("");
+  const [trackerTab, setTrackerTab] = useState<"bookings" | "requests" | "rejected">("bookings");
+  const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [userRequests, setUserRequests] = useState<any[]>([]);
+  const [trackerLoading, setTrackerLoading] = useState(false);
+  const [trackerLoaded, setTrackerLoaded] = useState(false);
+
   // ── Fetch coaches from DB ──────────────────────────────────────────────────
-  const loadCoaches = useCallback(async () => {
+  const loadCoaches = useCallback(async (programId?: string): Promise<Coach[]> => {
     setCoachesLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/accounts`);
+      const params = new URLSearchParams({ role: "coach", status: "active" });
+      if (programId) {
+        params.set("programName", programId);
+      }
+      const res = await fetch(`${API_BASE_URL}/api/accounts?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        // Filter only active coaches and map DB fields to Coach interface
-        const dbCoaches: Coach[] = (data.accounts || [])
-          .filter((a: any) => a.role === "coach" && a.status === "active")
-          .map((a: any) => ({
-            _id: a._id,
-            name: a.fullName,
-            email: a.email,
-            phone: a.phone || "",
-            specialization: a.programName || "",
-            status: a.status,
-          }));
+        const dbCoaches: Coach[] = (data.accounts || []).map((a: any) => ({
+          _id: a._id,
+          name: a.fullName,
+          email: a.email,
+          phone: a.phone || "",
+          specialization: a.programName || "",
+          status: a.status,
+        }));
         setCoaches(dbCoaches);
+        return dbCoaches;
       }
     } catch {
       // Silently fail — coaches section will be empty
     } finally {
       setCoachesLoading(false);
     }
+    return [];
   }, []);
 
   useEffect(() => {
@@ -134,6 +145,16 @@ const MainContent: React.FC<MainContentProps> = ({
     return p ? p.title : id || "—";
   };
 
+  const coachMatchesProgram = (coach: Coach, programId: string): boolean => {
+    const program = programs.find((p) => p.id === programId);
+    if (!program) return false;
+    const spec = (coach.specialization || "").trim().toLowerCase();
+    return (
+      spec === program.id.toLowerCase() ||
+      spec === program.title.toLowerCase()
+    );
+  };
+
   const getProgramDuration = (id: string) => {
     const p = programs.find((p) => p.id === id);
     return p ? p.duration : "—";
@@ -177,24 +198,19 @@ const MainContent: React.FC<MainContentProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (!validateStep1()) return;
 
-    // Filter coaches by program specialization (or show all if none match)
-    const candidates = coaches.filter(
-      (c) => c.specialization === formData.program ||
-             c.specialization === getProgramLabel(formData.program)
-    );
-    const pool = candidates;
+    const programCoaches = await loadCoaches(formData.program);
+    const pool = programCoaches.filter((c) => coachMatchesProgram(c, formData.program));
 
     if (pool.length === 0) {
-      setErrors({ ...errors, coachSelectError: "No available coaches match your selected program." });
+      showToast("No coaches available for this program yet. Please try another program.", "error", 5000);
       return;
     }
 
     if (formData.coachOption === "assign") {
-      // Pick the first available coach (or random if no rating)
-      const best = pool[0] || coaches[0];
+      const best = pool[0];
       setAutoAssignedCoach(best);
       setSelectedCoach(best);
       setFilteredCoaches([]);
@@ -224,7 +240,46 @@ const MainContent: React.FC<MainContentProps> = ({
     if (errors.slotError) setErrors({ ...errors, slotError: "" });
   };
 
-  // ── Submit booking ─────────────────────────────────────────────────────────
+  const loadUserSessions = async (email: string) => {
+    if (!email.trim()) {
+      showToast("Please enter your email address", "error", 3000);
+      return;
+    }
+
+    setTrackerLoading(true);
+    try {
+      const [bookingsRes, requestsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/bookings/sessions?email=${encodeURIComponent(email.trim())}`),
+        fetch(`${API_BASE_URL}/api/slot-requests?email=${encodeURIComponent(email.trim())}`),
+      ]);
+
+      if (bookingsRes.ok) {
+        const data = await bookingsRes.json();
+        setUserBookings(data.sessions || []);
+      }
+
+      if (requestsRes.ok) {
+        const data = await requestsRes.json();
+        setUserRequests(data.slotRequests || []);
+      }
+
+      setTrackerLoaded(true);
+    } catch {
+      showToast("Could not load your sessions", "error", 4000);
+    } finally {
+      setTrackerLoading(false);
+    }
+  };
+
+  const pendingUserRequests = userRequests.filter((r) => r.status === "pending");
+  const rejectedUserRequests = userRequests.filter((r) => r.status === "declined");
+
+  const openTracker = (email: string, tab: "bookings" | "requests" | "rejected" = "bookings") => {
+    setTrackerEmail(email);
+    setTrackerTab(tab);
+    loadUserSessions(email);
+    document.getElementById("my-sessions")?.scrollIntoView({ behavior: "smooth" });
+  };
   const handleSubmit = async () => {
     if (formData.coachOption !== "assign" && !selectedCoach) {
       setErrors({ ...errors, coachSelectError: "Please select a coach to continue." });
@@ -282,6 +337,7 @@ const MainContent: React.FC<MainContentProps> = ({
       setBookingData(booking);
       setShowSummary(true);
       onAddBooking(booking);
+      openTracker(formData.email, "bookings");
       showToast("🎉 Session booked! Confirmation email sent.", "success", 5000);
     } catch (error) {
       const message =
@@ -320,6 +376,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
       setRequestSubmitted(true);
       setShowRequestForm(false);
+      openTracker(formData.email, "requests");
       showToast("📩 Session request sent! Check your email for confirmation.", "success", 5000);
     } catch (error) {
       const message =
@@ -362,8 +419,6 @@ const MainContent: React.FC<MainContentProps> = ({
       `Coach Email:     ${bookingData.coachEmail}`,
       `Coach Phone:     ${bookingData.coachPhone}`,
       `Session Slot:    ${bookingData.slot}`,
-      `Duration:        ${bookingData.duration}`,
-      `Format:          1-on-1 Video Call`,
       "",
       "A confirmation email will be sent to your inbox.",
       "Your coach will reach out within 24 hours.",
@@ -371,7 +426,7 @@ const MainContent: React.FC<MainContentProps> = ({
       `Booked on: ${bookingData.bookedAt}`,
       "",
       "— ApexCoaching Team",
-      "hello@apexcoaching.com | +1 800 555 0100",
+      "wanjita.home@gmail.com | 0712281552 | Nairobi",
     ].join("\n");
 
     const blob = new Blob([content], { type: "text/plain" });
@@ -656,14 +711,8 @@ const MainContent: React.FC<MainContentProps> = ({
 
                   {/* Manual coach picker */}
                   {filteredCoaches.length > 0 && (
-                    <>
-                      {filteredCoaches.length === 0 && (
-                        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 12 }}>
-                          No coaches found for this program — showing all coaches.
-                        </p>
-                      )}
-                      <div className="filtered-coaches-grid">
-                        {filteredCoaches.map((coach) => (
+                    <div className="filtered-coaches-grid">
+                      {filteredCoaches.map((coach) => (
                           <div
                             key={coach._id}
                             className={`filtered-coach-card ${selectedFilteredCoach?._id === coach._id ? "selected" : ""}`}
@@ -677,8 +726,7 @@ const MainContent: React.FC<MainContentProps> = ({
                             </p>
                           </div>
                         ))}
-                      </div>
-                    </>
+                    </div>
                   )}
                   <span className="field-error">{errors.coachSelectError}</span>
 
@@ -864,7 +912,6 @@ const MainContent: React.FC<MainContentProps> = ({
                     { key: "Session Slot", val: bookingData?.slot },
                     { key: "Coach Email", val: bookingData?.coachEmail },
                     { key: "Coach Phone", val: bookingData?.coachPhone || "—" },
-                    { key: "Duration", val: bookingData?.duration },
                     { key: "Format", val: "1-on-1 Video Call" },
                   ].map(({ key, val }) => (
                     <div key={key} className="summary-row">
@@ -886,6 +933,121 @@ const MainContent: React.FC<MainContentProps> = ({
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── My Sessions Tracker ───────────────────── */}
+      <section id="my-sessions" className="section form-section" style={{ background: "var(--clr-bg-alt, #f8f6f2)" }}>
+        <div className="container">
+          <div className="section-header">
+            <span className="section-label">Your Sessions</span>
+            <h2 className="section-title">Track Your <em>Bookings & Requests</em></h2>
+            <p className="section-sub">
+              Enter your email to view confirmed bookings, pending requests, and declined requests.
+            </p>
+          </div>
+          <div className="form-wrapper" style={{ maxWidth: 900 }}>
+            <div className="form-row" style={{ marginBottom: 20 }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="trackerEmail">Email Address</label>
+                <input
+                  type="email"
+                  id="trackerEmail"
+                  placeholder="you@example.com"
+                  value={trackerEmail}
+                  onChange={(e) => setTrackerEmail(e.target.value)}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => loadUserSessions(trackerEmail)}
+                  disabled={trackerLoading}
+                >
+                  {trackerLoading ? "Loading…" : "View My Sessions"}
+                </button>
+              </div>
+            </div>
+
+            {trackerLoaded && (
+              <>
+                <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+                  {[
+                    { id: "bookings" as const, label: `Bookings (${userBookings.length})` },
+                    { id: "requests" as const, label: `Pending Requests (${pendingUserRequests.length})` },
+                    { id: "rejected" as const, label: `Rejected (${rejectedUserRequests.length})` },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`btn ${trackerTab === tab.id ? "btn-primary" : "btn-ghost"}`}
+                      onClick={() => setTrackerTab(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {trackerTab === "bookings" && (
+                  userBookings.length === 0 ? (
+                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
+                      No confirmed bookings yet. Book a session or wait for your coach to approve a request.
+                    </p>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {userBookings.map((booking) => (
+                        <div key={booking._id} style={{ padding: 16, border: "1px solid var(--clr-border)", borderRadius: 12, background: "#fff" }}>
+                          <strong>{booking.programName}</strong> with {booking.coachName || "your coach"}
+                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#64748b" }}>
+                            📅 {booking.bookingTime}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {trackerTab === "requests" && (
+                  pendingUserRequests.length === 0 ? (
+                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
+                      No pending session requests.
+                    </p>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {pendingUserRequests.map((request) => (
+                        <div key={request._id} style={{ padding: 16, border: "1px solid var(--clr-border)", borderRadius: 12, background: "#fff" }}>
+                          <strong>{request.programName}</strong> with {request.coachName}
+                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#64748b" }}>
+                            ⏳ Awaiting coach approval
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {trackerTab === "rejected" && (
+                  rejectedUserRequests.length === 0 ? (
+                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
+                      No rejected requests.
+                    </p>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {rejectedUserRequests.map((request) => (
+                        <div key={request._id} style={{ padding: 16, border: "1px solid #fecaca", borderRadius: 12, background: "#fff5f5" }}>
+                          <strong>{request.programName}</strong> with {request.coachName}
+                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#b91c1c" }}>
+                            ❌ Request declined — check your email for details
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>

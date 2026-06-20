@@ -9,6 +9,7 @@ import Footer from "./components/Footer";
 import AdminDashboard from "./components/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import LoginPage from "./components/LoginPage";
 import { AuthProvider } from "./context/AuthContext";
 import type {  Program, Testimonial, Booking } from "./types";
 
@@ -134,6 +135,9 @@ function AppContent() {
 
   return (
     <Routes>
+      {/* Staff Login */}
+      <Route path="/login" element={<LoginPage />} />
+
       {/* Admin Dashboard */}
       <Route
         path="/admin"
