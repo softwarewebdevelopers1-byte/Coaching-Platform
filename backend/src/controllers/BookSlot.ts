@@ -3,7 +3,9 @@ import {
   BookingsCreatedModel,
   BookingsSessionsModel,
 } from "../models/Bookings.model.js";
+import { UserAccountsModel } from "../models/users,model.js";
 import { sendBookingConfirmationEmail } from "../services/Brevo.emailSender.js";
+import { programsMatch } from "../utils/programs.js";
 
 const router = Router();
 
@@ -38,6 +40,26 @@ router.post("/coach-slots", async (req, res): Promise<void> => {
 
   if (!coachId || !coachName || !programName || !title || !bookingDate) {
     res.status(400).json({ message: "Missing required coach slot fields" });
+    return;
+  }
+
+  const coachAccount = await UserAccountsModel.findById(coachId);
+  if (!coachAccount || coachAccount.role !== "coach") {
+    res.status(404).json({ message: "Coach not found" });
+    return;
+  }
+
+  if (!coachAccount.programName) {
+    res.status(400).json({
+      message: "Please set your coaching program in Settings before creating slots",
+    });
+    return;
+  }
+
+  if (!programsMatch(coachAccount.programName, programName)) {
+    res.status(400).json({
+      message: "Slot program must match your configured coaching specialty",
+    });
     return;
   }
 
@@ -118,6 +140,19 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     return;
   }
 
+  const coachAccount = await UserAccountsModel.findById(coachId);
+  if (!coachAccount || coachAccount.role !== "coach") {
+    res.status(404).json({ message: "Coach not found" });
+    return;
+  }
+
+  if (!coachAccount.programName || !programsMatch(coachAccount.programName, program)) {
+    res.status(400).json({
+      message: "This coach does not offer the selected coaching program",
+    });
+    return;
+  }
+
   // Mark the slot as booked if a slotId was provided
   if (slotId) {
     const slot = await BookingsCreatedModel.findById(slotId);
@@ -127,6 +162,16 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     }
     if (slot.status === "booked") {
       res.status(409).json({ message: "This slot has already been booked" });
+      return;
+    }
+    if (!programsMatch(slot.programName, program)) {
+      res.status(400).json({
+        message: "Selected slot does not match the chosen coaching program",
+      });
+      return;
+    }
+    if (slot.coachId !== String(coachId)) {
+      res.status(400).json({ message: "Selected slot does not belong to this coach" });
       return;
     }
     await BookingsCreatedModel.findByIdAndUpdate(slotId, { status: "booked" });

@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { SlotRequestModel } from "../models/SlotRequests.model.js";
+import { BookingsSessionsModel } from "../models/Bookings.model.js";
+import { UserAccountsModel } from "../models/users,model.js";
 import {
   sendSlotRequestReceivedEmail,
   sendSlotRequestApprovedEmail,
 } from "../services/Brevo.emailSender.js";
+import { programsMatch } from "../utils/programs.js";
 
 const router = Router();
 
@@ -22,6 +25,19 @@ router.post("/", async (req, res): Promise<void> => {
 
   if (!fullName || !email || !phoneNumber || !programName || !coachId || !coachName || !coachEmail) {
     res.status(400).json({ message: "Missing required fields" });
+    return;
+  }
+
+  const coachAccount = await UserAccountsModel.findById(coachId);
+  if (!coachAccount || coachAccount.role !== "coach") {
+    res.status(404).json({ message: "Coach not found" });
+    return;
+  }
+
+  if (!coachAccount.programName || !programsMatch(coachAccount.programName, programName)) {
+    res.status(400).json({
+      message: "This coach does not offer the selected coaching program",
+    });
     return;
   }
 
@@ -91,6 +107,18 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
   slotRequest.coachNotes = coachNotes || "";
   await slotRequest.save();
 
+  const booking = await BookingsSessionsModel.create({
+    email: slotRequest.email,
+    fullName: slotRequest.fullName,
+    phoneNumber: slotRequest.phoneNumber,
+    programName: slotRequest.programName,
+    coachId: slotRequest.coachId,
+    coachName: slotRequest.coachName,
+    coachEmail: slotRequest.coachEmail,
+    coachPhone: coachPhone || "",
+    bookingTime: scheduledTime,
+  });
+
   // Send approval email to user with the scheduled time
   sendSlotRequestApprovedEmail({
     email: slotRequest.email,
@@ -108,6 +136,7 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
   res.status(200).json({
     message: "Slot request approved and client notified",
     slotRequest,
+    booking,
   });
 });
 

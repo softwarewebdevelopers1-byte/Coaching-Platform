@@ -185,7 +185,12 @@ const MainContent: React.FC<MainContentProps> = ({
       (c) => c.specialization === formData.program ||
              c.specialization === getProgramLabel(formData.program)
     );
-    const pool = candidates.length > 0 ? candidates : coaches;
+    const pool = candidates;
+
+    if (pool.length === 0) {
+      setErrors({ ...errors, coachSelectError: "No available coaches match your selected program." });
+      return;
+    }
 
     if (formData.coachOption === "assign") {
       // Pick the first available coach (or random if no rating)

@@ -13,7 +13,7 @@ interface CoachDashboardProps {
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
-type CoachTab = "overview" | "availability" | "bookings" | "requests";
+type CoachTab = "overview" | "availability" | "bookings" | "requests" | "rejected" | "settings";
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
 const Icons = {
@@ -67,6 +67,13 @@ const Icons = {
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
     </svg>
   ),
+  xCircle: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/>
+      <line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+  ),
   check: (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
@@ -89,7 +96,7 @@ const StatusPill = ({ status }: { status: string }) => (
 
 /* ── Component ───────────────────────────────────────────────── */
 const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) => {
-  const { logout, user } = useAuth();
+  const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CoachTab>("overview");
   const [slots, setSlots] = useState<CoachSlot[]>([]);
@@ -98,9 +105,16 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [slotForm, setSlotForm] = useState({
     title: "",
-    programName: programs[0]?.title || "",
+    programName: user?.programName || programs[0]?.title || "",
     bookingDate: "",
     bookingEndDate: "",
+  });
+
+  const [profileForm, setProfileForm] = useState({
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    programName: user?.programName || programs[0]?.title || "",
   });
 
   // Slot requests state
@@ -111,12 +125,28 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     coachNotes: "",
   });
   const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // The coach's identity comes directly from the logged-in user account
   const coachId = user?._id || "";
   const coachName = user?.fullName || "";
   const coachEmail = user?.email || "";
   const coachPhone = user?.phone || "";
+  const coachProgram = user?.programName || "";
+
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone || "",
+        programName: user.programName || programs[0]?.title || "",
+      });
+      if (user.programName) {
+        setSlotForm((prev) => ({ ...prev, programName: user.programName || prev.programName }));
+      }
+    }
+  }, [user, programs]);
 
   const initials = coachName
     .split(" ")
@@ -168,12 +198,21 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
   /* ── Create slot ─────────────────────────────────────────── */
   const createCoachSlot = async () => {
+    if (!coachProgram) {
+      showToast("Please set your coaching program in Settings before creating slots", "error", 4000);
+      setActiveTab("settings");
+      return;
+    }
     if (!slotForm.title.trim()) {
       showToast("Please enter a session title", "error", 3000);
       return;
     }
     if (!slotForm.programName) {
       showToast("Please select a program", "error", 3000);
+      return;
+    }
+    if (slotForm.programName !== coachProgram) {
+      showToast("Slots must be created for your configured coaching program", "error", 4000);
       return;
     }
     if (!slotForm.bookingDate) {
@@ -212,7 +251,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     if (res.ok) {
       setSlotForm({
         title: "",
-        programName: programs[0]?.title || "",
+        programName: coachProgram || programs[0]?.title || "",
         bookingDate: "",
         bookingEndDate: "",
       });
@@ -256,6 +295,11 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const openSlots = slots.filter((s) => s.status === "open").length;
   const bookedSlots = slots.filter((s) => s.status === "booked").length;
   const pendingRequests = slotRequests.filter((r) => r.status === "pending").length;
+  const approvedRequests = slotRequests.filter((r) => r.status === "approved").length;
+  const declinedRequests = slotRequests.filter((r) => r.status === "declined").length;
+  const visibleRequests = slotRequests.filter(
+    (request) => requestFilter === "all" || request.status === requestFilter,
+  );
 
   /* ── Approve slot request ──────────────────────────────── */
   const approveRequest = async (requestId: string) => {
@@ -283,6 +327,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         setApprovingId(null);
         setApproveForm({ scheduledTime: "", coachNotes: "" });
         await loadDashboardData();
+        setRequestFilter("approved");
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.message || "Error approving request", "error", 5000);
@@ -315,11 +360,45 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     }
   };
 
+  const saveProfile = async () => {
+    if (!profileForm.fullName.trim() || !profileForm.email.trim()) {
+      showToast("Please enter your name and email", "error", 3000);
+      return;
+    }
+    if (!profileForm.programName) {
+      showToast("Please select your coaching program", "error", 3000);
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/accounts/${coachId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        updateUser(data.account);
+        showToast("Coach profile updated", "success", 3000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.message || "Error saving profile", "error", 5000);
+      }
+    } catch {
+      showToast("Network error, please try again", "error", 5000);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   const navItems = [
     { id: "overview", label: "Overview", icon: Icons.grid },
     { id: "availability", label: "My Availability", icon: Icons.calendar },
     { id: "bookings", label: "Client Bookings", icon: Icons.users },
     { id: "requests", label: `Requests${pendingRequests > 0 ? ` (${pendingRequests})` : ""}`, icon: Icons.clock },
+    { id: "settings", label: "Settings", icon: Icons.award },
   ];
 
   const tabTitles: Record<CoachTab, { title: string; subtitle: string }> = {
@@ -327,6 +406,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     availability: { title: "Manage Availability", subtitle: "Create and manage your coaching slots" },
     bookings: { title: "Client Bookings", subtitle: "All clients who booked sessions with you" },
     requests: { title: "Session Requests", subtitle: "Review and approve session requests from clients" },
+    settings: { title: "Coach Settings", subtitle: "Update your contact and program preferences" },
   };
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -723,20 +803,32 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                     </p>
                   </div>
                 ) : (
-                  <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
-                    <table className="dashboard-table">
-                      <thead>
-                        <tr>
-                          <th>Client</th>
-                          <th>Email</th>
-                          <th>Program</th>
-                          <th>Message</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {slotRequests.map((request) => (
+                  <>
+                    <div className="dashboard-request-filters" style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: 12, borderBottom: "1px solid rgba(203,213,225,0.7)", background: "#fafbff" }}>
+                      {(["all", "pending", "approved", "declined"] as RequestFilter[]).map((filter) => (
+                        <button
+                          key={filter}
+                          className={`dashboard-btn dashboard-btn-small ${requestFilter === filter ? "dashboard-btn-primary" : "dashboard-btn-secondary"}`}
+                          onClick={() => setRequestFilter(filter)}
+                        >
+                          {filter === "all" ? "All" : filter === "pending" ? `Pending (${pendingRequests})` : filter === "approved" ? `Approved (${approvedRequests})` : `Declined (${declinedRequests})`}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                      <table className="dashboard-table">
+                        <thead>
+                          <tr>
+                            <th>Client</th>
+                            <th>Email</th>
+                            <th>Program</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visibleRequests.map((request) => (
                           <tr key={request._id}>
                             <td className="td-name">
                               {request.fullName}
@@ -836,6 +928,66 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── SETTINGS ────────────────────────────── */}
+          {!isLoading && activeTab === "settings" && (
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">⚙️</span>
+                  Coach Settings
+                </h2>
+              </div>
+              <div className="dashboard-card-body">
+                <div className="dashboard-form" style={{ maxWidth: 520 }}>
+                  <div className="form-field">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      value={profileForm.fullName}
+                      onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Coaching Program</label>
+                    <select
+                      value={profileForm.programName}
+                      onChange={(e) => setProfileForm({ ...profileForm, programName: e.target.value })}
+                    >
+                      <option value="">Select Program</option>
+                      {programs.map((program) => (
+                        <option key={program.id} value={program.title}>
+                          {program.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="dashboard-btn dashboard-btn-primary"
+                    onClick={saveProfile}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? "Saving…" : "Save Settings"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

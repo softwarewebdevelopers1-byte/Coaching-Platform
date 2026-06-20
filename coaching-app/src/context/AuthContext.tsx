@@ -6,6 +6,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, role: "admin" | "coach") => Promise<void>;
   logout: () => void;
+  updateUser: (updates: Partial<Account>) => void;
   isAuthenticated: boolean;
 }
 
@@ -59,6 +60,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("authUser");
   }, []);
 
+  const updateUser = useCallback((updates: Partial<Account>) => {
+    setUser((prevUser) => {
+      if (!prevUser) return prevUser;
+      const nextUser = { ...prevUser, ...updates };
+      localStorage.setItem("authUser", JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -66,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoading,
         login,
         logout,
+          updateUser,
         isAuthenticated: !!user,
       }}
     >
