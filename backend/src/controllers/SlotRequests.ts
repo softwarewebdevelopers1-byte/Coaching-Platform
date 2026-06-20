@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { SlotRequestModel } from "../models/SlotRequests.model.js";
 import { BookingsSessionsModel } from "../models/Bookings.model.js";
+import { UserAccountsModel } from "../models/users.model.js";
+
 import {
   sendSlotRequestReceivedEmail,
   sendSlotRequestApprovedEmail,
@@ -153,7 +155,6 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
   res.status(200).json({
     message: "Slot request approved and client notified",
     slotRequest,
-    booking,
   });
 });
 

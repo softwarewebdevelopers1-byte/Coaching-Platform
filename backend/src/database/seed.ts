@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import DotEnvConfig from "../configs/DotEnv.js";
-import { UserAccountsModel } from "../models/users,model.js";
+import { UserAccountsModel } from "../models/users.model.js";
 
 const seedAccounts = [
   {

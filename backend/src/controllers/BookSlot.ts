@@ -3,7 +3,7 @@ import {
   BookingsCreatedModel,
   BookingsSessionsModel,
 } from "../models/Bookings.model.js";
-import { UserAccountsModel } from "../models/users,model.js";
+import { UserAccountsModel } from "../models/users.model.js";
 import { sendBookingConfirmationEmail } from "../services/Brevo.emailSender.js";
 import { programsMatch } from "../utils/programs.js";
 

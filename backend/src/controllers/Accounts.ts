@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { Router } from "express";
-import { CoachInviteModel, UserAccountsModel } from "../models/users,model.js";
+import { CoachInviteModel, UserAccountsModel } from "../models/users.model.js";
 
 const router = Router();
 
