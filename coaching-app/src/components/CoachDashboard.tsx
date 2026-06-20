@@ -6,7 +6,7 @@ import "../styles/Dashboard.css";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "http://localhost:8000";
+  "https://coaching-platform-38p5.onrender.com";
 
 interface CoachDashboardProps {
   programs: Program[];
@@ -158,7 +158,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     coachNotes: "",
   });
   const [decliningId, setDecliningId] = useState<string | null>(null);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // The coach's identity comes directly from the logged-in user account
   const coachId = user?._id || "";
@@ -240,11 +239,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
   /* ── Create slot ─────────────────────────────────────────── */
   const createCoachSlot = async () => {
-    if (!coachProgram) {
-      showToast("Please set your coaching program in Settings before creating slots", "error", 4000);
-      setActiveTab("settings");
-      return;
-    }
     if (!slotForm.title.trim()) {
       showToast("Please enter a session title", "error", 3000);
       return;
@@ -253,7 +247,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       showToast("Please select a program", "error", 3000);
       return;
     }
-    if (slotForm.programName !== coachProgram) {
+    if (slotForm.programName) {
       showToast("Slots must be created for your configured coaching program", "error", 4000);
       return;
     }
