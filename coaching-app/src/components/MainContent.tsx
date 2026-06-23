@@ -122,9 +122,9 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   }, []);
 
-  // Reload slots whenever selectedCoach changes in step 2
+  // Reload slots whenever selectedCoach changes in step 6
   useEffect(() => {
-    if (currentStep === 2 && selectedCoach?.email) {
+    if (currentStep === 6 && selectedCoach?.email) {
       loadCoachSlots(selectedCoach.email);
     }
   }, [selectedCoach, currentStep, loadCoachSlots]);
@@ -162,6 +162,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
   const scrollToForm = (programId: string) => {
     setFormData((prev) => ({ ...prev, program: programId }));
+    setCurrentStep(1);
     document.getElementById("select-coach")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -176,8 +177,20 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // ── Form handlers ──────────────────────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-    if (errors[e.target.id]) setErrors({ ...errors, [e.target.id]: "" });
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+    
+    // Clear errors when typing
+    const errorKeyMap: Record<string, string> = {
+      fullName: "nameError",
+      phone: "phoneError",
+      email: "emailError",
+      program: "programError",
+    };
+    const mappedError = errorKeyMap[id];
+    if (mappedError && errors[mappedError]) {
+      setErrors({ ...errors, [mappedError]: "" });
+    }
   };
 
   const handleRadioChange = (value: "choose" | "assign") => {
@@ -185,21 +198,32 @@ const MainContent: React.FC<MainContentProps> = ({
     if (errors.optionError) setErrors({ ...errors, optionError: "" });
   };
 
-  const validateStep1 = (): boolean => {
+  const validateCurrentStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.fullName.trim()) newErrors.nameError = "Full name is required.";
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      newErrors.emailError = "Enter a valid email address.";
-    if (!formData.phone.trim() || !/^\+?[\d\s\-().]{7,20}$/.test(formData.phone))
-      newErrors.phoneError = "Enter a valid phone number.";
-    if (!formData.program) newErrors.programError = "Please select a program.";
-    if (!formData.coachOption) newErrors.optionError = "Please choose an option.";
+    if (step === 1) {
+      if (!formData.fullName.trim()) newErrors.nameError = "Full name is required.";
+    } else if (step === 2) {
+      if (!formData.phone.trim() || !/^\+?[\d\s\-().]{7,20}$/.test(formData.phone))
+        newErrors.phoneError = "Enter a valid phone number.";
+    } else if (step === 3) {
+      if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+        newErrors.emailError = "Enter a valid email address.";
+    } else if (step === 4) {
+      if (!formData.program) newErrors.programError = "Please select a program.";
+    } else if (step === 5) {
+      if (!formData.coachOption) newErrors.optionError = "Please choose an option.";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNextStep = async () => {
-    if (!validateStep1()) return;
+    if (!validateCurrentStep(currentStep)) return;
+
+    if (currentStep < 5) {
+      setCurrentStep((prev) => prev + 1);
+      return;
+    }
 
     const programCoaches = await loadCoaches(formData.program);
     const pool = programCoaches.filter((c) => coachMatchesProgram(c, formData.program));
@@ -221,13 +245,17 @@ const MainContent: React.FC<MainContentProps> = ({
       setSelectedCoach(null);
       setSelectedFilteredCoach(null);
     }
-    setCurrentStep(2);
+    setCurrentStep(6);
     setSelectedSlot(null);
     if (errors.coachSelectError) setErrors({ ...errors, coachSelectError: "" });
     if (errors.slotError) setErrors({ ...errors, slotError: "" });
   };
 
-  const handleBackStep = () => setCurrentStep(1);
+  const handleBackStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
 
   const selectFilteredCoach = (coach: Coach) => {
     setSelectedFilteredCoach(coach);
@@ -601,60 +629,134 @@ const MainContent: React.FC<MainContentProps> = ({
           <div className="form-wrapper">
             {!showSummary ? (
               <>
-                {/* Step 1 — Personal Details */}
+                <div className="progress-step-info">
+                  <span>Question {currentStep} of 6</span>
+                  <span className="current-step-label">
+                    {currentStep === 1 && "Personal details — Name"}
+                    {currentStep === 2 && "Personal details — Phone"}
+                    {currentStep === 3 && "Personal details — Email"}
+                    {currentStep === 4 && "Coaching Program Preference"}
+                    {currentStep === 5 && "Coach Assignment Preference"}
+                    {currentStep === 6 && "Coach & Slot Selection"}
+                  </span>
+                </div>
+                <div className="progress-container">
+                  <div className="progress-bar" style={{ width: `${(currentStep / 6) * 100}%` }} />
+                </div>
+
+                {/* Step 1 — Full Name */}
                 <div className={`form-step ${currentStep === 1 ? "active" : ""}`}>
                   <h3 className="step-title">
-                    <span className="step-num">01</span> Personal Details
+                    <span className="step-num">01</span> What is your full name?
                   </h3>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="fullName">Full Name</label>
-                      <input
-                        type="text"
-                        id="fullName"
-                        placeholder="e.g. Alex Morgan"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                      />
-                      <span className="field-error">{errors.nameError}</span>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="email">Email Address</label>
-                      <input
-                        type="email"
-                        id="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                      />
-                      <span className="field-error">{errors.emailError}</span>
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="fullName">Full Name</label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      placeholder="e.g. Alex Morgan"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
+                      autoFocus={currentStep === 1}
+                    />
+                    <span className="field-error">{errors.nameError}</span>
                   </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        placeholder="+1 555 000 0000"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                      />
-                      <span className="field-error">{errors.phoneError}</span>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="program">Coaching Program</label>
-                      <select id="program" value={formData.program} onChange={handleInputChange}>
-                        <option value="">— Select a program —</option>
-                        {programs.map((p) => (
-                          <option key={p.id} value={p.id}>{p.title}</option>
-                        ))}
-                      </select>
-                      <span className="field-error">{errors.programError}</span>
-                    </div>
+                  <div className="form-nav">
+                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
+                      Continue →
+                    </button>
                   </div>
+                </div>
+
+                {/* Step 2 — Phone Number */}
+                <div className={`form-step ${currentStep === 2 ? "active" : ""}`}>
+                  <h3 className="step-title">
+                    <span className="step-num">02</span> What is your phone number?
+                  </h3>
+                  <div className="form-group">
+                    <label htmlFor="phone">Phone Number</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      placeholder="e.g. +1 555 000 0000"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
+                      autoFocus={currentStep === 2}
+                    />
+                    <span className="field-error">{errors.phoneError}</span>
+                  </div>
+                  <div className="form-nav">
+                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
+                      ← Back
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
+                      Continue →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 3 — Email Address */}
+                <div className={`form-step ${currentStep === 3 ? "active" : ""}`}>
+                  <h3 className="step-title">
+                    <span className="step-num">03</span> What is your email address?
+                  </h3>
+                  <div className="form-group">
+                    <label htmlFor="email">Email Address</label>
+                    <input
+                      type="email"
+                      id="email"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
+                      autoFocus={currentStep === 3}
+                    />
+                    <span className="field-error">{errors.emailError}</span>
+                  </div>
+                  <div className="form-nav">
+                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
+                      ← Back
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
+                      Continue →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 4 — Coaching Program Selection */}
+                <div className={`form-step ${currentStep === 4 ? "active" : ""}`}>
+                  <h3 className="step-title">
+                    <span className="step-num">04</span> Which coaching program are you interested in?
+                  </h3>
+                  <div className="form-group">
+                    <label htmlFor="program">Coaching Program</label>
+                    <select id="program" value={formData.program} onChange={handleInputChange} autoFocus={currentStep === 4}>
+                      <option value="">— Select a program —</option>
+                      {programs.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                    <span className="field-error">{errors.programError}</span>
+                  </div>
+                  <div className="form-nav">
+                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
+                      ← Back
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
+                      Continue →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 5 — Coach Preference */}
+                <div className={`form-step ${currentStep === 5 ? "active" : ""}`}>
+                  <h3 className="step-title">
+                    <span className="step-num">05</span> How would you like to choose your coach?
+                  </h3>
                   <div className="form-group full">
-                    <label className="radio-label">How would you like to choose your coach?</label>
+                    <label className="radio-label">Select matching method</label>
                     <div className="radio-group">
                       <label className={`radio-card ${formData.coachOption === "choose" ? "selected" : ""}`}>
                         <input
@@ -683,15 +785,20 @@ const MainContent: React.FC<MainContentProps> = ({
                     </div>
                     <span className="field-error">{errors.optionError}</span>
                   </div>
-                  <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                    Continue →
-                  </button>
+                  <div className="form-nav">
+                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
+                      ← Back
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
+                      Continue →
+                    </button>
+                  </div>
                 </div>
 
-                {/* Step 2 — Select Coach & Slot */}
-                <div className={`form-step ${currentStep === 2 ? "active" : ""}`}>
+                {/* Step 6 — Select Coach & Slot */}
+                <div className={`form-step ${currentStep === 6 ? "active" : ""}`}>
                   <h3 className="step-title">
-                    <span className="step-num">02</span> Select Your Coach &amp; Slot
+                    <span className="step-num">06</span> Select Your Coach &amp; Slot
                   </h3>
 
                   {/* Auto-assigned */}
@@ -999,10 +1106,10 @@ const MainContent: React.FC<MainContentProps> = ({
                   ) : (
                     <div style={{ display: "grid", gap: 12 }}>
                       {userBookings.map((booking) => (
-                        <div key={booking._id} style={{ padding: 16, border: "1px solid var(--clr-border)", borderRadius: 12, background: "#fff" }}>
-                          <strong>{booking.programName}</strong> with {booking.coachName || "your coach"}
-                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#64748b" }}>
-                            📅 {booking.bookingTime}
+                        <div key={booking._id} style={{ padding: "20px 24px", border: "1px solid var(--clr-border)", borderLeft: "5px solid var(--clr-accent)", borderRadius: 12, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                          <strong style={{ fontSize: 16, color: "var(--clr-ink)" }}>{booking.programName}</strong> <span style={{ color: "var(--clr-ink-soft)", fontSize: 14 }}>with {booking.coachName || "your coach"}</span>
+                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--clr-accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>📅</span> {booking.bookingTime}
                           </p>
                         </div>
                       ))}
@@ -1018,10 +1125,10 @@ const MainContent: React.FC<MainContentProps> = ({
                   ) : (
                     <div style={{ display: "grid", gap: 12 }}>
                       {pendingUserRequests.map((request) => (
-                        <div key={request._id} style={{ padding: 16, border: "1px solid var(--clr-border)", borderRadius: 12, background: "#fff" }}>
-                          <strong>{request.programName}</strong> with {request.coachName}
-                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#64748b" }}>
-                            ⏳ Awaiting coach approval
+                        <div key={request._id} style={{ padding: "20px 24px", border: "1px solid var(--clr-border)", borderLeft: "5px solid var(--clr-gold)", borderRadius: 12, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                          <strong style={{ fontSize: 16, color: "var(--clr-ink)" }}>{request.programName}</strong> <span style={{ color: "var(--clr-ink-soft)", fontSize: 14 }}>with {request.coachName}</span>
+                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--clr-gold)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>⏳</span> Awaiting coach approval
                           </p>
                         </div>
                       ))}
@@ -1037,10 +1144,10 @@ const MainContent: React.FC<MainContentProps> = ({
                   ) : (
                     <div style={{ display: "grid", gap: 12 }}>
                       {rejectedUserRequests.map((request) => (
-                        <div key={request._id} style={{ padding: 16, border: "1px solid #fecaca", borderRadius: 12, background: "#fff5f5" }}>
-                          <strong>{request.programName}</strong> with {request.coachName}
-                          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#b91c1c" }}>
-                            ❌ Request declined — check your email for details
+                        <div key={request._id} style={{ padding: "20px 24px", border: "1px solid #fecaca", borderLeft: "5px solid #ef4444", borderRadius: 12, background: "#fff5f5", boxShadow: "0 2px 8px rgba(239,68,68,0.02)" }}>
+                          <strong style={{ fontSize: 16, color: "#7f1d1d" }}>{request.programName}</strong> <span style={{ color: "#991b1b", fontSize: 14 }}>with {request.coachName}</span>
+                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "#ef4444", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>❌</span> Request declined — check your email for details
                           </p>
                         </div>
                       ))}

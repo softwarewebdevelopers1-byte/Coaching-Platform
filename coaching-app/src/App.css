@@ -1,17 +1,17 @@
 /* App.css */
 :root {
-  --clr-bg: #faf8f4;
-  --clr-bg-alt: #f2ede5;
-  --clr-surface: #ffffff;
+  --clr-bg: #e5e2dc;
+  --clr-bg-alt: #dad7d1;
+  --clr-surface: #faf9f6;
   --clr-ink: #1a1612;
   --clr-ink-soft: #5a5249;
   --clr-ink-muted: #9a928a;
-  --clr-gold: #c9933a;
-  --clr-gold-light: #e8b96a;
-  --clr-gold-pale: #fdf4e3;
-  --clr-accent: #2c4a6e;
-  --clr-accent-lt: #eef3f9;
-  --clr-border: #e4ddd4;
+  --clr-gold: #db9530;
+  --clr-gold-light: #f2ac49;
+  --clr-gold-pale: #f2f4ee;
+  --clr-accent: #5d684b;
+  --clr-accent-lt: #eef0ea;
+  --clr-border: #cac6be;
   --clr-error: #c0392b;
   --clr-success: #2e7d32;
 
@@ -481,8 +481,8 @@ textarea {
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: var(--clr-gold);
-  box-shadow: 0 0 0 3px rgba(201, 147, 58, 0.12);
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(93, 104, 75, 0.12);
 }
 
 .field-error {
@@ -511,8 +511,8 @@ textarea {
 }
 
 .radio-card:hover {
-  border-color: var(--clr-gold);
-  background: var(--clr-gold-pale);
+  border-color: var(--clr-accent);
+  background: var(--clr-accent-lt);
 }
 
 .radio-card input[type="radio"] {
@@ -524,10 +524,46 @@ textarea {
 }
 
 .radio-card.selected {
-  border-color: var(--clr-gold);
-  background: var(--clr-gold-pale);
-  box-shadow: 0 0 0 3px rgba(201, 147, 58, 0.15);
+  border-color: var(--clr-accent);
+  background: var(--clr-accent-lt);
+  box-shadow: 0 0 0 3px rgba(93, 104, 75, 0.15);
 }
+
+/* Progressive Form Wizard Progress Bar styling */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: var(--clr-bg-alt);
+  border-radius: 3px;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--clr-accent);
+  width: 0;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 3px;
+}
+
+.progress-step-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--clr-ink-soft);
+  margin-bottom: 8px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.progress-step-info span.current-step-label {
+  color: var(--clr-accent);
+}
+
 
 .radio-icon {
   font-size: 1.5rem;

@@ -594,7 +594,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   </p>
                   <div className="dashboard-badge-list">
                     <span className="dashboard-badge success">✓ {openSlots} open slots</span>
-                    <span className="dashboard-badge" style={{ background: "rgba(99,102,241,0.10)", color: "#818cf8", borderColor: "rgba(99,102,241,0.25)" }}>
+                    <span className="dashboard-badge booked">
                       📋 {bookedSlots} booked
                     </span>
                     <span className="dashboard-badge warning">👥 {sessions.length} clients</span>
@@ -725,7 +725,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   </h2>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span className="dashboard-badge success">{openSlots} open</span>
-                    <span className="dashboard-badge" style={{ background: "rgba(99,102,241,0.10)", color: "#818cf8", borderColor: "rgba(99,102,241,0.25)" }}>
+                    <span className="dashboard-badge booked">
                       {bookedSlots} booked
                     </span>
                   </div>
@@ -995,7 +995,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   <span className="card-title-icon">❌</span>
                   Rejected Session Requests
                 </h2>
-                <span className="dashboard-badge" style={{ background: "rgba(239,68,68,0.10)", color: "#ef4444", borderColor: "rgba(239,68,68,0.25)" }}>
+                <span className="dashboard-badge error">
                   {declinedCount} rejected
                 </span>
               </div>

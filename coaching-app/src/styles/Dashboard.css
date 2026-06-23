@@ -7,18 +7,18 @@
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
   /* Admin palette  */
-  --admin-sidebar-from: #0d1117;
-  --admin-sidebar-to: #161b22;
-  --admin-accent: #6366f1;
-  --admin-accent-light: #818cf8;
-  --admin-accent-glow: rgba(99, 102, 241, 0.35);
+  --admin-sidebar-from: #1c150c;
+  --admin-sidebar-to: #0f0a05;
+  --admin-accent: #db9530;
+  --admin-accent-light: #f2ac49;
+  --admin-accent-glow: rgba(219, 149, 48, 0.35);
 
   /* Coach palette */
-  --coach-sidebar-from: #0b1a12;
-  --coach-sidebar-to: #0f2318;
-  --coach-accent: #10b981;
-  --coach-accent-light: #34d399;
-  --coach-accent-glow: rgba(16, 185, 129, 0.35);
+  --coach-sidebar-from: #142211;
+  --coach-sidebar-to: #0a1108;
+  --coach-accent: #8bb97f;
+  --coach-accent-light: #a5d099;
+  --coach-accent-glow: rgba(139, 185, 127, 0.35);
 
   /* Shared neutrals */
   --surface: #ffffff;
@@ -49,6 +49,13 @@
 
   --sidebar-w: 268px;
   --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-dashboard-wrapper {
+  --accent: var(--admin-accent);
+}
+.coach-dashboard-wrapper {
+  --accent: var(--coach-accent);
 }
 
 /* ── Reset & Base ──────────────────────────────────────────── */
@@ -127,12 +134,12 @@
 }
 
 .admin-dashboard-wrapper .dashboard-sidebar-icon {
-  background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent-light));
+  background: linear-gradient(135deg, var(--admin-accent), var(--coach-accent));
   box-shadow: 0 4px 14px var(--admin-accent-glow);
 }
 
 .coach-dashboard-wrapper .dashboard-sidebar-icon {
-  background: linear-gradient(135deg, var(--coach-accent), var(--coach-accent-light));
+  background: linear-gradient(135deg, var(--coach-accent), var(--admin-accent));
   box-shadow: 0 4px 14px var(--coach-accent-glow);
 }
 
@@ -288,11 +295,11 @@
 }
 
 .admin-dashboard-wrapper .dashboard-user-avatar {
-  background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent-light));
+  background: linear-gradient(135deg, var(--admin-accent), var(--coach-accent));
 }
 
 .coach-dashboard-wrapper .dashboard-user-avatar {
-  background: linear-gradient(135deg, var(--coach-accent), var(--coach-accent-light));
+  background: linear-gradient(135deg, var(--coach-accent), var(--admin-accent));
 }
 
 .dashboard-user-text {
@@ -766,9 +773,9 @@
 }
 
 .dashboard-badge.success {
-  background: rgba(16,185,129,0.10);
-  color: #10b981;
-  border-color: rgba(16,185,129,0.25);
+  background: rgba(139, 185, 127, 0.12);
+  color: #5c8452;
+  border-color: rgba(139, 185, 127, 0.3);
 }
 
 .dashboard-badge.warning {
@@ -781,6 +788,12 @@
   background: rgba(239,68,68,0.10);
   color: #ef4444;
   border-color: rgba(239,68,68,0.25);
+}
+
+.dashboard-badge.booked {
+  background: rgba(219, 149, 48, 0.10);
+  color: #c27f21;
+  border-color: rgba(219, 149, 48, 0.25);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -914,7 +927,7 @@
 }
 
 .dashboard-btn-primary {
-  background: linear-gradient(135deg, var(--admin-accent) 0%, var(--admin-accent-light) 100%);
+  background: linear-gradient(135deg, var(--admin-accent) 0%, var(--coach-accent) 100%);
   color: #fff;
   box-shadow: 0 4px 14px var(--admin-accent-glow);
 }
@@ -926,7 +939,7 @@
 }
 
 .coach-dashboard-wrapper .dashboard-btn-primary {
-  background: linear-gradient(135deg, var(--coach-accent) 0%, var(--coach-accent-light) 100%);
+  background: linear-gradient(135deg, var(--coach-accent) 0%, var(--admin-accent) 100%);
   box-shadow: 0 4px 14px var(--coach-accent-glow);
 }
 
@@ -1054,18 +1067,18 @@
 }
 
 .status-open, .status-active {
-  background: rgba(16,185,129,0.10);
-  color: #10b981;
-  border: 1px solid rgba(16,185,129,0.25);
+  background: rgba(139, 185, 127, 0.12);
+  color: #5c8452;
+  border: 1px solid rgba(139, 185, 127, 0.3);
 }
-.status-open::before, .status-active::before { background: #10b981; }
+.status-open::before, .status-active::before { background: #8bb97f; }
 
 .status-booked {
-  background: rgba(99,102,241,0.10);
-  color: #6366f1;
-  border: 1px solid rgba(99,102,241,0.25);
+  background: rgba(219, 149, 48, 0.10);
+  color: #c27f21;
+  border: 1px solid rgba(219, 149, 48, 0.25);
 }
-.status-booked::before { background: #6366f1; }
+.status-booked::before { background: #db9530; }
 
 .status-disabled, .status-closed {
   background: rgba(239,68,68,0.10);
@@ -1083,8 +1096,8 @@
   text-transform: capitalize;
 }
 
-.role-admin { background: rgba(99,102,241,0.10); color: #6366f1; }
-.role-coach { background: rgba(16,185,129,0.10); color: #10b981; }
+.role-admin { background: rgba(219, 149, 48, 0.10); color: #c27f21; }
+.role-coach { background: rgba(139, 185, 127, 0.12); color: #5c8452; }
 .role-user  { background: rgba(100,116,139,0.10); color: #64748b; }
 
 /* ════════════════════════════════════════════════════════════
