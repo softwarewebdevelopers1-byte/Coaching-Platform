@@ -65,7 +65,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ showToast }) => {
                   href="mailto:hello@apexcoaching.com"
                   className="contact-value"
                 >
-                  hello@apexcoaching.com
+                  hello@unwantracoaching.co.ke
                 </a>
               </div>
             </div>
@@ -73,8 +73,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ showToast }) => {
               <div className="contact-icon">📞</div>
               <div>
                 <p className="contact-label">Call Us</p>
-                <a href="tel:+18005550100" className="contact-value">
-                  +1 800 555 0100
+                <a href="tel:+254712281552" className="contact-value">
+                  +254 712 281 552
                 </a>
               </div>
             </div>
@@ -83,7 +83,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ showToast }) => {
               <div>
                 <p className="contact-label">Visit Us</p>
                 <span className="contact-value">
-                  350 Fifth Ave, New York, NY 10118
+                  Nairobi, Kenya
                 </span>
               </div>
             </div>
