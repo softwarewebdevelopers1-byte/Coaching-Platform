@@ -842,8 +842,9 @@ textarea {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
   gap: 20px;
+  min-width: 0;
 }
 
 .dashboard-panel {
@@ -868,6 +869,7 @@ textarea {
 .dashboard-form {
   display: grid;
   gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .dashboard-form input,
@@ -1412,6 +1414,21 @@ a.contact-value:hover {
   .row-actions {
     justify-content: flex-start;
   }
+  .dashboard-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-panel {
+    padding: 18px;
+  }
+  .dashboard-tabs {
+    justify-content: stretch;
+  }
+  .dashboard-tabs button {
+    flex: 1 1 auto;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1434,4 +1451,79 @@ a.contact-value:hover {
   .radio-group {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 480px) {
+  .programs-grid {
+    grid-template-columns: 1fr;
+  }
+  .coaches-grid {
+    grid-template-columns: 1fr;
+  }
+  .section-title {
+    font-size: 2.2rem;
+  }
+}
+
+/* Booking Form Modal Overlay */
+.booking-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(26, 22, 18, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+  overflow-y: auto;
+}
+
+.booking-modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.booking-modal-overlay.blur-bg {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.booking-modal-content {
+  background: var(--clr-surface);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.3s ease;
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+}
+
+.booking-modal-overlay.open .booking-modal-content {
+  transform: translateY(0) scale(1);
+}
+
+.booking-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--clr-bg-alt);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: var(--transition);
+  z-index: 20;
+}
+
+.booking-modal-close:hover {
+  background: var(--clr-border);
 }
