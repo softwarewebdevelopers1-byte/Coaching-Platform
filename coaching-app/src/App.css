@@ -241,3 +241,177 @@ img { max-width: 100%; display: block; }
   .uw-btn { width: 100%; }
   .uw-form-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Slot-request flow styles ──────────────────────────────────────────────── */
+
+/* No-slots notice banner */
+.uw-no-slots-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.uw-no-slots-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  padding: 18px 20px;
+  animation: uw-slide-in 320ms ease;
+}
+
+.uw-no-slots-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.uw-no-slots-notice strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+
+.uw-no-slots-notice p {
+  margin: 0;
+  font-size: 0.87rem;
+  color: #b45309;
+  line-height: 1.6;
+}
+
+/* Request-a-slot form card */
+.uw-request-slot-form {
+  background: #fff;
+  border: 1.5px solid rgba(127, 154, 122, 0.35);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 16px;
+  box-shadow: 0 6px 22px rgba(28, 35, 23, 0.07);
+  animation: uw-slide-in 350ms ease;
+}
+
+.uw-request-slot-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uw-request-slot-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--uw-muted);
+  line-height: 1.55;
+}
+
+.uw-request-slot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(127, 154, 122, 0.14);
+  color: var(--uw-sage-dark);
+  border: 1px solid rgba(127, 154, 122, 0.32);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  width: fit-content;
+}
+
+/* Step 4 – request mode notice */
+.uw-request-mode-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(217, 169, 40, 0.09);
+  border: 1px solid rgba(217, 169, 40, 0.35);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: var(--uw-ink);
+  margin-bottom: 4px;
+  animation: uw-slide-in 300ms ease;
+}
+
+.uw-request-mode-notice span:first-child {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Step 5 – pending confirmation */
+.uw-request-confirmation {
+  text-align: center;
+  animation: uw-fade-up 400ms ease;
+}
+
+.uw-request-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.uw-request-details-panel {
+  border: 1px solid var(--uw-line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 18px 0;
+  text-align: left;
+}
+
+.uw-request-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--uw-line);
+  font-size: 0.9rem;
+}
+
+.uw-request-detail-row:last-child {
+  border-bottom: none;
+}
+
+.uw-request-detail-row span {
+  color: var(--uw-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.uw-request-next-steps {
+  background: var(--uw-cream);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  color: var(--uw-sage-dark);
+  line-height: 1.6;
+  text-align: left;
+  margin: 0 0 8px;
+}
+
+/* Animations */
+@keyframes uw-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes uw-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+

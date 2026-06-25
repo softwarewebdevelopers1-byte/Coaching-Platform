@@ -95,6 +95,12 @@ const MainContent: React.FC<MainContentProps> = ({
     coachingType: "Discovery call",
   });
 
+  // ── Slot-request state (used when coach has no open slots) ────────────────
+  const [requestMode, setRequestMode] = useState(false);
+  const [slotRequestForm, setSlotRequestForm] = useState({ message: "", preferredDate: "", preferredTime: "" });
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+
   const selectedProgramData = programs.find((program) => program.id === selectedProgram);
   const eligibleCoaches = useMemo(
     () =>
@@ -205,7 +211,8 @@ const MainContent: React.FC<MainContentProps> = ({
         return showToast("Choose a coach or select best-match assignment", "error");
       }
     }
-    if (step === 3 && !selectedSlot && (!form.preferredDate || !form.preferredTime)) {
+    // In request mode (no open slots) we skip the slot-selection requirement
+    if (step === 3 && !requestMode && !selectedSlot && (!form.preferredDate || !form.preferredTime)) {
       return showToast("Choose a time slot or enter a preferred date and time", "error");
     }
     setStep((value) => Math.min(value + 1, 5));
@@ -261,6 +268,54 @@ const MainContent: React.FC<MainContentProps> = ({
       showToast(error instanceof Error ? error.message : "Could not submit booking", "error", 6000);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // ── Submit a slot request (no open slots path) ────────────────────────────
+  const submitSlotRequest = async () => {
+    if (!form.fullName || !form.email || !form.phoneNumber) {
+      showToast("Please fill in your name, email, and phone number", "error");
+      return;
+    }
+    if (!selectedCoach || !selectedProgramData) return;
+
+    setSubmittingRequest(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/slot-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          email: form.email,
+          phoneNumber: form.phoneNumber,
+          programName: selectedProgram,
+          coachId: selectedCoach._id,
+          coachName: selectedCoach.name,
+          coachEmail: selectedCoach.email,
+          message: [
+            slotRequestForm.message,
+            slotRequestForm.preferredDate
+              ? `Preferred date: ${new Date(slotRequestForm.preferredDate).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}`
+              : "",
+            slotRequestForm.preferredTime ? `Preferred time: ${slotRequestForm.preferredTime}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Could not submit slot request");
+      }
+
+      setRequestSent(true);
+      showToast("Slot request sent! You'll be notified by email when the coach responds.", "success", 6000);
+      setStep(5);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not submit slot request", "error", 6000);
+    } finally {
+      setSubmittingRequest(false);
     }
   };
 
@@ -480,47 +535,121 @@ const MainContent: React.FC<MainContentProps> = ({
               <div className="uw-form-panel">
                 <h3>Step 3: Choose available time slot</h3>
                 {selectedCoach && <p className="uw-assigned">Coach: {selectedCoach.name}</p>}
-                <div className="uw-slot-grid">
-                  {slotOptions.map((slot) => (
-                    <button
-                      key={slot.value}
-                      className={selectedSlot === slot.value ? "selected" : ""}
-                      onClick={() => setSelectedSlot(slot.value)}
-                    >
-                      {slot.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="uw-form-grid">
-                  <label>Preferred Date<input type="date" value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} /></label>
-                  <label>Preferred Time<input type="time" value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} /></label>
-                </div>
+
+                {/* ── Has open slots: normal booking ─────────────────── */}
+                {slots.length > 0 && (
+                  <>
+                    <div className="uw-slot-grid">
+                      {slotOptions.map((slot) => (
+                        <button
+                          key={slot.value}
+                          className={selectedSlot === slot.value ? "selected" : ""}
+                          onClick={() => { setSelectedSlot(slot.value); setRequestMode(false); }}
+                        >
+                          {slot.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="uw-form-grid">
+                      <label>Preferred Date<input type="date" value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} /></label>
+                      <label>Preferred Time<input type="time" value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} /></label>
+                    </div>
+                  </>
+                )}
+
+                {/* ── No open slots: request-a-slot flow ─────────────── */}
+                {slots.length === 0 && (
+                  <div className="uw-no-slots-panel">
+                    <div className="uw-no-slots-notice">
+                      <span className="uw-no-slots-icon">📭</span>
+                      <div>
+                        <strong>No available slots right now</strong>
+                        <p>This coach has no open slots at the moment. You can send a slot request and {selectedCoach?.name || "the coach"} will get back to you with a confirmed time.</p>
+                      </div>
+                    </div>
+
+                    <div className="uw-request-slot-form">
+                      <div className="uw-request-slot-header">
+                        <span className="uw-request-slot-badge">📩 Request a Slot</span>
+                        <p>Fill in your details in the next step and we'll send your request to the coach immediately.</p>
+                      </div>
+                      <div className="uw-form-grid">
+                        <label>
+                          Preferred Date (optional)
+                          <input
+                            type="date"
+                            value={slotRequestForm.preferredDate}
+                            onChange={(e) => setSlotRequestForm({ ...slotRequestForm, preferredDate: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Preferred Time (optional)
+                          <input
+                            type="time"
+                            value={slotRequestForm.preferredTime}
+                            onChange={(e) => setSlotRequestForm({ ...slotRequestForm, preferredTime: e.target.value })}
+                          />
+                        </label>
+                      </div>
+                      <label className="wide">
+                        Message to coach (optional)
+                        <textarea
+                          rows={3}
+                          placeholder="e.g. I'd prefer weekday mornings, or any context about your goals…"
+                          value={slotRequestForm.message}
+                          onChange={(e) => setSlotRequestForm({ ...slotRequestForm, message: e.target.value })}
+                        />
+                      </label>
+                    </div>
+                    {/* Activate request mode on mount */}
+                    {!requestMode && (() => { setRequestMode(true); return null; })()}
+                  </div>
+                )}
+
                 <div className="uw-form-actions">
                   <button className="uw-btn uw-btn-quiet" onClick={() => setStep(2)}>Back</button>
-                  <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+                  <button className="uw-btn uw-btn-primary" onClick={next}>
+                    {requestMode ? "Continue to details" : "Continue"}
+                  </button>
                 </div>
               </div>
             )}
 
             {step === 4 && (
               <div className="uw-form-panel">
-                <h3>Step 4: Submit details</h3>
+                <h3>{requestMode ? "Step 4: Your contact details" : "Step 4: Submit details"}</h3>
+                {requestMode && (
+                  <div className="uw-request-mode-notice">
+                    <span>📩</span>
+                    <span>You're requesting a slot from <strong>{selectedCoach?.name}</strong>. Fill in your details and we'll send your request straight away.</span>
+                  </div>
+                )}
                 <div className="uw-form-grid">
                   <label>Full Name<input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></label>
                   <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
                   <label>Phone Number<input value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} /></label>
-                  <label>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label>
-                  <label>Coaching Type<select value={form.coachingType} onChange={(e) => setForm({ ...form, coachingType: e.target.value })}><option>Discovery call</option><option>Individual Executive Coaching</option><option>Group Executive Coaching</option></select></label>
-                  <label className="wide">Top Three Coaching Goals<textarea rows={4} placeholder="Confidence, boundaries, boardroom influence" value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} /></label>
+                  {!requestMode && <label>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label>}
+                  {!requestMode && <label>Coaching Type<select value={form.coachingType} onChange={(e) => setForm({ ...form, coachingType: e.target.value })}><option>Discovery call</option><option>Individual Executive Coaching</option><option>Group Executive Coaching</option></select></label>}
+                  <label className="wide">{requestMode ? "Anything else you'd like the coach to know? (optional)" : "Top Three Coaching Goals"}<textarea rows={4} placeholder={requestMode ? "e.g. goals, preferred format, availability…" : "Confidence, boundaries, boardroom influence"} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} /></label>
                 </div>
                 <div className="uw-form-actions">
                   <button className="uw-btn uw-btn-quiet" onClick={() => setStep(3)}>Back</button>
-                  <button className="uw-btn uw-btn-primary" onClick={submitBooking} disabled={submitting}>{submitting ? "Submitting..." : "Submit booking"}</button>
+                  {requestMode ? (
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={submitSlotRequest}
+                      disabled={submittingRequest}
+                    >
+                      {submittingRequest ? "Sending request…" : "📩 Send slot request"}
+                    </button>
+                  ) : (
+                    <button className="uw-btn uw-btn-primary" onClick={submitBooking} disabled={submitting}>{submitting ? "Submitting..." : "Submit booking"}</button>
+                  )}
                 </div>
               </div>
             )}
 
-            {step === 5 && (
+            {step === 5 && !requestSent && (
               <div className="uw-confirmation">
                 <span>Confirmed</span>
                 <h3>Your discovery call request has been received.</h3>
@@ -529,7 +658,41 @@ const MainContent: React.FC<MainContentProps> = ({
                   reschedule notices by email. WhatsApp notifications are
                   structured for future activation.
                 </p>
-                <button className="uw-btn uw-btn-primary" onClick={() => setStep(1)}>Book another call</button>
+                <button className="uw-btn uw-btn-primary" onClick={() => { setStep(1); setRequestSent(false); setRequestMode(false); }}>Book another call</button>
+              </div>
+            )}
+
+            {step === 5 && requestSent && (
+              <div className="uw-confirmation uw-request-confirmation">
+                <span className="uw-request-pending-badge">⏳ Pending</span>
+                <h3>Slot request sent to {selectedCoach?.name}!</h3>
+                <p>
+                  Your request has been sent and <strong>{selectedCoach?.name}</strong> has been notified.
+                  You will receive an email confirmation as soon as your coach approves and sets a session time.
+                </p>
+                <div className="uw-request-details-panel">
+                  <div className="uw-request-detail-row">
+                    <span>Program</span>
+                    <strong>{selectedProgramData?.title}</strong>
+                  </div>
+                  <div className="uw-request-detail-row">
+                    <span>Coach</span>
+                    <strong>{selectedCoach?.name}</strong>
+                  </div>
+                  <div className="uw-request-detail-row">
+                    <span>Status</span>
+                    <strong style={{ color: "#f59e0b" }}>Awaiting coach approval</strong>
+                  </div>
+                </div>
+                <p className="uw-request-next-steps">
+                  💡 Keep an eye on your inbox. Once approved, you'll receive a confirmation email with your session time and coach contact details.
+                </p>
+                <button
+                  className="uw-btn uw-btn-primary"
+                  onClick={() => { setStep(1); setRequestSent(false); setRequestMode(false); setSlotRequestForm({ message: "", preferredDate: "", preferredTime: "" }); }}
+                >
+                  Done
+                </button>
               </div>
             )}
           </div>
