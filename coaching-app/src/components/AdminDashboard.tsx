@@ -15,10 +15,8 @@ interface AdminDashboardProps {
 type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 
 const COACH_PROGRAMS = [
-  { id: "career", title: "Career Coaching" },
-  { id: "business", title: "Business Coaching" },
-  { id: "life", title: "Life Coaching" },
-  { id: "leadership", title: "Leadership Coaching" },
+  { id: "individual-executive", title: "Individual Executive Coaching" },
+  { id: "group-executive", title: "Group Executive Coaching" },
 ];
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
@@ -147,7 +145,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     email: "",
     phone: "",
     password: "",
-    programName: "career",
+    programName: "individual-executive",
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
   });
@@ -190,7 +188,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
         email: "",
         phone: "",
         password: "",
-        programName: "career",
+        programName: "individual-executive",
         role: "coach",
         status: "active",
       });
@@ -485,7 +483,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                       email: account.email,
                                       phone: account.phone || "",
                                       password: "",
-                                      programName: account.programName || "career",
+                                      programName: account.programName || "individual-executive",
                                       role: account.role,
                                       status: account.status,
                                     })}

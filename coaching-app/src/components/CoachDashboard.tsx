@@ -247,7 +247,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       showToast("Please select a program", "error", 3000);
       return;
     }
-    if (slotForm.programName) {
+    if (user?.programName && slotForm.programName !== user.programName) {
       showToast("Slots must be created for your configured coaching program", "error", 4000);
       return;
     }

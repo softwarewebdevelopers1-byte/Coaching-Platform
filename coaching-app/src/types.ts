@@ -1,4 +1,3 @@
-// types.ts
 export interface Program {
   id: string;
   title: string;
@@ -7,21 +6,28 @@ export interface Program {
   duration: string;
   image: string;
   color: string;
+  benefits?: string[];
+  outcomes?: string[];
 }
 
-// DB-backed coach (fetched from /api/accounts with role=coach)
 export interface Coach {
-  _id: string;        // MongoDB _id
-  id?: number;        // legacy static id (unused for DB coaches)
-  name: string;       // maps to fullName in DB
+  _id: string;
+  id?: number;
+  name: string;
   email: string;
   phone: string;
-  specialization: string;  // maps to programName in DB
+  specialization: string;
   experience?: number;
   rating?: number;
   bio?: string;
   tags?: string[];
   status?: string;
+  photo?: string;
+  languages?: string[];
+  availabilitySummary?: string;
+  currentWorkload?: number;
+  maxWorkload?: number;
+  expertise?: string[];
 }
 
 export interface Testimonial {
@@ -52,6 +58,13 @@ export interface Account {
   role: "admin" | "coach" | "user";
   status: "active" | "disabled";
   programName?: string;
+  bio?: string;
+  experience?: number;
+  languages?: string[];
+  expertise?: string[];
+  photo?: string;
+  currentWorkload?: number;
+  maxWorkload?: number;
 }
 
 export interface CoachSlot {
@@ -75,8 +88,12 @@ export interface BookingSession {
   email: string;
   fullName: string;
   phoneNumber: string;
+  country?: string;
+  goals?: string[];
+  coachingType?: string;
   programName: string;
   bookingTime: string;
+  status?: "pending" | "approved" | "rejected" | "rescheduled" | "cancelled";
 }
 
 export interface SlotRequest {

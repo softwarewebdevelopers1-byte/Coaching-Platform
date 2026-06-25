@@ -1,8 +1,5 @@
-// components/MainContent.tsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import type { Program, Coach, Testimonial, Booking, CoachSlot } from "../types";
-import CoachProfileModal from "./CoachProfileModal";
-import ContactForm from "./ContactForm";
+import React, { useEffect, useMemo, useState } from "react";
+import type { Booking, Coach, CoachSlot, Program, Testimonial } from "../types";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
@@ -15,546 +12,332 @@ interface MainContentProps {
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
+const fallbackCoaches: Coach[] = [
+  {
+    _id: "amina-fallback",
+    name: "Amina Wanjiru",
+    email: "amina@unwantra.co",
+    phone: "+254 700 000 101",
+    specialization: "individual-executive",
+    bio: "Executive coach and former people leader supporting women executives, founders, and senior managers to strengthen voice, boundaries, and influence.",
+    expertise: ["Executive presence", "Courageous conversations", "Values-led leadership"],
+    experience: 14,
+    languages: ["English", "Kiswahili"],
+    availabilitySummary: "Tue and Thu mornings",
+    photo: "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=600&q=80",
+    rating: 5,
+    currentWorkload: 5,
+    maxWorkload: 10,
+  },
+  {
+    _id: "zuri-fallback",
+    name: "Zuri Okafor",
+    email: "zuri@unwantra.co",
+    phone: "+234 800 000 202",
+    specialization: "group-executive",
+    bio: "Leadership facilitator specializing in group coaching, team trust, cross-cultural leadership, and practical rituals for aligned executive teams.",
+    expertise: ["Leadership cohorts", "Team alignment", "Connection and trust"],
+    experience: 12,
+    languages: ["English", "Igbo"],
+    availabilitySummary: "Wed afternoons",
+    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&q=80",
+    rating: 5,
+    currentWorkload: 3,
+    maxWorkload: 8,
+  },
+  {
+    _id: "naledi-fallback",
+    name: "Naledi Mokoena",
+    email: "naledi@unwantra.co",
+    phone: "+27 71 000 0303",
+    specialization: "individual-executive",
+    bio: "ICF-aligned coach helping senior leaders navigate transition, confidence, identity, and strategic communication with compassion and rigor.",
+    expertise: ["Leadership transition", "Confidence", "Strategic communication"],
+    experience: 16,
+    languages: ["English", "Sesotho"],
+    availabilitySummary: "Mon and Fri afternoons",
+    photo: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?w=600&q=80",
+    rating: 4.9,
+    currentWorkload: 7,
+    maxWorkload: 12,
+  },
+];
+
+const fallbackSlots = [
+  "2026-07-01T09:00",
+  "2026-07-02T14:00",
+  "2026-07-06T11:30",
+];
+
 const MainContent: React.FC<MainContentProps> = ({
   programs,
   testimonials,
   onAddBooking,
   showToast,
 }) => {
-  // ── State ──────────────────────────────────────────────────────────────────
-  const [coaches, setCoaches] = useState<Coach[]>([]);
-  const [coachesLoading, setCoachesLoading] = useState(true);
-
-  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  // Real DB slots for the selected coach
-  const [coachSlots, setCoachSlots] = useState<CoachSlot[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<CoachSlot | null>(null);
-
-  const [formData, setFormData] = useState({
+  const [coaches, setCoaches] = useState<Coach[]>(fallbackCoaches);
+  const [slots, setSlots] = useState<CoachSlot[]>([]);
+  const [step, setStep] = useState(1);
+  const [selectedProgram, setSelectedProgram] = useState(programs[0]?.id || "");
+  const [coachChoice, setCoachChoice] = useState<"choose" | "assign">("assign");
+  const [selectedCoachId, setSelectedCoachId] = useState("");
+  const [assignedCoach, setAssignedCoach] = useState<Coach | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
     fullName: "",
     email: "",
-    phone: "",
-    program: "",
-    coachOption: "" as "choose" | "assign" | "",
+    phoneNumber: "",
+    country: "",
+    goals: "",
+    preferredDate: "",
+    preferredTime: "",
+    coachingType: "Discovery call",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [autoAssignedCoach, setAutoAssignedCoach] = useState<Coach | null>(null);
-  const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
-  const [selectedFilteredCoach, setSelectedFilteredCoach] = useState<Coach | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [bookingData, setBookingData] = useState<any>(null);
-  const [modalCoach, setModalCoach] = useState<Coach | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Slot request state (when no slots available)
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestMessage, setRequestMessage] = useState("");
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
-  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const selectedProgramData = programs.find((program) => program.id === selectedProgram);
+  const eligibleCoaches = useMemo(
+    () =>
+      coaches.filter(
+        (coach) =>
+          coach.specialization === selectedProgram ||
+          coach.specialization === selectedProgramData?.title,
+      ),
+    [coaches, selectedProgram, selectedProgramData],
+  );
+  const selectedCoach =
+    assignedCoach || coaches.find((coach) => coach._id === selectedCoachId) || null;
 
-  // User session tracker
-  const [trackerEmail, setTrackerEmail] = useState("");
-  const [trackerTab, setTrackerTab] = useState<"bookings" | "requests" | "rejected">("bookings");
-  const [userBookings, setUserBookings] = useState<any[]>([]);
-  const [userRequests, setUserRequests] = useState<any[]>([]);
-  const [trackerLoading, setTrackerLoading] = useState(false);
-  const [trackerLoaded, setTrackerLoaded] = useState(false);
-
-  // ── Fetch coaches from DB ──────────────────────────────────────────────────
-  const loadCoaches = useCallback(async (programId?: string): Promise<Coach[]> => {
-    setCoachesLoading(true);
-    try {
-      const params = new URLSearchParams({ role: "coach", status: "active" });
-      if (programId) {
-        params.set("programName", programId);
-      }
-      const res = await fetch(`${API_BASE_URL}/api/accounts?${params.toString()}`);
-      if (res.ok) {
+  useEffect(() => {
+    const loadCoaches = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/accounts?role=coach&status=active`);
+        if (!res.ok) return;
         const data = await res.json();
-        const dbCoaches: Coach[] = (data.accounts || []).map((a: any) => ({
-          _id: a._id,
-          name: a.fullName,
-          email: a.email,
-          phone: a.phone || "",
-          specialization: a.programName || "",
-          status: a.status,
+        const mapped = (data.accounts || []).map((account: any) => ({
+          _id: account._id,
+          name: account.fullName,
+          email: account.email,
+          phone: account.phone || "",
+          specialization: account.programName || "",
+          bio: account.bio,
+          experience: account.experience,
+          languages: account.languages,
+          expertise: account.expertise,
+          photo: account.photo,
+          currentWorkload: account.currentWorkload,
+          maxWorkload: account.maxWorkload,
+          availabilitySummary: account.availabilitySummary,
+          rating: 5,
         }));
-        setCoaches(dbCoaches);
-        return dbCoaches;
+        if (mapped.length) setCoaches(mapped);
+      } catch {
+        setCoaches(fallbackCoaches);
       }
-    } catch {
-      // Silently fail — coaches section will be empty
-    } finally {
-      setCoachesLoading(false);
-    }
-    return [];
+    };
+    loadCoaches();
   }, []);
 
   useEffect(() => {
-    loadCoaches();
-  }, [loadCoaches]);
+    const loadSlots = async () => {
+      if (!selectedCoach?.email) return;
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/bookings/coach-slots?coachEmail=${encodeURIComponent(selectedCoach.email)}`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setSlots((data.slots || []).filter((slot: CoachSlot) => slot.status === "open"));
+      } catch {
+        setSlots([]);
+      }
+    };
+    setSlots([]);
+    setSelectedSlot("");
+    loadSlots();
+  }, [selectedCoach?.email]);
 
-  // ── Fetch real slots for a coach ───────────────────────────────────────────
-  const loadCoachSlots = useCallback(async (coachEmail: string) => {
-    if (!coachEmail) return;
-    setSlotsLoading(true);
-    setCoachSlots([]);
-    setSelectedSlot(null);
+  const assignBestCoach = async () => {
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/bookings/coach-slots?coachEmail=${encodeURIComponent(coachEmail)}`
-      );
+      const res = await fetch(`${API_BASE_URL}/api/bookings/assign-coach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          programName: selectedProgram,
+          goals: form.goals.split(",").map((goal) => goal.trim()).filter(Boolean),
+        }),
+      });
       if (res.ok) {
         const data = await res.json();
-        // Only show open slots
-        const openSlots = (data.slots || []).filter(
-          (s: CoachSlot) => s.status === "open"
-        );
-        setCoachSlots(openSlots);
+        setAssignedCoach({
+          _id: data.coach._id,
+          name: data.coach.fullName,
+          email: data.coach.email,
+          phone: data.coach.phone || "",
+          specialization: data.coach.programName,
+          bio: data.coach.bio,
+          experience: data.coach.experience,
+          languages: data.coach.languages,
+          expertise: data.coach.expertise,
+          photo: data.coach.photo,
+          currentWorkload: data.coach.currentWorkload,
+          maxWorkload: data.coach.maxWorkload,
+        });
+        return;
       }
     } catch {
-      showToast("Could not load available slots", "error", 4000);
-    } finally {
-      setSlotsLoading(false);
-    }
-  }, []);
-
-  // Reload slots whenever selectedCoach changes in step 6
-  useEffect(() => {
-    if (currentStep === 6 && selectedCoach?.email) {
-      loadCoachSlots(selectedCoach.email);
-    }
-  }, [selectedCoach, currentStep, loadCoachSlots]);
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const getInitials = (name: string) =>
-    name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2);
-
-  const renderStars = (rating: number = 0) => {
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5 ? 1 : 0;
-    const empty = 5 - full - half;
-    return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
-  };
-
-  const getProgramLabel = (id: string) => {
-    const p = programs.find((p) => p.id === id || p.title === id);
-    return p ? p.title : id || "—";
-  };
-
-  const coachMatchesProgram = (coach: Coach, programId: string): boolean => {
-    const program = programs.find((p) => p.id === programId);
-    if (!program) return false;
-    const spec = (coach.specialization || "").trim().toLowerCase();
-    return (
-      spec === program.id.toLowerCase() ||
-      spec === program.title.toLowerCase()
-    );
-  };
-
-  const getProgramDuration = (id: string) => {
-    const p = programs.find((p) => p.id === id);
-    return p ? p.duration : "—";
-  };
-
-  const scrollToForm = (programId: string) => {
-    setFormData((prev) => ({ ...prev, program: programId }));
-    setCurrentStep(1);
-    document.getElementById("select-coach")?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const formatSlotTime = (slot: CoachSlot) => {
-    const start = new Date(slot.bookingDate);
-    const end = slot.bookingEndDate ? new Date(slot.bookingEndDate) : null;
-    const dateStr = start.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
-    const startTime = start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const endTime = end ? " – " + end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-    return { dateStr, timeStr: startTime + endTime, full: `${dateStr} at ${startTime}` };
-  };
-
-  // ── Form handlers ──────────────────────────────────────────────────────────
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { id, value } = e.target;
-    setFormData({ ...formData, [id]: value });
-    
-    // Clear errors when typing
-    const errorKeyMap: Record<string, string> = {
-      fullName: "nameError",
-      phone: "phoneError",
-      email: "emailError",
-      program: "programError",
-    };
-    const mappedError = errorKeyMap[id];
-    if (mappedError && errors[mappedError]) {
-      setErrors({ ...errors, [mappedError]: "" });
-    }
-  };
-
-  const handleRadioChange = (value: "choose" | "assign") => {
-    setFormData({ ...formData, coachOption: value });
-    if (errors.optionError) setErrors({ ...errors, optionError: "" });
-  };
-
-  const validateCurrentStep = (step: number): boolean => {
-    const newErrors: Record<string, string> = {};
-    if (step === 1) {
-      if (!formData.fullName.trim()) newErrors.nameError = "Full name is required.";
-    } else if (step === 2) {
-      if (!formData.phone.trim() || !/^\+?[\d\s\-().]{7,20}$/.test(formData.phone))
-        newErrors.phoneError = "Enter a valid phone number.";
-    } else if (step === 3) {
-      if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-        newErrors.emailError = "Enter a valid email address.";
-    } else if (step === 4) {
-      if (!formData.program) newErrors.programError = "Please select a program.";
-    } else if (step === 5) {
-      if (!formData.coachOption) newErrors.optionError = "Please choose an option.";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNextStep = async () => {
-    if (!validateCurrentStep(currentStep)) return;
-
-    if (currentStep < 5) {
-      setCurrentStep((prev) => prev + 1);
-      return;
+      // Local fallback below keeps the booking path usable offline.
     }
 
-    const programCoaches = await loadCoaches(formData.program);
-    const pool = programCoaches.filter((c) => coachMatchesProgram(c, formData.program));
-
-    if (pool.length === 0) {
-      showToast("No coaches available for this program yet. Please try another program.", "error", 5000);
-      return;
-    }
-
-    if (formData.coachOption === "assign") {
-      const best = pool[0];
-      setAutoAssignedCoach(best);
-      setSelectedCoach(best);
-      setFilteredCoaches([]);
-      setSelectedFilteredCoach(null);
-    } else {
-      setFilteredCoaches(pool);
-      setAutoAssignedCoach(null);
-      setSelectedCoach(null);
-      setSelectedFilteredCoach(null);
-    }
-    setCurrentStep(6);
-    setSelectedSlot(null);
-    if (errors.coachSelectError) setErrors({ ...errors, coachSelectError: "" });
-    if (errors.slotError) setErrors({ ...errors, slotError: "" });
+    const best = [...eligibleCoaches].sort((a, b) => {
+      const loadA = (a.currentWorkload || 0) / (a.maxWorkload || 10);
+      const loadB = (b.currentWorkload || 0) / (b.maxWorkload || 10);
+      return loadA - loadB || (b.experience || 0) - (a.experience || 0);
+    })[0];
+    setAssignedCoach(best || null);
   };
 
-  const handleBackStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  };
-
-  const selectFilteredCoach = (coach: Coach) => {
-    setSelectedFilteredCoach(coach);
-    setSelectedCoach(coach);
-    if (errors.coachSelectError) setErrors({ ...errors, coachSelectError: "" });
-  };
-
-  const selectSlot = (slot: CoachSlot) => {
-    setSelectedSlot(slot);
-    if (errors.slotError) setErrors({ ...errors, slotError: "" });
-  };
-
-  const loadUserSessions = async (email: string) => {
-    if (!email.trim()) {
-      showToast("Please enter your email address", "error", 3000);
-      return;
-    }
-
-    setTrackerLoading(true);
-    try {
-      const [bookingsRes, requestsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/bookings/sessions?email=${encodeURIComponent(email.trim())}`),
-        fetch(`${API_BASE_URL}/api/slot-requests?email=${encodeURIComponent(email.trim())}`),
-      ]);
-
-      if (bookingsRes.ok) {
-        const data = await bookingsRes.json();
-        setUserBookings(data.sessions || []);
+  const next = async () => {
+    if (step === 1 && !selectedProgram) return showToast("Choose a coaching service", "error");
+    if (step === 2) {
+      if (coachChoice === "assign") await assignBestCoach();
+      if (coachChoice === "choose" && !selectedCoachId) {
+        return showToast("Choose a coach or select best-match assignment", "error");
       }
-
-      if (requestsRes.ok) {
-        const data = await requestsRes.json();
-        setUserRequests(data.slotRequests || []);
-      }
-
-      setTrackerLoaded(true);
-    } catch {
-      showToast("Could not load your sessions", "error", 4000);
-    } finally {
-      setTrackerLoading(false);
     }
+    if (step === 3 && !selectedSlot && (!form.preferredDate || !form.preferredTime)) {
+      return showToast("Choose a time slot or enter a preferred date and time", "error");
+    }
+    setStep((value) => Math.min(value + 1, 5));
   };
 
-  const pendingUserRequests = userRequests.filter((r) => r.status === "pending");
-  const rejectedUserRequests = userRequests.filter((r) => r.status === "declined");
-
-  const openTracker = (email: string, tab: "bookings" | "requests" | "rejected" = "bookings") => {
-    setTrackerEmail(email);
-    setTrackerTab(tab);
-    loadUserSessions(email);
-    document.getElementById("my-sessions")?.scrollIntoView({ behavior: "smooth" });
-  };
-  const handleSubmit = async () => {
-    if (formData.coachOption !== "assign" && !selectedCoach) {
-      setErrors({ ...errors, coachSelectError: "Please select a coach to continue." });
+  const submitBooking = async () => {
+    if (!form.fullName || !form.email || !form.phoneNumber || !form.country || !form.goals) {
+      showToast("Complete all required details before submitting", "error");
       return;
     }
-    if (!selectedSlot) {
-      setErrors({ ...errors, slotError: "Please choose a session time slot." });
-      return;
-    }
-    if (!selectedCoach) {
-      setErrors({ ...errors, coachSelectError: "Please select a coach to continue." });
-      return;
-    }
+    if (!selectedCoach || !selectedProgramData) return;
 
-    const slotLabel = formatSlotTime(selectedSlot).full;
+    const slotLabel =
+      selectedSlot ||
+      `${new Date(form.preferredDate).toLocaleDateString()} at ${form.preferredTime}`;
 
-    const booking: Booking = {
-      id: Date.now(),
-      name: formData.fullName,
-      email: formData.email,
-      program: getProgramLabel(formData.program),
-      coach: selectedCoach.name,
-      coachEmail: selectedCoach.email,
-      coachPhone: selectedCoach.phone,
-      slot: slotLabel,
-      duration: getProgramDuration(formData.program),
-      bookedAt: new Date().toLocaleString(),
-    };
-
-    setIsSubmitting(true);
+    setSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/bookings/book-slot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          phoneNumber: formData.phone,
-          programName: booking.program,
-          coachId: selectedCoach._id || String(selectedCoach.id),
+          ...form,
+          programName: selectedProgram,
+          coachId: selectedCoach._id,
           coachName: selectedCoach.name,
           coachEmail: selectedCoach.email,
           coachPhone: selectedCoach.phone,
           bookingTime: slotLabel,
-          slotId: selectedSlot._id,  // marks the slot as booked in DB
+          slotId: slots.find((slot) => slot.bookingDate === selectedSlot)?._id,
+          goals: form.goals.split(",").map((goal) => goal.trim()).filter(Boolean).slice(0, 3),
         }),
       });
-
-      const result = await response.json().catch(() => null);
-
       if (!response.ok) {
-        throw new Error(result?.message || "Could not complete booking.");
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Could not submit booking");
       }
-
-      setBookingData(booking);
-      setShowSummary(true);
-      onAddBooking(booking);
-      openTracker(formData.email, "bookings");
-      showToast("🎉 Session booked! Confirmation email sent.", "success", 5000);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not complete booking. Please try again.";
-      showToast(message, "error", 6000);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // ── Reset form ─────────────────────────────────────────────────────────────
-  // ── Submit slot request (no available slots) ───────────────────────────────
-  const handleSlotRequest = async () => {
-    if (!selectedCoach) return;
-    setRequestSubmitting(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/slot-requests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          phoneNumber: formData.phone,
-          programName: getProgramLabel(formData.program),
-          coachId: selectedCoach._id || String(selectedCoach.id),
-          coachName: selectedCoach.name,
-          coachEmail: selectedCoach.email,
-          message: requestMessage,
-        }),
+      onAddBooking({
+        id: Date.now(),
+        name: form.fullName,
+        email: form.email,
+        program: selectedProgramData.title,
+        coach: selectedCoach.name,
+        coachEmail: selectedCoach.email,
+        coachPhone: selectedCoach.phone,
+        slot: slotLabel,
+        duration: selectedProgramData.duration,
+        bookedAt: new Date().toLocaleString(),
       });
-
-      const result = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(result?.message || "Could not submit request.");
-      }
-
-      setRequestSubmitted(true);
-      setShowRequestForm(false);
-      openTracker(formData.email, "requests");
-      showToast("📩 Session request sent! Check your email for confirmation.", "success", 5000);
+      showToast("Discovery call request received. Confirmation sent by email.", "success", 5000);
+      setStep(5);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not submit request. Please try again.";
-      showToast(message, "error", 6000);
+      showToast(error instanceof Error ? error.message : "Could not submit booking", "error", 6000);
     } finally {
-      setRequestSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  // ── Reset form ─────────────────────────────────────────────────────────────
-  const resetForm = () => {
-    setFormData({ fullName: "", email: "", phone: "", program: "", coachOption: "" });
-    setSelectedCoach(null);
-    setSelectedSlot(null);
-    setCurrentStep(1);
-    setShowSummary(false);
-    setAutoAssignedCoach(null);
-    setSelectedFilteredCoach(null);
-    setCoachSlots([]);
-    setErrors({});
-    setBookingData(null);
-    setIsSubmitting(false);
-    setShowRequestForm(false);
-    setRequestMessage("");
-    setRequestSubmitted(false);
-    setRequestSubmitting(false);
-  };
+  const slotOptions = slots.length
+    ? slots.map((slot) => ({
+        value: slot.bookingDate,
+        label: `${new Date(slot.bookingDate).toLocaleDateString([], {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })} at ${new Date(slot.bookingDate).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+      }))
+    : fallbackSlots.map((slot) => ({
+        value: slot,
+        label: `${new Date(slot).toLocaleDateString([], {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })} at ${new Date(slot).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+      }));
 
-  // ── Download summary ───────────────────────────────────────────────────────
-  const downloadSummary = () => {
-    if (!bookingData) return;
-    const content = [
-      "APEX COACHING — SESSION BOOKING CONFIRMATION",
-      "=".repeat(50),
-      "",
-      `Client Name:     ${bookingData.name}`,
-      `Program:         ${bookingData.program}`,
-      `Coach:           ${bookingData.coach}`,
-      `Coach Email:     ${bookingData.coachEmail}`,
-      `Coach Phone:     ${bookingData.coachPhone}`,
-      `Session Slot:    ${bookingData.slot}`,
-      "",
-      "A confirmation email will be sent to your inbox.",
-      "Your coach will reach out within 24 hours.",
-      "",
-      `Booked on: ${bookingData.bookedAt}`,
-      "",
-      "— ApexCoaching Team",
-      "wanjita.home@gmail.com | 0712281552 | Nairobi",
-    ].join("\n");
-
-    const blob = new Blob([content], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `ApexCoaching_Booking_${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    showToast("Summary downloaded!", "success");
-  };
-
-  // ── Testimonials Slider ────────────────────────────────────────────────────
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(3);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const updateVisible = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
-        setVisibleCards(Math.max(1, Math.min(3, Math.round(width / 340))));
-      }
-    };
-    updateVisible();
-    window.addEventListener("resize", updateVisible);
-    return () => window.removeEventListener("resize", updateVisible);
-  }, []);
-
-  useEffect(() => {
-    const maxSlide = Math.max(0, testimonials.length - visibleCards);
-    if (currentSlide > maxSlide) setCurrentSlide(maxSlide);
-  }, [visibleCards, testimonials.length, currentSlide]);
-
-  useEffect(() => {
-    if (trackRef.current) {
-      const cardWidth =
-        trackRef.current.children[0]?.getBoundingClientRect().width || 300;
-      trackRef.current.style.transform = `translateX(-${currentSlide * (cardWidth + 28)}px)`;
-    }
-  }, [currentSlide, visibleCards]);
-
-  const goToSlide = (index: number) =>
-    setCurrentSlide(Math.min(index, testimonials.length - visibleCards));
-  const prevSlide = () => setCurrentSlide(Math.max(0, currentSlide - 1));
-  const nextSlide = () => {
-    const maxSlide = Math.max(0, testimonials.length - visibleCards);
-    setCurrentSlide(currentSlide >= maxSlide ? 0 : currentSlide + 1);
-  };
-
-  // ── Scroll reveal ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
-    );
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [coaches]); // re-run when coaches load so new cards animate in
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Programs Section ──────────────────────── */}
-      <section id="programs" className="section programs-section">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-label">What We Offer</span>
-            <h2 className="section-title">Coaching <em>Programs</em></h2>
-            <p className="section-sub">
-              Structured pathways designed to unlock your potential at every stage of life.
+      <section id="mission" className="uw-section uw-band">
+        <div className="uw-container uw-statement-grid">
+          <article>
+            <span className="uw-kicker">Mission</span>
+            <h2>Empowering leaders to own their voice.</h2>
+            <p>
+              Unwantra Coaching strengthens confidence, boundaries, influence,
+              and values-based leadership through transformational executive coaching.
             </p>
+          </article>
+          <article>
+            <span className="uw-kicker">Why we exist</span>
+            <h2>Because leadership should feel both brave and whole.</h2>
+            <p>
+              We exist for leaders who are done performing confidence and ready
+              to lead from clarity, compassion, and deeply held values.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="services" className="uw-section">
+        <div className="uw-container">
+          <div className="uw-section-head">
+            <span className="uw-kicker">Coaching services</span>
+            <h2>Programs for executive growth.</h2>
+            <p>Focused support for individual leaders and leadership cohorts.</p>
           </div>
-          <div className="programs-grid">
-            {programs.map((prog, i) => (
-              <article
-                key={prog.id}
-                className="program-card reveal"
-                style={{ transitionDelay: `${i * 80}ms` }}
-              >
-                <div className="program-img-wrap">
-                  <img src={prog.image} alt={prog.title} className="program-img" loading="lazy" />
-                </div>
-                <div className="program-body">
-                  <span className="program-tag">{prog.tag}</span>
-                  <h3 className="program-title">{prog.title}</h3>
-                  <p className="program-desc">{prog.description}</p>
-                  <div className="program-meta">
-                    <span>🕐</span>
-                    <span>{prog.duration}</span>
-                  </div>
-                  <button className="btn-outline-sm" onClick={() => scrollToForm(prog.id)}>
-                    Learn More →
+          <div className="uw-card-grid">
+            {programs.map((program) => (
+              <article className="uw-service-card" key={program.id}>
+                <img src={program.image} alt="" />
+                <div>
+                  <span>{program.tag}</span>
+                  <h3>{program.title}</h3>
+                  <p>{program.description}</p>
+                  <h4>Benefits</h4>
+                  <ul>{program.benefits?.map((item) => <li key={item}>{item}</li>)}</ul>
+                  <h4>Outcomes</h4>
+                  <ul>{program.outcomes?.map((item) => <li key={item}>{item}</li>)}</ul>
+                  <button
+                    className="uw-btn uw-btn-primary"
+                    onClick={() => {
+                      setSelectedProgram(program.id);
+                      document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    Start with this service
                   </button>
                 </div>
               </article>
@@ -563,661 +346,238 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </section>
 
-      {/* ── Coaches Section ───────────────────────── */}
-      <section id="coaches" className="section coaches-section">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-label">Meet the Team</span>
-            <h2 className="section-title">Our <em>Expert Coaches</em></h2>
-            <p className="section-sub">
-              Certified professionals with proven track records and deep specialization.
+      <section id="story" className="uw-section uw-story">
+        <div className="uw-container uw-story-grid">
+          <div>
+            <span className="uw-kicker">Our story</span>
+            <h2>Created for leaders whose impact is bigger than a title.</h2>
+          </div>
+          <div>
+            <p>
+              Unwantra Coaching was created to offer premium, African-led and
+              women-led coaching for executives navigating visibility,
+              responsibility, transition, and purpose.
+            </p>
+            <p>
+              Our philosophy blends rigorous coaching practice with cultural
+              intelligence, reflective inquiry, and practical leadership tools.
+              We honor ambition without asking leaders to abandon humanity.
             </p>
           </div>
+        </div>
+      </section>
 
-          {coachesLoading ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>
-              <div style={{
-                width: 36, height: 36, border: "3px solid #e2e8f0",
-                borderTopColor: "#6366f1", borderRadius: "50%",
-                animation: "spin 0.8s linear infinite", margin: "0 auto 16px"
-              }} />
-              <p style={{ fontSize: 14 }}>Loading coaches…</p>
-            </div>
-          ) : coaches.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>
-              <p style={{ fontSize: 16, fontWeight: 600 }}>No coaches available yet</p>
-              <p style={{ fontSize: 14, marginTop: 6 }}>Check back soon — our team is growing!</p>
-            </div>
-          ) : (
-            <div className="coaches-grid">
-              {coaches.map((coach, i) => (
-                <article
-                  key={coach._id}
-                  className="coach-card reveal"
-                  style={{ transitionDelay: `${i * 60}ms` }}
-                  onClick={() => setModalCoach(coach)}
-                >
-                  <div className="coach-avatar-placeholder">{getInitials(coach.name)}</div>
-                  <h3 className="coach-name">{coach.name}</h3>
-                  <span className="coach-spec">{getProgramLabel(coach.specialization)}</span>
-                  <div className="coach-meta">
-                    <span>✉️ {coach.email}</span>
-                  </div>
+      <section id="coaches" className="uw-section">
+        <div className="uw-container">
+          <div className="uw-section-head">
+            <span className="uw-kicker">Meet our coaches</span>
+            <h2>Experienced guides for courageous leadership.</h2>
+          </div>
+          <div className="uw-coach-grid">
+            {coaches.map((coach) => (
+              <article className="uw-coach-card" key={coach._id}>
+                <img src={coach.photo || fallbackCoaches[0].photo} alt={coach.name} />
+                <div>
+                  <h3>{coach.name}</h3>
+                  <p>{coach.bio || "Executive coach focused on clarity, courage, and connection."}</p>
+                  <dl>
+                    <div><dt>Expertise</dt><dd>{(coach.expertise || ["Executive leadership"]).join(", ")}</dd></div>
+                    <div><dt>Experience</dt><dd>{coach.experience || 10}+ years</dd></div>
+                    <div><dt>Languages</dt><dd>{(coach.languages || ["English"]).join(", ")}</dd></div>
+                    <div><dt>Availability</dt><dd>{coach.availabilitySummary || "By discovery call"}</dd></div>
+                  </dl>
                   <button
-                    className="btn-outline-sm"
-                    onClick={(e) => { e.stopPropagation(); setModalCoach(coach); }}
+                    className="uw-btn uw-btn-secondary"
+                    onClick={() => {
+                      setCoachChoice("choose");
+                      setSelectedCoachId(coach._id);
+                      setSelectedProgram(coach.specialization || selectedProgram);
+                      document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
+                    }}
                   >
-                    View Profile
+                    Book session
                   </button>
-                </article>
-              ))}
-            </div>
-          )}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Booking Form ──────────────────────────── */}
-      <section id="select-coach" className="section form-section">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-label">Start Your Journey</span>
-            <h2 className="section-title">Choose Your <em>Coach</em></h2>
-            <p className="section-sub">
-              Fill in your details and we'll pair you with the perfect coaching match.
+      <section id="discovery-call" className="uw-section uw-booking-section">
+        <div className="uw-container uw-booking-layout">
+          <div>
+            <span className="uw-kicker">Discovery call booking</span>
+            <h2>A premium booking experience with no account required.</h2>
+            <p>
+              Choose a service, select a coach or let the assignment engine find
+              the best fit, then submit your goals for confirmation.
             </p>
+            <ol className="uw-steps">
+              {["Choose service", "Choose coach", "Choose time", "Submit details", "Confirmation"].map((item, index) => (
+                <li className={step === index + 1 ? "active" : ""} key={item}>{item}</li>
+              ))}
+            </ol>
           </div>
-          <div className="form-wrapper">
-            {!showSummary ? (
-              <>
-                <div className="progress-step-info">
-                  <span>Question {currentStep} of 6</span>
-                  <span className="current-step-label">
-                    {currentStep === 1 && "Personal details — Name"}
-                    {currentStep === 2 && "Personal details — Phone"}
-                    {currentStep === 3 && "Personal details — Email"}
-                    {currentStep === 4 && "Coaching Program Preference"}
-                    {currentStep === 5 && "Coach Assignment Preference"}
-                    {currentStep === 6 && "Coach & Slot Selection"}
-                  </span>
-                </div>
-                <div className="progress-container">
-                  <div className="progress-bar" style={{ width: `${(currentStep / 6) * 100}%` }} />
-                </div>
-
-                {/* Step 1 — Full Name */}
-                <div className={`form-step ${currentStep === 1 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">01</span> What is your full name?
-                  </h3>
-                  <div className="form-group">
-                    <label htmlFor="fullName">Full Name</label>
-                    <input
-                      type="text"
-                      id="fullName"
-                      placeholder="e.g. Alex Morgan"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
-                      autoFocus={currentStep === 1}
-                    />
-                    <span className="field-error">{errors.nameError}</span>
-                  </div>
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                      Continue →
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 2 — Phone Number */}
-                <div className={`form-step ${currentStep === 2 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">02</span> What is your phone number?
-                  </h3>
-                  <div className="form-group">
-                    <label htmlFor="phone">Phone Number</label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      placeholder="e.g. +1 555 000 0000"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
-                      autoFocus={currentStep === 2}
-                    />
-                    <span className="field-error">{errors.phoneError}</span>
-                  </div>
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
-                      ← Back
-                    </button>
-                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                      Continue →
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 3 — Email Address */}
-                <div className={`form-step ${currentStep === 3 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">03</span> What is your email address?
-                  </h3>
-                  <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
-                    <input
-                      type="email"
-                      id="email"
-                      placeholder="you@example.com"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      onKeyDown={(e) => e.key === "Enter" && handleNextStep()}
-                      autoFocus={currentStep === 3}
-                    />
-                    <span className="field-error">{errors.emailError}</span>
-                  </div>
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
-                      ← Back
-                    </button>
-                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                      Continue →
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 4 — Coaching Program Selection */}
-                <div className={`form-step ${currentStep === 4 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">04</span> Which coaching program are you interested in?
-                  </h3>
-                  <div className="form-group">
-                    <label htmlFor="program">Coaching Program</label>
-                    <select id="program" value={formData.program} onChange={handleInputChange} autoFocus={currentStep === 4}>
-                      <option value="">— Select a program —</option>
-                      {programs.map((p) => (
-                        <option key={p.id} value={p.id}>{p.title}</option>
-                      ))}
-                    </select>
-                    <span className="field-error">{errors.programError}</span>
-                  </div>
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
-                      ← Back
-                    </button>
-                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                      Continue →
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 5 — Coach Preference */}
-                <div className={`form-step ${currentStep === 5 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">05</span> How would you like to choose your coach?
-                  </h3>
-                  <div className="form-group full">
-                    <label className="radio-label">Select matching method</label>
-                    <div className="radio-group">
-                      <label className={`radio-card ${formData.coachOption === "choose" ? "selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="coachOption"
-                          value="choose"
-                          checked={formData.coachOption === "choose"}
-                          onChange={() => handleRadioChange("choose")}
-                        />
-                        <span className="radio-icon">🎯</span>
-                        <span className="radio-title">I'll choose my coach</span>
-                        <span className="radio-desc">Browse coaches filtered by your program</span>
-                      </label>
-                      <label className={`radio-card ${formData.coachOption === "assign" ? "selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="coachOption"
-                          value="assign"
-                          checked={formData.coachOption === "assign"}
-                          onChange={() => handleRadioChange("assign")}
-                        />
-                        <span className="radio-icon">✨</span>
-                        <span className="radio-title">Assign me the best coach</span>
-                        <span className="radio-desc">We'll recommend the top-rated match</span>
-                      </label>
-                    </div>
-                    <span className="field-error">{errors.optionError}</span>
-                  </div>
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
-                      ← Back
-                    </button>
-                    <button type="button" className="btn btn-primary" onClick={handleNextStep}>
-                      Continue →
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 6 — Select Coach & Slot */}
-                <div className={`form-step ${currentStep === 6 ? "active" : ""}`}>
-                  <h3 className="step-title">
-                    <span className="step-num">06</span> Select Your Coach &amp; Slot
-                  </h3>
-
-                  {/* Auto-assigned */}
-                  {autoAssignedCoach && (
-                    <div className="auto-assign-card">
-                      <div className="assign-icon">🏆</div>
-                      <div className="assign-content">
-                        <p className="assign-label">Recommended Coach</p>
-                        <p className="assign-name">{autoAssignedCoach.name}</p>
-                        <p className="assign-spec">
-                          {getProgramLabel(autoAssignedCoach.specialization)} · {autoAssignedCoach.email}
-                        </p>
-                      </div>
-                      <div className="assign-badge">Best Match</div>
-                    </div>
-                  )}
-
-                  {/* Manual coach picker */}
-                  {filteredCoaches.length > 0 && (
-                    <div className="filtered-coaches-grid">
-                      {filteredCoaches.map((coach) => (
-                          <div
-                            key={coach._id}
-                            className={`filtered-coach-card ${selectedFilteredCoach?._id === coach._id ? "selected" : ""}`}
-                            onClick={() => selectFilteredCoach(coach)}
-                          >
-                            <div className="coach-avatar-placeholder">{getInitials(coach.name)}</div>
-                            <p className="mini-name">{coach.name}</p>
-                            <p className="mini-meta">{getProgramLabel(coach.specialization)}</p>
-                            <p className="mini-meta" style={{ fontSize: 11, color: "#94a3b8" }}>
-                              {coach.email}
-                            </p>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                  <span className="field-error">{errors.coachSelectError}</span>
-
-                  {/* Real slots from DB */}
-                  <div style={{ marginTop: 24 }}>
-                    <h4 style={{ fontWeight: 700, marginBottom: 14 }}>
-                      Pick a Session Slot
-                      {selectedCoach && (
-                        <span style={{ fontWeight: 400, fontSize: 13, color: "#64748b", marginLeft: 8 }}>
-                          — {selectedCoach.name}'s available times
-                        </span>
-                      )}
-                    </h4>
-
-                    {!selectedCoach && (
-                      <p style={{ color: "#94a3b8", fontSize: 14 }}>
-                        Select a coach above to see their available slots.
-                      </p>
-                    )}
-
-                    {selectedCoach && slotsLoading && (
-                      <div style={{ textAlign: "center", padding: "24px 0", color: "#64748b" }}>
-                        <div style={{
-                          width: 28, height: 28, border: "3px solid #e2e8f0",
-                          borderTopColor: "#6366f1", borderRadius: "50%",
-                          animation: "spin 0.8s linear infinite", margin: "0 auto 10px"
-                        }} />
-                        <p style={{ fontSize: 13 }}>Loading available slots…</p>
-                      </div>
-                    )}
-
-                    {selectedCoach && !slotsLoading && coachSlots.length === 0 && (
-                      <div className="slot-request-section">
-                        {!requestSubmitted ? (
-                          <>
-                            <div className="slot-request-empty">
-                              <div className="slot-request-empty-icon">📭</div>
-                              <p className="slot-request-empty-title">No available slots</p>
-                              <p className="slot-request-empty-desc">
-                                {selectedCoach.name} hasn't created any open slots yet.
-                              </p>
-                            </div>
-
-                            {!showRequestForm ? (
-                              <div className="slot-request-cta">
-                                <p className="slot-request-cta-text">
-                                  Want to work with {selectedCoach.name}? Request a session and they'll get back to you with available times.
-                                </p>
-                                <button
-                                  type="button"
-                                  className="btn btn-request-session"
-                                  onClick={() => setShowRequestForm(true)}
-                                >
-                                  📩 Request a Session
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="slot-request-form">
-                                <h4 className="slot-request-form-title">
-                                  <span>📩</span> Request a Session with {selectedCoach.name}
-                                </h4>
-                                <div className="slot-request-form-prefilled">
-                                  <div className="slot-request-prefilled-row">
-                                    <span className="slot-request-prefilled-label">Name</span>
-                                    <span className="slot-request-prefilled-value">{formData.fullName}</span>
-                                  </div>
-                                  <div className="slot-request-prefilled-row">
-                                    <span className="slot-request-prefilled-label">Email</span>
-                                    <span className="slot-request-prefilled-value">{formData.email}</span>
-                                  </div>
-                                  <div className="slot-request-prefilled-row">
-                                    <span className="slot-request-prefilled-label">Program</span>
-                                    <span className="slot-request-prefilled-value">{getProgramLabel(formData.program)}</span>
-                                  </div>
-                                </div>
-                                <div className="slot-request-form-field">
-                                  <label htmlFor="requestMessage" className="slot-request-form-label">
-                                    Message for your coach <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span>
-                                  </label>
-                                  <textarea
-                                    id="requestMessage"
-                                    className="slot-request-message-input"
-                                    placeholder="e.g. I prefer morning sessions, or any day after 3pm works for me…"
-                                    value={requestMessage}
-                                    onChange={(e) => setRequestMessage(e.target.value)}
-                                    rows={3}
-                                  />
-                                </div>
-                                <div className="slot-request-form-actions">
-                                  <button
-                                    type="button"
-                                    className="btn btn-ghost"
-                                    onClick={() => setShowRequestForm(false)}
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn-request-session"
-                                    onClick={handleSlotRequest}
-                                    disabled={requestSubmitting}
-                                  >
-                                    {requestSubmitting ? "Sending…" : "Send Request →"}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="slot-request-success">
-                            <div className="slot-request-success-icon">✅</div>
-                            <h4 className="slot-request-success-title">Request Sent!</h4>
-                            <p className="slot-request-success-desc">
-                              Your session request has been sent to <strong>{selectedCoach.name}</strong>.
-                              You'll receive a confirmation email shortly, and your coach will reach out with available times.
-                            </p>
-                            <div className="slot-request-success-status">
-                              <span className="slot-request-status-pill pending">⏳ Pending</span>
-                              <span className="slot-request-success-note">Your coach will review this request</span>
-                            </div>
-                            <button
-                              type="button"
-                              className="btn btn-ghost"
-                              style={{ marginTop: 16 }}
-                              onClick={resetForm}
-                            >
-                              ← Start Over
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedCoach && !slotsLoading && coachSlots.length > 0 && (
-                      <div className="schedule-grid">
-                        {coachSlots.map((slot) => {
-                          const { dateStr, timeStr } = formatSlotTime(slot);
-                          return (
-                            <div
-                              key={slot._id}
-                              className={`time-slot ${selectedSlot?._id === slot._id ? "selected" : ""}`}
-                              onClick={() => selectSlot(slot)}
-                            >
-                              <div className="slot-day">{dateStr}</div>
-                              <div className="slot-time">{timeStr}</div>
-                              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
-                                {slot.title}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <span className="field-error">{errors.slotError}</span>
-                  </div>
-
-                  <div className="form-nav">
-                    <button type="button" className="btn btn-ghost" onClick={handleBackStep}>
-                      ← Back
-                    </button>
+          <div className="uw-booking-card">
+            {step === 1 && (
+              <div className="uw-form-panel">
+                <h3>Step 1: Choose coaching service</h3>
+                <div className="uw-choice-list">
+                  {programs.map((program) => (
                     <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleSubmit}
-                      disabled={isSubmitting || !selectedCoach || !selectedSlot}
+                      key={program.id}
+                      className={selectedProgram === program.id ? "selected" : ""}
+                      onClick={() => setSelectedProgram(program.id)}
                     >
-                      {isSubmitting ? "Booking…" : "Confirm & Book →"}
+                      <strong>{program.title}</strong>
+                      <span>{program.duration}</span>
                     </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* ── Booking Summary ── */
-              <div className="booking-summary">
-                <div className="summary-icon">🎉</div>
-                <h3>You're All Set!</h3>
-                <p className="summary-subtitle">Here's a recap of your coaching booking:</p>
-                <div className="summary-details">
-                  {[
-                    { key: "Name", val: bookingData?.name },
-                    { key: "Program", val: bookingData?.program },
-                    { key: "Coach", val: bookingData?.coach },
-                    { key: "Session Slot", val: bookingData?.slot },
-                    { key: "Coach Email", val: bookingData?.coachEmail },
-                    { key: "Coach Phone", val: bookingData?.coachPhone || "—" },
-                    { key: "Format", val: "1-on-1 Video Call" },
-                  ].map(({ key, val }) => (
-                    <div key={key} className="summary-row">
-                      <span className="summary-key">{key}</span>
-                      <span className="summary-val">{val}</span>
-                    </div>
                   ))}
                 </div>
-                <p className="summary-note">
-                  A confirmation email will be sent to your inbox. Your coach will reach out
-                  within 24 hours to confirm the session details.
+                <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="uw-form-panel">
+                <h3>Step 2: Choose your coach</h3>
+                <label className="uw-radio">
+                  <input
+                    type="radio"
+                    checked={coachChoice === "assign"}
+                    onChange={() => {
+                      setCoachChoice("assign");
+                      setAssignedCoach(null);
+                    }}
+                  />
+                  Assign me the best coach
+                </label>
+                <label className="uw-radio">
+                  <input
+                    type="radio"
+                    checked={coachChoice === "choose"}
+                    onChange={() => setCoachChoice("choose")}
+                  />
+                  I want to choose
+                </label>
+                {coachChoice === "choose" && (
+                  <select value={selectedCoachId} onChange={(event) => setSelectedCoachId(event.target.value)}>
+                    <option value="">Select coach</option>
+                    {eligibleCoaches.map((coach) => (
+                      <option key={coach._id} value={coach._id}>{coach.name}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="uw-form-actions">
+                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(1)}>Back</button>
+                  <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="uw-form-panel">
+                <h3>Step 3: Choose available time slot</h3>
+                {selectedCoach && <p className="uw-assigned">Coach: {selectedCoach.name}</p>}
+                <div className="uw-slot-grid">
+                  {slotOptions.map((slot) => (
+                    <button
+                      key={slot.value}
+                      className={selectedSlot === slot.value ? "selected" : ""}
+                      onClick={() => setSelectedSlot(slot.value)}
+                    >
+                      {slot.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="uw-form-grid">
+                  <label>Preferred Date<input type="date" value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} /></label>
+                  <label>Preferred Time<input type="time" value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} /></label>
+                </div>
+                <div className="uw-form-actions">
+                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(2)}>Back</button>
+                  <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="uw-form-panel">
+                <h3>Step 4: Submit details</h3>
+                <div className="uw-form-grid">
+                  <label>Full Name<input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></label>
+                  <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+                  <label>Phone Number<input value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} /></label>
+                  <label>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label>
+                  <label>Coaching Type<select value={form.coachingType} onChange={(e) => setForm({ ...form, coachingType: e.target.value })}><option>Discovery call</option><option>Individual Executive Coaching</option><option>Group Executive Coaching</option></select></label>
+                  <label className="wide">Top Three Coaching Goals<textarea rows={4} placeholder="Confidence, boundaries, boardroom influence" value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} /></label>
+                </div>
+                <div className="uw-form-actions">
+                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(3)}>Back</button>
+                  <button className="uw-btn uw-btn-primary" onClick={submitBooking} disabled={submitting}>{submitting ? "Submitting..." : "Submit booking"}</button>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="uw-confirmation">
+                <span>Confirmed</span>
+                <h3>Your discovery call request has been received.</h3>
+                <p>
+                  We will send booking confirmation, approval updates, and any
+                  reschedule notices by email. WhatsApp notifications are
+                  structured for future activation.
                 </p>
-                <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                  <button className="btn btn-primary" onClick={resetForm}>
-                    Book Another Session
-                  </button>
-                  <button className="btn btn-ghost" onClick={downloadSummary}>
-                    ⬇ Download Summary
-                  </button>
-                </div>
+                <button className="uw-btn uw-btn-primary" onClick={() => setStep(1)}>Book another call</button>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* ── My Sessions Tracker ───────────────────── */}
-      <section id="my-sessions" className="section form-section" style={{ background: "var(--clr-bg-alt, #f8f6f2)" }}>
-        <div className="container">
-          <div className="section-header">
-            <span className="section-label">Your Sessions</span>
-            <h2 className="section-title">Track Your <em>Bookings & Requests</em></h2>
-            <p className="section-sub">
-              Enter your email to view confirmed bookings, pending requests, and declined requests.
-            </p>
+      <section id="testimonials" className="uw-section">
+        <div className="uw-container">
+          <div className="uw-section-head">
+            <span className="uw-kicker">Testimonials</span>
+            <h2>Trusted by leaders doing meaningful work.</h2>
           </div>
-          <div className="form-wrapper" style={{ maxWidth: 900 }}>
-            <div className="form-row" style={{ marginBottom: 20 }}>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label htmlFor="trackerEmail">Email Address</label>
-                <input
-                  type="email"
-                  id="trackerEmail"
-                  placeholder="you@example.com"
-                  value={trackerEmail}
-                  onChange={(e) => setTrackerEmail(e.target.value)}
-                />
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end" }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => loadUserSessions(trackerEmail)}
-                  disabled={trackerLoading}
-                >
-                  {trackerLoading ? "Loading…" : "View My Sessions"}
-                </button>
-              </div>
-            </div>
-
-            {trackerLoaded && (
-              <>
-                <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-                  {[
-                    { id: "bookings" as const, label: `Bookings (${userBookings.length})` },
-                    { id: "requests" as const, label: `Pending Requests (${pendingUserRequests.length})` },
-                    { id: "rejected" as const, label: `Rejected (${rejectedUserRequests.length})` },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      className={`btn ${trackerTab === tab.id ? "btn-primary" : "btn-ghost"}`}
-                      onClick={() => setTrackerTab(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {trackerTab === "bookings" && (
-                  userBookings.length === 0 ? (
-                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
-                      No confirmed bookings yet. Book a session or wait for your coach to approve a request.
-                    </p>
-                  ) : (
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {userBookings.map((booking) => (
-                        <div key={booking._id} style={{ padding: "20px 24px", border: "1px solid var(--clr-border)", borderLeft: "5px solid var(--clr-accent)", borderRadius: 12, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                          <strong style={{ fontSize: 16, color: "var(--clr-ink)" }}>{booking.programName}</strong> <span style={{ color: "var(--clr-ink-soft)", fontSize: 14 }}>with {booking.coachName || "your coach"}</span>
-                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--clr-accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                            <span>📅</span> {booking.bookingTime}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-
-                {trackerTab === "requests" && (
-                  pendingUserRequests.length === 0 ? (
-                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
-                      No pending session requests.
-                    </p>
-                  ) : (
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {pendingUserRequests.map((request) => (
-                        <div key={request._id} style={{ padding: "20px 24px", border: "1px solid var(--clr-border)", borderLeft: "5px solid var(--clr-gold)", borderRadius: 12, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                          <strong style={{ fontSize: 16, color: "var(--clr-ink)" }}>{request.programName}</strong> <span style={{ color: "var(--clr-ink-soft)", fontSize: 14 }}>with {request.coachName}</span>
-                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--clr-gold)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                            <span>⏳</span> Awaiting coach approval
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-
-                {trackerTab === "rejected" && (
-                  rejectedUserRequests.length === 0 ? (
-                    <p style={{ color: "#64748b", textAlign: "center", padding: "24px 0" }}>
-                      No rejected requests.
-                    </p>
-                  ) : (
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {rejectedUserRequests.map((request) => (
-                        <div key={request._id} style={{ padding: "20px 24px", border: "1px solid #fecaca", borderLeft: "5px solid #ef4444", borderRadius: 12, background: "#fff5f5", boxShadow: "0 2px 8px rgba(239,68,68,0.02)" }}>
-                          <strong style={{ fontSize: 16, color: "#7f1d1d" }}>{request.programName}</strong> <span style={{ color: "#991b1b", fontSize: 14 }}>with {request.coachName}</span>
-                          <p style={{ margin: "8px 0 0", fontSize: 14, color: "#ef4444", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                            <span>❌</span> Request declined — check your email for details
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-              </>
-            )}
+          <div className="uw-testimonial-grid">
+            {testimonials.map((testimonial) => (
+              <article className="uw-testimonial" key={testimonial.name}>
+                <p>"{testimonial.text}"</p>
+                <strong>{testimonial.name}</strong>
+                <span>{testimonial.role}</span>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── Testimonials ──────────────────────────── */}
-      <section id="testimonials" className="section testimonials-section">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-label">Client Stories</span>
-            <h2 className="section-title">What Our <em>Clients Say</em></h2>
+      <section id="contact" className="uw-section uw-contact">
+        <div className="uw-container uw-contact-grid">
+          <div>
+            <span className="uw-kicker">Contact us</span>
+            <h2>Start the conversation.</h2>
+            <p>Tell us what you are navigating and the kind of leadership support you need.</p>
           </div>
-          <div className="testimonials-slider" ref={containerRef}>
-            <div className="testimonials-track" ref={trackRef}>
-              {testimonials.map((t, idx) => (
-                <article key={idx} className="testimonial-card">
-                  <div className="testimonial-quote">"</div>
-                  <p className="testimonial-text">{t.text}</p>
-                  <div className="testimonial-author">
-                    <div className="testimonial-avatar">{getInitials(t.name)}</div>
-                    <div>
-                      <p className="testimonial-name">{t.name}</p>
-                      <p className="testimonial-role">{t.role}</p>
-                    </div>
-                    <div className="testimonial-stars">{"★".repeat(t.rating)}</div>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <div className="slider-controls">
-              <button className="slider-btn" onClick={prevSlide}>←</button>
-              <div className="slider-dots">
-                {Array.from({ length: Math.max(1, testimonials.length - visibleCards + 1) }).map(
-                  (_, idx) => (
-                    <button
-                      key={idx}
-                      className={`slider-dot ${currentSlide === idx ? "active" : ""}`}
-                      onClick={() => goToSlide(idx)}
-                    />
-                  )
-                )}
-              </div>
-              <button className="slider-btn" onClick={nextSlide}>→</button>
-            </div>
-          </div>
+          <form
+            className="uw-contact-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              showToast("Thank you. The Unwantra team will follow up by email.", "success");
+              event.currentTarget.reset();
+            }}
+          >
+            <input name="name" placeholder="Name" required />
+            <input name="email" type="email" placeholder="Email" required />
+            <input name="phone" placeholder="Phone Number" required />
+            <input name="interest" placeholder="Coaching Interest" required />
+            <textarea name="goals" placeholder="Goals" rows={5} required />
+            <button className="uw-btn uw-btn-primary" type="submit">Send message</button>
+          </form>
         </div>
       </section>
-
-      {/* ── Contact ───────────────────────────────── */}
-      <ContactForm showToast={showToast} />
-
-      {/* ── Coach Profile Modal ───────────────────── */}
-      <CoachProfileModal
-        coach={modalCoach}
-        getInitials={getInitials}
-        getProgramLabel={getProgramLabel}
-        renderStars={renderStars}
-        onClose={() => setModalCoach(null)}
-        onBook={(coach) => {
-          setModalCoach(null);
-          scrollToForm(coach.specialization);
-        }}
-      />
     </>
   );
 };
