@@ -5,42 +5,60 @@ import type {
 } from "../types/Bookings.js";
 
 // bookings created by coach
-let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>({
-  imageUrl: { type: String, required: false },
-  userId: { type: String, required: false },
-  coachId: { type: String, required: true },
-  coachName: { type: String, required: true },
-  coachEmail: { type: String, required: false },
-  programName: { type: String, required: true },
-  title: { type: String, required: true },
-  bookingDate: { type: Date, required: true },
-  bookingEndDate: { type: Date, required: true },
-  status: {
-    type: String,
-    enum: ["open", "booked", "cancelled"],
-    default: "open",
+let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>(
+  {
+    imageUrl: { type: String, required: false },
+    userId: { type: String, required: false },
+    coachId: { type: String, required: true, index: true },
+    coachName: { type: String, required: true },
+    coachEmail: { type: String, required: false, index: true },
+    programName: { type: String, required: true, index: true },
+    title: { type: String, required: true },
+    bookingDate: { type: Date, required: true, index: true },
+    bookingEndDate: { type: Date, required: true },
+    status: {
+      type: String,
+      enum: ["open", "booked", "cancelled"],
+      default: "open",
+      index: true,
+    },
   },
-});
+  { timestamps: true },
+);
+BookingsCreatedByCoach.index({ coachId: 1, bookingDate: 1 }, { unique: true });
+
 // bookings sessions made by users
-let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>({
-  coachId: { type: String, required: true },
-  coachName: { type: String, required: false },
-  coachEmail: { type: String, required: false },
-  coachPhone: { type: String, required: false },
-  email: { type: String, required: true },
-  fullName: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
-  programName: { type: String, required: true },
-  bookingTime: { type: String, required: true },
-});
+let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>(
+  {
+    coachId: { type: String, required: true, index: true },
+    coachName: { type: String, required: false },
+    coachEmail: { type: String, required: false },
+    coachPhone: { type: String, required: false },
+    email: { type: String, required: true, index: true },
+    fullName: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    country: { type: String, required: false },
+    goals: [{ type: String }],
+    coachingType: { type: String, required: false },
+    programName: { type: String, required: true, index: true },
+    bookingTime: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "rescheduled", "cancelled"],
+      default: "pending",
+    },
+  },
+  { timestamps: true },
+);
 // models
 let BookingsCreatedModel =
-  mongoose.model<BookingsInterface>("coach_bookings", BookingsCreatedByCoach) ||
-  (mongoose.models.coach_bookings as Model<BookingsInterface>);
+  (mongoose.models.coach_bookings as Model<BookingsInterface>) ||
+  mongoose.model<BookingsInterface>("coach_bookings", BookingsCreatedByCoach);
 //
 let BookingsSessionsModel =
+  (mongoose.models.booking_sessions as Model<BookingsSessionsInterface>) ||
   mongoose.model<BookingsSessionsInterface>(
     "booking_sessions",
     BookingsSessions,
-  ) || (mongoose.models.booking_sessions as Model<BookingsSessionsInterface>);
+  );
 export { BookingsCreatedModel, BookingsSessionsModel };

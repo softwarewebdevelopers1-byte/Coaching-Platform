@@ -63,6 +63,14 @@ router.post("/login", async (req, res): Promise<void> => {
       role: account.role,
       status: account.status,
       programName: account.programName,
+      bio: account.bio,
+      experience: account.experience,
+      languages: account.languages,
+      expertise: account.expertise,
+      photo: account.photo,
+      availabilitySummary: account.availabilitySummary,
+      currentWorkload: account.currentWorkload,
+      maxWorkload: account.maxWorkload,
     },
   });
 });
@@ -134,7 +142,22 @@ router.get("/", async (req, res): Promise<void> => {
 });
 
 router.post("/", async (req, res): Promise<void> => {
-  const { fullName, email, phone, role, status, programName, password } = req.body;
+  const {
+    fullName,
+    email,
+    phone,
+    role,
+    status,
+    programName,
+    password,
+    bio,
+    experience,
+    languages,
+    expertise,
+    photo,
+    availabilitySummary,
+    maxWorkload,
+  } = req.body;
 
   if (!fullName || !email || !role) {
     res.status(400).json({ message: "Full name, email, and role are required" });
@@ -155,6 +178,13 @@ router.post("/", async (req, res): Promise<void> => {
     role,
     status: status || "active",
     programName,
+    bio,
+    experience,
+    languages,
+    expertise,
+    photo,
+    availabilitySummary,
+    maxWorkload,
   };
 
   if (password) {
@@ -171,13 +201,33 @@ router.post("/", async (req, res): Promise<void> => {
 });
 
 router.put("/:id", async (req, res): Promise<void> => {
-  const { fullName, email, phone, programName, password } = req.body;
+  const {
+    fullName,
+    email,
+    phone,
+    programName,
+    password,
+    bio,
+    experience,
+    languages,
+    expertise,
+    photo,
+    availabilitySummary,
+    maxWorkload,
+  } = req.body;
   const update: Record<string, unknown> = {};
 
   if (fullName !== undefined) update.fullName = fullName;
   if (email !== undefined) update.email = email;
   if (phone !== undefined) update.phone = phone;
   if (programName !== undefined) update.programName = programName;
+  if (bio !== undefined) update.bio = bio;
+  if (experience !== undefined) update.experience = experience;
+  if (languages !== undefined) update.languages = languages;
+  if (expertise !== undefined) update.expertise = expertise;
+  if (photo !== undefined) update.photo = photo;
+  if (availabilitySummary !== undefined) update.availabilitySummary = availabilitySummary;
+  if (maxWorkload !== undefined) update.maxWorkload = maxWorkload;
 
   if (password) {
     update.password = await bcrypt.hash(password, 10);
@@ -263,7 +313,19 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
     return;
   }
 
-  const { fullName, phone, programName, password } = req.body;
+  const {
+    fullName,
+    phone,
+    programName,
+    password,
+    bio,
+    experience,
+    languages,
+    expertise,
+    photo,
+    availabilitySummary,
+    maxWorkload,
+  } = req.body;
   if (!fullName) {
     res.status(400).json({ message: "Full name is required" });
     return;
@@ -278,6 +340,13 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
       email: invite.email,
       phone,
       programName,
+      bio,
+      experience,
+      languages,
+      expertise,
+      photo,
+      availabilitySummary,
+      maxWorkload,
       password: hashedPassword,
       role: "coach",
       status: "active",

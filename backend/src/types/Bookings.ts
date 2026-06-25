@@ -18,7 +18,11 @@ interface BookingsSessionsInterface {
   email: string;
   fullName: string;
   phoneNumber: string;
+  country?: string;
+  goals?: string[];
+  coachingType?: string;
   programName: string;
   bookingTime: string;
+  status?: "pending" | "approved" | "rejected" | "rescheduled" | "cancelled";
 }
 export type { BookingsInterface, BookingsSessionsInterface };

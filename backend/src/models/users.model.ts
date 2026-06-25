@@ -8,6 +8,14 @@ interface UserAccountInterface {
   status: "active" | "disabled";
   programName?: string;
   password?: string;
+  bio?: string;
+  experience?: number;
+  languages?: string[];
+  expertise?: string[];
+  photo?: string;
+  availabilitySummary?: string;
+  currentWorkload?: number;
+  maxWorkload?: number;
 }
 
 interface CoachInviteInterface {
@@ -35,6 +43,14 @@ const UserAccountSchema = new mongoose.Schema<UserAccountInterface>(
       default: "active",
     },
     programName: { type: String, required: false },
+    bio: { type: String, required: false },
+    experience: { type: Number, required: false, default: 0 },
+    languages: [{ type: String }],
+    expertise: [{ type: String }],
+    photo: { type: String, required: false },
+    availabilitySummary: { type: String, required: false },
+    currentWorkload: { type: Number, default: 0 },
+    maxWorkload: { type: Number, default: 10 },
   },
   { timestamps: true },
 );
