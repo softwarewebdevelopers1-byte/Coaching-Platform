@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Booking, Coach, CoachSlot, Program, Testimonial } from "../types";
+import { coachMatchesProgram } from "../utils/programs";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
@@ -24,7 +25,7 @@ const fallbackCoaches: Coach[] = [
     experience: 14,
     languages: ["English", "Kiswahili"],
     availabilitySummary: "Tue and Thu mornings",
-    photo: "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=600&q=80",
+    photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&q=80",
     rating: 5,
     currentWorkload: 5,
     maxWorkload: 10,
@@ -40,7 +41,7 @@ const fallbackCoaches: Coach[] = [
     experience: 12,
     languages: ["English", "Igbo"],
     availabilitySummary: "Wed afternoons",
-    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&q=80",
+    photo: "https://images.unsplash.com/photo-1589156191108-c762ff4b96ab?w=600&q=80",
     rating: 5,
     currentWorkload: 3,
     maxWorkload: 8,
@@ -56,7 +57,7 @@ const fallbackCoaches: Coach[] = [
     experience: 16,
     languages: ["English", "Sesotho"],
     availabilitySummary: "Mon and Fri afternoons",
-    photo: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?w=600&q=80",
+    photo: "https://images.unsplash.com/photo-1592621385612-4d7129426394?w=600&q=80",
     rating: 4.9,
     currentWorkload: 7,
     maxWorkload: 12,
@@ -102,15 +103,17 @@ const MainContent: React.FC<MainContentProps> = ({
   const [requestSent, setRequestSent] = useState(false);
 
   const selectedProgramData = programs.find((program) => program.id === selectedProgram);
+  const getCoachProgramIds = (specialization = "") =>
+    specialization
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
   const eligibleCoaches = useMemo(
     () =>
-      coaches.filter(
-        (coach) =>
-          coach.specialization === selectedProgram ||
-          coach.specialization === selectedProgramData?.title,
-      ),
-    [coaches, selectedProgram, selectedProgramData],
+      coaches.filter((coach) => coachMatchesProgram(coach.specialization, selectedProgram)),
+    [coaches, selectedProgram],
   );
+  const hasCoachForSelectedProgram = eligibleCoaches.length > 0;
   const selectedCoach =
     assignedCoach || coaches.find((coach) => coach._id === selectedCoachId) || null;
 
@@ -189,7 +192,7 @@ const MainContent: React.FC<MainContentProps> = ({
           currentWorkload: data.coach.currentWorkload,
           maxWorkload: data.coach.maxWorkload,
         });
-        return;
+        return true;
       }
     } catch {
       // Local fallback below keeps the booking path usable offline.
@@ -201,12 +204,18 @@ const MainContent: React.FC<MainContentProps> = ({
       return loadA - loadB || (b.experience || 0) - (a.experience || 0);
     })[0];
     setAssignedCoach(best || null);
+    return !!best;
   };
 
   const next = async () => {
     if (step === 1 && !selectedProgram) return showToast("Choose a coaching service", "error");
+    if (step === 1 && !hasCoachForSelectedProgram) {
+      return showToast("No coach is currently available for this coaching program", "error", 5000);
+    }
     if (step === 2) {
-      if (coachChoice === "assign") await assignBestCoach();
+      if (coachChoice === "assign" && !(await assignBestCoach())) {
+        return showToast("No coach is currently available for this coaching program", "error", 5000);
+      }
       if (coachChoice === "choose" && !selectedCoachId) {
         return showToast("Choose a coach or select best-match assignment", "error");
       }
@@ -446,7 +455,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     onClick={() => {
                       setCoachChoice("choose");
                       setSelectedCoachId(coach._id);
-                      setSelectedProgram(coach.specialization || selectedProgram);
+                      setSelectedProgram(getCoachProgramIds(coach.specialization)[0] || selectedProgram);
                       document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
                     }}
                   >
@@ -497,25 +506,27 @@ const MainContent: React.FC<MainContentProps> = ({
             {step === 2 && (
               <div className="uw-form-panel">
                 <h3>Step 2: Choose your coach</h3>
-                <label className="uw-radio">
-                  <input
-                    type="radio"
-                    checked={coachChoice === "assign"}
-                    onChange={() => {
-                      setCoachChoice("assign");
-                      setAssignedCoach(null);
-                    }}
-                  />
-                  Assign me the best coach
-                </label>
-                <label className="uw-radio">
-                  <input
-                    type="radio"
-                    checked={coachChoice === "choose"}
-                    onChange={() => setCoachChoice("choose")}
-                  />
-                  I want to choose
-                </label>
+                <div className="uw-coach-choice-group">
+                  <label className="uw-radio">
+                    <input
+                      type="radio"
+                      checked={coachChoice === "assign"}
+                      onChange={() => {
+                        setCoachChoice("assign");
+                        setAssignedCoach(null);
+                      }}
+                    />
+                    <span>Assign me the best coach</span>
+                  </label>
+                  <label className="uw-radio">
+                    <input
+                      type="radio"
+                      checked={coachChoice === "choose"}
+                      onChange={() => setCoachChoice("choose")}
+                    />
+                    <span>I want to choose</span>
+                  </label>
+                </div>
                 {coachChoice === "choose" && (
                   <select value={selectedCoachId} onChange={(event) => setSelectedCoachId(event.target.value)}>
                     <option value="">Select coach</option>
@@ -746,3 +757,5 @@ const MainContent: React.FC<MainContentProps> = ({
 };
 
 export default MainContent;
+
+

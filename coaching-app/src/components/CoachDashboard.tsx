@@ -105,31 +105,10 @@ const StatusPill = ({ status }: { status: string }) => (
   </span>
 );
 
-/* ── Component ───────────────────────────────────────────────── */
-const PasswordVisibilityIcon = ({ hidden }: { hidden: boolean }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {hidden ? (
-      <>
-        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12a18.45 18.45 0 0 1 5.06-6.94" />
-        <path d="M9.9 4.24A10.7 10.7 0 0 1 12 4c5 0 9.27 3.11 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
-        <path d="M1 1l22 22" />
-      </>
-    ) : (
-      <>
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-        <circle cx="12" cy="12" r="3" />
-      </>
-    )}
-  </svg>
-);
-
 const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) => {
   const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CoachTab>("overview");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,8 +124,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     email: user?.email || "",
     phone: user?.phone || "",
     programName: user?.programName || programs[0]?.id || "",
-    password: "",
-    confirmPassword: "",
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -165,14 +142,34 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const coachEmail = user?.email || "";
   const coachPhone = user?.phone || "";
 
+  const getProgramIds = (value?: string) =>
+    (value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
   const getProgramLabel = (value: string) => {
     const program = programs.find((p) => p.id === value || p.title === value);
-    return program?.title || value || "—";
+    return program?.title || value || "-";
   };
 
-  const coachSlotPrograms = user?.programName
-    ? programs.filter((p) => p.id === user.programName || p.title === user.programName)
+  const getProgramSummary = (value?: string) => {
+    const labels = getProgramIds(value).map(getProgramLabel);
+    return labels.length ? labels.join(", ") : "Not set";
+  };
+
+  const coachProgramIds = getProgramIds(user?.programName);
+  const selectedProgramIds = getProgramIds(settingsForm.programName);
+  const coachSlotPrograms = coachProgramIds.length
+    ? programs.filter((p) => coachProgramIds.includes(p.id) || coachProgramIds.includes(p.title))
     : programs;
+
+  const setProgramEnabled = (programId: string, enabled: boolean) => {
+    const next = enabled
+      ? Array.from(new Set([...selectedProgramIds, programId]))
+      : selectedProgramIds.filter((id) => id !== programId);
+    setSettingsForm({ ...settingsForm, programName: next.join(",") });
+  };
 
   useEffect(() => {
     if (user) {
@@ -184,7 +181,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       }));
       setSlotForm((prev) => ({
         ...prev,
-        programName: user.programName || programs[0]?.id || "",
+        programName: getProgramIds(user.programName)[0] || programs[0]?.id || "",
       }));
     }
   }, [user, programs]);
@@ -247,8 +244,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       showToast("Please select a program", "error", 3000);
       return;
     }
-    if (user?.programName && slotForm.programName !== user.programName) {
-      showToast("Slots must be created for your configured coaching program", "error", 4000);
+    if (!coachSlotPrograms.some((program) => program.id === slotForm.programName)) {
+      showToast("Slots must be created for one of your configured coaching programs", "error", 4000);
       return;
     }
     if (!slotForm.bookingDate) {
@@ -287,7 +284,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     if (res.ok) {
       setSlotForm({
         title: "",
-        programName: user?.programName || programs[0]?.id || "",
+        programName: coachSlotPrograms[0]?.id || programs[0]?.id || "",
         bookingDate: "",
         bookingEndDate: "",
       });
@@ -403,16 +400,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       return;
     }
 
-    if (settingsForm.password && settingsForm.password !== settingsForm.confirmPassword) {
-      showToast("Passwords do not match", "error", 3000);
-      return;
-    }
-
-    if (settingsForm.password && settingsForm.password.length < 6) {
-      showToast("Password must be at least 6 characters", "error", 3000);
-      return;
-    }
-
     setIsSavingSettings(true);
     try {
       const payload: Record<string, string> = {
@@ -420,10 +407,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         phone: settingsForm.phone.trim(),
         programName: settingsForm.programName,
       };
-
-      if (settingsForm.password) {
-        payload.password = settingsForm.password;
-      }
 
       const res = await fetch(`${API_BASE_URL}/api/accounts/${coachId}`, {
         method: "PUT",
@@ -442,12 +425,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         phone: result.account.phone,
         programName: result.account.programName,
       });
-
-      setSettingsForm((prev) => ({
-        ...prev,
-        password: "",
-        confirmPassword: "",
-      }));
 
       showToast("Settings updated successfully", "success", 4000);
     } catch (error) {
@@ -472,7 +449,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     bookings: { title: "Client Bookings", subtitle: "All clients who booked sessions with you" },
     requests: { title: "Session Requests", subtitle: "Review and approve pending session requests from clients" },
     rejected: { title: "Rejected Requests", subtitle: "Session requests you have declined" },
-    settings: { title: "Account Settings", subtitle: "Update your contact details, password, and coaching program" },
+    settings: { title: "Account Settings", subtitle: "Update your contact details and coaching programs" },
   };
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -648,7 +625,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                     </div>
                     <div>
                       <p className="dashboard-detail-label">Coaching Program</p>
-                      <p className="dashboard-detail-value">{getProgramLabel(user?.programName || "")}</p>
+                      <p className="dashboard-detail-value">{getProgramSummary(user?.programName)}</p>
                     </div>
                     <div>
                       <p className="dashboard-detail-label">Role</p>
@@ -1071,56 +1048,19 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       placeholder="+1 555 000 0000"
                     />
                   </div>
-                  <div className="form-field">
-                    <label className="form-label">Coaching Program / Field</label>
-                    <select
-                      value={settingsForm.programName}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, programName: e.target.value })}
-                    >
-                      <option value="">Select Program</option>
+                  <div className="form-field dashboard-form-full">
+                    <label className="form-label">Coaching Programs Offered</label>
+                    <div className="program-checkbox-group">
                       {programs.map((p) => (
-                        <option key={p.id} value={p.id}>{p.title}</option>
+                        <label className="program-checkbox" key={p.id}>
+                          <input
+                            type="checkbox"
+                            checked={selectedProgramIds.includes(p.id)}
+                            onChange={(e) => setProgramEnabled(p.id, e.target.checked)}
+                          />
+                          <span>{p.title}</span>
+                        </label>
                       ))}
-                    </select>
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">New Password</label>
-                    <div className="password-input-wrapper">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        value={settingsForm.password}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
-                        placeholder="Leave blank to keep current password"
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle-btn"
-                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
-                        title={showNewPassword ? "Hide new password" : "Show new password"}
-                        onClick={() => setShowNewPassword((value) => !value)}
-                      >
-                        <PasswordVisibilityIcon hidden={showNewPassword} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Confirm New Password</label>
-                    <div className="password-input-wrapper">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={settingsForm.confirmPassword}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
-                        placeholder="Confirm new password"
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle-btn"
-                        aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
-                        title={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
-                        onClick={() => setShowConfirmPassword((value) => !value)}
-                      >
-                        <PasswordVisibilityIcon hidden={showConfirmPassword} />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1143,3 +1083,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 };
 
 export default CoachDashboard;
+
+
+
+
+

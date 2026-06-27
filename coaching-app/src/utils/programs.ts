@@ -1,11 +1,14 @@
 export const PROGRAMS = [
-  { id: "career", title: "Career Coaching" },
-  { id: "business", title: "Business Coaching" },
-  { id: "life", title: "Life Coaching" },
-  { id: "leadership", title: "Leadership Coaching" },
+  { id: "individual-executive", title: "Individual Executive Coaching" },
+  { id: "group-executive", title: "Group Executive Coaching" },
 ] as const;
 
 const normalize = (value: string) => value.trim().toLowerCase();
+const splitProgramValues = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const resolveProgram = (value: string) =>
   PROGRAMS.find(
@@ -17,6 +20,15 @@ const resolveProgram = (value: string) =>
 
 export const programsMatch = (a: string, b: string): boolean => {
   if (!a || !b) return false;
+  const valuesA = splitProgramValues(a);
+  const valuesB = splitProgramValues(b);
+
+  if (valuesA.length > 1 || valuesB.length > 1) {
+    return valuesA.some((valueA) =>
+      valuesB.some((valueB) => programsMatch(valueA, valueB)),
+    );
+  }
+
   if (normalize(a) === normalize(b)) return true;
 
   const programA = resolveProgram(a);

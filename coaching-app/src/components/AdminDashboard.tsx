@@ -17,6 +17,7 @@ type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 const COACH_PROGRAMS = [
   { id: "individual-executive", title: "Individual Executive Coaching" },
   { id: "group-executive", title: "Group Executive Coaching" },
+  { id: "individual-executive,group-executive", title: "Individual and Group Coaching" },
 ];
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
@@ -657,3 +658,4 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
 };
 
 export default AdminDashboard;
+
