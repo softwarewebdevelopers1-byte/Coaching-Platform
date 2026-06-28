@@ -20,7 +20,7 @@ export const PROGRAMS: Program[] = [
     tag: "One-to-one",
     description:
       "Private coaching for senior leaders who want to lead with courage, clarity, stronger boundaries, and values-based influence.",
-    duration: "12 sessions / 3 months",
+    duration: "",
     image:
       "/individual-coaching.jpg",
     color: "#D9A928",
@@ -41,7 +41,7 @@ export const PROGRAMS: Program[] = [
     tag: "Leadership cohorts",
     description:
       "Facilitated coaching cohorts for leadership teams and emerging executives who need trust, alignment, and shared leadership language.",
-    duration: "8 cohort sessions / 10 weeks",
+    duration: "",
     image:
       "/group-coaching.jpg",
     color: "#7F9A7A",
