@@ -25,7 +25,7 @@ export async function sendBookingConfirmationEmail(
 
   const payload: BrevoEmailPayload = {
     sender: {
-      name: "Apex Coaching",
+      name: "Unwantra Coaching",
       email: "softwarewebdevelopers1@gmail.com",
     },
     to: [{ email: booking.email, name: booking.fullName }],
