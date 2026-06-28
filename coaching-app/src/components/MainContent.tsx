@@ -25,7 +25,7 @@ const fallbackCoaches: Coach[] = [
     experience: 14,
     languages: ["English", "Kiswahili"],
     availabilitySummary: "Tue and Thu mornings",
-    photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&q=80",
+    photo: "/amina-wanjiru.jpg",
     rating: 5,
     currentWorkload: 5,
     maxWorkload: 10,
@@ -41,7 +41,7 @@ const fallbackCoaches: Coach[] = [
     experience: 12,
     languages: ["English", "Igbo"],
     availabilitySummary: "Wed afternoons",
-    photo: "https://images.unsplash.com/photo-1589156191108-c762ff4b96ab?w=600&q=80",
+    photo: "/zuri-okafor.jpg",
     rating: 5,
     currentWorkload: 3,
     maxWorkload: 8,
@@ -57,7 +57,7 @@ const fallbackCoaches: Coach[] = [
     experience: 16,
     languages: ["English", "Sesotho"],
     availabilitySummary: "Mon and Fri afternoons",
-    photo: "https://images.unsplash.com/photo-1592621385612-4d7129426394?w=600&q=80",
+    photo: "/naledi-mokoena.jpg",
     rating: 4.9,
     currentWorkload: 7,
     maxWorkload: 12,
@@ -757,5 +757,6 @@ const MainContent: React.FC<MainContentProps> = ({
 };
 
 export default MainContent;
+
 
 

@@ -22,7 +22,7 @@ export const PROGRAMS: Program[] = [
       "Private coaching for senior leaders who want to lead with courage, clarity, stronger boundaries, and values-based influence.",
     duration: "12 sessions / 3 months",
     image:
-      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=900&q=80",
+      "/individual-coaching.jpg",
     color: "#D9A928",
     benefits: [
       "Build executive presence and confidence",
@@ -43,7 +43,7 @@ export const PROGRAMS: Program[] = [
       "Facilitated coaching cohorts for leadership teams and emerging executives who need trust, alignment, and shared leadership language.",
     duration: "8 cohort sessions / 10 weeks",
     image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=900&q=80",
+      "/group-coaching.jpg",
     color: "#7F9A7A",
     benefits: [
       "Create shared clarity across leadership teams",
@@ -174,4 +174,5 @@ function App() {
 }
 
 export default App;
+
 
