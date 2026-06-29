@@ -21,17 +21,6 @@ const Hero: React.FC = () => (
           </a>
         </div>
       </div>
-      <aside className="uw-hero-panel" aria-label="Brand promise">
-        <p>Vision</p>
-        <strong>
-          Leaders leading with courage, clarity, and compassion.
-        </strong>
-        <div className="uw-values">
-          <span>Courage</span>
-          <span>Clarity</span>
-          <span>Connection</span>
-        </div>
-      </aside>
     </div>
   </section>
 );

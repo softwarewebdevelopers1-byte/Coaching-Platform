@@ -21,7 +21,11 @@ const fallbackCoaches: Coach[] = [
     phone: "+254 700 000 101",
     specialization: "individual-executive",
     bio: "Executive coach and former people leader supporting women executives, founders, and senior managers to strengthen voice, boundaries, and influence.",
-    expertise: ["Executive presence", "Courageous conversations", "Values-led leadership"],
+    expertise: [
+      "Executive presence",
+      "Courageous conversations",
+      "Values-led leadership",
+    ],
     experience: 14,
     languages: ["English", "Kiswahili"],
     availabilitySummary: "Tue and Thu mornings",
@@ -53,7 +57,11 @@ const fallbackCoaches: Coach[] = [
     phone: "+27 71 000 0303",
     specialization: "individual-executive",
     bio: "ICF-aligned coach helping senior leaders navigate transition, confidence, identity, and strategic communication with compassion and rigor.",
-    expertise: ["Leadership transition", "Confidence", "Strategic communication"],
+    expertise: [
+      "Leadership transition",
+      "Confidence",
+      "Strategic communication",
+    ],
     experience: 16,
     languages: ["English", "Sesotho"],
     availabilitySummary: "Mon and Fri afternoons",
@@ -98,11 +106,17 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // ── Slot-request state (used when coach has no open slots) ────────────────
   const [requestMode, setRequestMode] = useState(false);
-  const [slotRequestForm, setSlotRequestForm] = useState({ message: "", preferredDate: "", preferredTime: "" });
+  const [slotRequestForm, setSlotRequestForm] = useState({
+    message: "",
+    preferredDate: "",
+    preferredTime: "",
+  });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
 
-  const selectedProgramData = programs.find((program) => program.id === selectedProgram);
+  const selectedProgramData = programs.find(
+    (program) => program.id === selectedProgram,
+  );
   const getCoachProgramIds = (specialization = "") =>
     specialization
       .split(",")
@@ -110,17 +124,23 @@ const MainContent: React.FC<MainContentProps> = ({
       .filter(Boolean);
   const eligibleCoaches = useMemo(
     () =>
-      coaches.filter((coach) => coachMatchesProgram(coach.specialization, selectedProgram)),
+      coaches.filter((coach) =>
+        coachMatchesProgram(coach.specialization, selectedProgram),
+      ),
     [coaches, selectedProgram],
   );
   const hasCoachForSelectedProgram = eligibleCoaches.length > 0;
   const selectedCoach =
-    assignedCoach || coaches.find((coach) => coach._id === selectedCoachId) || null;
+    assignedCoach ||
+    coaches.find((coach) => coach._id === selectedCoachId) ||
+    null;
 
   useEffect(() => {
     const loadCoaches = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/accounts?role=coach&status=active`);
+        const res = await fetch(
+          `${API_BASE_URL}/api/accounts?role=coach&status=active`,
+        );
         if (!res.ok) return;
         const data = await res.json();
         const mapped = (data.accounts || []).map((account: any) => ({
@@ -156,7 +176,11 @@ const MainContent: React.FC<MainContentProps> = ({
         );
         if (!res.ok) return;
         const data = await res.json();
-        setSlots((data.slots || []).filter((slot: CoachSlot) => slot.status === "open"));
+        setSlots(
+          (data.slots || []).filter(
+            (slot: CoachSlot) => slot.status === "open",
+          ),
+        );
       } catch {
         setSlots([]);
       }
@@ -173,7 +197,10 @@ const MainContent: React.FC<MainContentProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           programName: selectedProgram,
-          goals: form.goals.split(",").map((goal) => goal.trim()).filter(Boolean),
+          goals: form.goals
+            .split(",")
+            .map((goal) => goal.trim())
+            .filter(Boolean),
         }),
       });
       if (res.ok) {
@@ -208,27 +235,53 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   const next = async () => {
-    if (step === 1 && !selectedProgram) return showToast("Choose a coaching service", "error");
+    if (step === 1 && !selectedProgram)
+      return showToast("Choose a coaching service", "error");
     if (step === 1 && !hasCoachForSelectedProgram) {
-      return showToast("No coach is currently available for this coaching program", "error", 5000);
+      return showToast(
+        "No coach is currently available for this coaching program",
+        "error",
+        5000,
+      );
     }
     if (step === 2) {
       if (coachChoice === "assign" && !(await assignBestCoach())) {
-        return showToast("No coach is currently available for this coaching program", "error", 5000);
+        return showToast(
+          "No coach is currently available for this coaching program",
+          "error",
+          5000,
+        );
       }
       if (coachChoice === "choose" && !selectedCoachId) {
-        return showToast("Choose a coach or select best-match assignment", "error");
+        return showToast(
+          "Choose a coach or select best-match assignment",
+          "error",
+        );
       }
     }
     // In request mode (no open slots) we skip the slot-selection requirement
-    if (step === 3 && !requestMode && !selectedSlot && (!form.preferredDate || !form.preferredTime)) {
-      return showToast("Choose a time slot or enter a preferred date and time", "error");
+    if (
+      step === 3 &&
+      !requestMode &&
+      !selectedSlot &&
+      (!form.preferredDate || !form.preferredTime)
+    ) {
+      return showToast(
+        "Choose a time slot or enter a preferred date and time",
+        "error",
+      );
     }
     setStep((value) => Math.min(value + 1, 5));
   };
 
   const submitBooking = async () => {
-    if (!form.fullName || !form.email || !form.phoneNumber || !form.country || !form.goals) {
+    if (
+      !form.fullName ||
+      !form.email ||
+      !form.phoneNumber ||
+      !form.country ||
+      !form.goals
+    ) {
       showToast("Complete all required details before submitting", "error");
       return;
     }
@@ -252,7 +305,11 @@ const MainContent: React.FC<MainContentProps> = ({
           coachPhone: selectedCoach.phone,
           bookingTime: slotLabel,
           slotId: slots.find((slot) => slot.bookingDate === selectedSlot)?._id,
-          goals: form.goals.split(",").map((goal) => goal.trim()).filter(Boolean).slice(0, 3),
+          goals: form.goals
+            .split(",")
+            .map((goal) => goal.trim())
+            .filter(Boolean)
+            .slice(0, 3),
         }),
       });
       if (!response.ok) {
@@ -271,10 +328,18 @@ const MainContent: React.FC<MainContentProps> = ({
         duration: selectedProgramData.duration,
         bookedAt: new Date().toLocaleString(),
       });
-      showToast("Discovery call request received. Confirmation sent by email.", "success", 5000);
+      showToast(
+        "Discovery call request received. Confirmation sent by email.",
+        "success",
+        5000,
+      );
       setStep(5);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Could not submit booking", "error", 6000);
+      showToast(
+        error instanceof Error ? error.message : "Could not submit booking",
+        "error",
+        6000,
+      );
     } finally {
       setSubmitting(false);
     }
@@ -306,7 +371,9 @@ const MainContent: React.FC<MainContentProps> = ({
             slotRequestForm.preferredDate
               ? `Preferred date: ${new Date(slotRequestForm.preferredDate).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}`
               : "",
-            slotRequestForm.preferredTime ? `Preferred time: ${slotRequestForm.preferredTime}` : "",
+            slotRequestForm.preferredTime
+              ? `Preferred time: ${slotRequestForm.preferredTime}`
+              : "",
           ]
             .filter(Boolean)
             .join(" | "),
@@ -319,10 +386,20 @@ const MainContent: React.FC<MainContentProps> = ({
       }
 
       setRequestSent(true);
-      showToast("Slot request sent! You'll be notified by email when the coach responds.", "success", 6000);
+      showToast(
+        "Slot request sent! You'll be notified by email when the coach responds.",
+        "success",
+        6000,
+      );
       setStep(5);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Could not submit slot request", "error", 6000);
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Could not submit slot request",
+        "error",
+        6000,
+      );
     } finally {
       setSubmittingRequest(false);
     }
@@ -354,33 +431,14 @@ const MainContent: React.FC<MainContentProps> = ({
 
   return (
     <>
-      <section id="mission" className="uw-section uw-band">
-        <div className="uw-container uw-statement-grid">
-          <article>
-            <span className="uw-kicker">Mission</span>
-            <h2>Empowering leaders to own their voice.</h2>
-            <p>
-              Unwantra Coaching strengthens confidence, boundaries, influence,
-              and values-based leadership through transformational executive coaching.
-            </p>
-          </article>
-          <article>
-            <span className="uw-kicker">Why we exist</span>
-            <h2>Because leadership should feel both brave and whole.</h2>
-            <p>
-              We exist for leaders who are done performing confidence and ready
-              to lead from clarity, compassion, and deeply held values.
-            </p>
-          </article>
-        </div>
-      </section>
-
       <section id="services" className="uw-section">
         <div className="uw-container">
           <div className="uw-section-head">
             <span className="uw-kicker">Coaching services</span>
             <h2>Programs for executive growth.</h2>
-            <p>Focused support for individual leaders and leadership cohorts.</p>
+            <p>
+              Focused support for individual leaders and leadership cohorts.
+            </p>
           </div>
           <div className="uw-card-grid">
             {programs.map((program) => (
@@ -391,14 +449,24 @@ const MainContent: React.FC<MainContentProps> = ({
                   <h3>{program.title}</h3>
                   <p>{program.description}</p>
                   <h4>Benefits</h4>
-                  <ul>{program.benefits?.map((item) => <li key={item}>{item}</li>)}</ul>
+                  <ul>
+                    {program.benefits?.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
                   <h4>Outcomes</h4>
-                  <ul>{program.outcomes?.map((item) => <li key={item}>{item}</li>)}</ul>
+                  <ul>
+                    {program.outcomes?.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
                   <button
                     className="uw-btn uw-btn-primary"
                     onClick={() => {
                       setSelectedProgram(program.id);
-                      document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
+                      document
+                        .getElementById("discovery-call")
+                        ?.scrollIntoView({ behavior: "smooth" });
                     }}
                   >
                     Start with this service
@@ -409,28 +477,6 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </section>
-
-      <section id="story" className="uw-section uw-story">
-        <div className="uw-container uw-story-grid">
-          <div>
-            <span className="uw-kicker">Our story</span>
-            <h2>Created for leaders whose impact is bigger than a title.</h2>
-          </div>
-          <div>
-            <p>
-              Unwantra Coaching was created to offer premium, African-led and
-              women-led coaching for executives navigating visibility,
-              responsibility, transition, and purpose.
-            </p>
-            <p>
-              Our philosophy blends rigorous coaching practice with cultural
-              intelligence, reflective inquiry, and practical leadership tools.
-              We honor ambition without asking leaders to abandon humanity.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <section id="coaches" className="uw-section">
         <div className="uw-container">
           <div className="uw-section-head">
@@ -440,23 +486,52 @@ const MainContent: React.FC<MainContentProps> = ({
           <div className="uw-coach-grid">
             {coaches.map((coach) => (
               <article className="uw-coach-card" key={coach._id}>
-                <img src={coach.photo || fallbackCoaches[0].photo} alt={coach.name} />
+                <img
+                  src={coach.photo || fallbackCoaches[0].photo}
+                  alt={coach.name}
+                />
                 <div>
                   <h3>{coach.name}</h3>
-                  <p>{coach.bio || "Executive coach focused on clarity, courage, and connection."}</p>
+                  <p>
+                    {coach.bio ||
+                      "Executive coach focused on clarity, courage, and connection."}
+                  </p>
                   <dl>
-                    <div><dt>Expertise</dt><dd>{(coach.expertise || ["Executive leadership"]).join(", ")}</dd></div>
-                    <div><dt>Experience</dt><dd>{coach.experience || 10}+ years</dd></div>
-                    <div><dt>Languages</dt><dd>{(coach.languages || ["English"]).join(", ")}</dd></div>
-                    <div><dt>Availability</dt><dd>{coach.availabilitySummary || "By discovery call"}</dd></div>
+                    <div>
+                      <dt>Expertise</dt>
+                      <dd>
+                        {(coach.expertise || ["Executive leadership"]).join(
+                          ", ",
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Experience</dt>
+                      <dd>{coach.experience || 10}+ years</dd>
+                    </div>
+                    <div>
+                      <dt>Languages</dt>
+                      <dd>{(coach.languages || ["English"]).join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Availability</dt>
+                      <dd>
+                        {coach.availabilitySummary || "By discovery call"}
+                      </dd>
+                    </div>
                   </dl>
                   <button
                     className="uw-btn uw-btn-secondary"
                     onClick={() => {
                       setCoachChoice("choose");
                       setSelectedCoachId(coach._id);
-                      setSelectedProgram(getCoachProgramIds(coach.specialization)[0] || selectedProgram);
-                      document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
+                      setSelectedProgram(
+                        getCoachProgramIds(coach.specialization)[0] ||
+                          selectedProgram,
+                      );
+                      document
+                        .getElementById("discovery-call")
+                        ?.scrollIntoView({ behavior: "smooth" });
                     }}
                   >
                     Book session
@@ -478,8 +553,16 @@ const MainContent: React.FC<MainContentProps> = ({
               the best fit, then submit your goals for confirmation.
             </p>
             <ol className="uw-steps">
-              {["Choose service", "Choose coach", "Choose time", "Submit details", "Confirmation"].map((item, index) => (
-                <li className={step === index + 1 ? "active" : ""} key={item}>{item}</li>
+              {[
+                "Choose service",
+                "Choose coach",
+                "Choose time",
+                "Submit details",
+                "Confirmation",
+              ].map((item, index) => (
+                <li className={step === index + 1 ? "active" : ""} key={item}>
+                  {item}
+                </li>
               ))}
             </ol>
           </div>
@@ -491,7 +574,9 @@ const MainContent: React.FC<MainContentProps> = ({
                   {programs.map((program) => (
                     <button
                       key={program.id}
-                      className={selectedProgram === program.id ? "selected" : ""}
+                      className={
+                        selectedProgram === program.id ? "selected" : ""
+                      }
                       onClick={() => setSelectedProgram(program.id)}
                     >
                       <strong>{program.title}</strong>
@@ -499,7 +584,9 @@ const MainContent: React.FC<MainContentProps> = ({
                     </button>
                   ))}
                 </div>
-                <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+                <button className="uw-btn uw-btn-primary" onClick={next}>
+                  Continue
+                </button>
               </div>
             )}
 
@@ -528,16 +615,28 @@ const MainContent: React.FC<MainContentProps> = ({
                   </label>
                 </div>
                 {coachChoice === "choose" && (
-                  <select value={selectedCoachId} onChange={(event) => setSelectedCoachId(event.target.value)}>
+                  <select
+                    value={selectedCoachId}
+                    onChange={(event) => setSelectedCoachId(event.target.value)}
+                  >
                     <option value="">Select coach</option>
                     {eligibleCoaches.map((coach) => (
-                      <option key={coach._id} value={coach._id}>{coach.name}</option>
+                      <option key={coach._id} value={coach._id}>
+                        {coach.name}
+                      </option>
                     ))}
                   </select>
                 )}
                 <div className="uw-form-actions">
-                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(1)}>Back</button>
-                  <button className="uw-btn uw-btn-primary" onClick={next}>Continue</button>
+                  <button
+                    className="uw-btn uw-btn-quiet"
+                    onClick={() => setStep(1)}
+                  >
+                    Back
+                  </button>
+                  <button className="uw-btn uw-btn-primary" onClick={next}>
+                    Continue
+                  </button>
                 </div>
               </div>
             )}
@@ -545,7 +644,9 @@ const MainContent: React.FC<MainContentProps> = ({
             {step === 3 && (
               <div className="uw-form-panel">
                 <h3>Step 3: Choose available time slot</h3>
-                {selectedCoach && <p className="uw-assigned">Coach: {selectedCoach.name}</p>}
+                {selectedCoach && (
+                  <p className="uw-assigned">Coach: {selectedCoach.name}</p>
+                )}
 
                 {/* ── Has open slots: normal booking ─────────────────── */}
                 {slots.length > 0 && (
@@ -554,16 +655,39 @@ const MainContent: React.FC<MainContentProps> = ({
                       {slotOptions.map((slot) => (
                         <button
                           key={slot.value}
-                          className={selectedSlot === slot.value ? "selected" : ""}
-                          onClick={() => { setSelectedSlot(slot.value); setRequestMode(false); }}
+                          className={
+                            selectedSlot === slot.value ? "selected" : ""
+                          }
+                          onClick={() => {
+                            setSelectedSlot(slot.value);
+                            setRequestMode(false);
+                          }}
                         >
                           {slot.label}
                         </button>
                       ))}
                     </div>
                     <div className="uw-form-grid">
-                      <label>Preferred Date<input type="date" value={form.preferredDate} onChange={(e) => setForm({ ...form, preferredDate: e.target.value })} /></label>
-                      <label>Preferred Time<input type="time" value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} /></label>
+                      <label>
+                        Preferred Date
+                        <input
+                          type="date"
+                          value={form.preferredDate}
+                          onChange={(e) =>
+                            setForm({ ...form, preferredDate: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Preferred Time
+                        <input
+                          type="time"
+                          value={form.preferredTime}
+                          onChange={(e) =>
+                            setForm({ ...form, preferredTime: e.target.value })
+                          }
+                        />
+                      </label>
                     </div>
                   </>
                 )}
@@ -575,14 +699,24 @@ const MainContent: React.FC<MainContentProps> = ({
                       <span className="uw-no-slots-icon">📭</span>
                       <div>
                         <strong>No available slots right now</strong>
-                        <p>This coach has no open slots at the moment. You can send a slot request and {selectedCoach?.name || "the coach"} will get back to you with a confirmed time.</p>
+                        <p>
+                          This coach has no open slots at the moment. You can
+                          send a slot request and{" "}
+                          {selectedCoach?.name || "the coach"} will get back to
+                          you with a confirmed time.
+                        </p>
                       </div>
                     </div>
 
                     <div className="uw-request-slot-form">
                       <div className="uw-request-slot-header">
-                        <span className="uw-request-slot-badge">📩 Request a Slot</span>
-                        <p>Fill in your details in the next step and we'll send your request to the coach immediately.</p>
+                        <span className="uw-request-slot-badge">
+                          📩 Request a Slot
+                        </span>
+                        <p>
+                          Fill in your details in the next step and we'll send
+                          your request to the coach immediately.
+                        </p>
                       </div>
                       <div className="uw-form-grid">
                         <label>
@@ -590,7 +724,12 @@ const MainContent: React.FC<MainContentProps> = ({
                           <input
                             type="date"
                             value={slotRequestForm.preferredDate}
-                            onChange={(e) => setSlotRequestForm({ ...slotRequestForm, preferredDate: e.target.value })}
+                            onChange={(e) =>
+                              setSlotRequestForm({
+                                ...slotRequestForm,
+                                preferredDate: e.target.value,
+                              })
+                            }
                           />
                         </label>
                         <label>
@@ -598,7 +737,12 @@ const MainContent: React.FC<MainContentProps> = ({
                           <input
                             type="time"
                             value={slotRequestForm.preferredTime}
-                            onChange={(e) => setSlotRequestForm({ ...slotRequestForm, preferredTime: e.target.value })}
+                            onChange={(e) =>
+                              setSlotRequestForm({
+                                ...slotRequestForm,
+                                preferredTime: e.target.value,
+                              })
+                            }
                           />
                         </label>
                       </div>
@@ -608,17 +752,31 @@ const MainContent: React.FC<MainContentProps> = ({
                           rows={3}
                           placeholder="e.g. I'd prefer weekday mornings, or any context about your goals…"
                           value={slotRequestForm.message}
-                          onChange={(e) => setSlotRequestForm({ ...slotRequestForm, message: e.target.value })}
+                          onChange={(e) =>
+                            setSlotRequestForm({
+                              ...slotRequestForm,
+                              message: e.target.value,
+                            })
+                          }
                         />
                       </label>
                     </div>
                     {/* Activate request mode on mount */}
-                    {!requestMode && (() => { setRequestMode(true); return null; })()}
+                    {!requestMode &&
+                      (() => {
+                        setRequestMode(true);
+                        return null;
+                      })()}
                   </div>
                 )}
 
                 <div className="uw-form-actions">
-                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(2)}>Back</button>
+                  <button
+                    className="uw-btn uw-btn-quiet"
+                    onClick={() => setStep(2)}
+                  >
+                    Back
+                  </button>
                   <button className="uw-btn uw-btn-primary" onClick={next}>
                     {requestMode ? "Continue to details" : "Continue"}
                   </button>
@@ -628,33 +786,119 @@ const MainContent: React.FC<MainContentProps> = ({
 
             {step === 4 && (
               <div className="uw-form-panel">
-                <h3>{requestMode ? "Step 4: Your contact details" : "Step 4: Submit details"}</h3>
+                <h3>
+                  {requestMode
+                    ? "Step 4: Your contact details"
+                    : "Step 4: Submit details"}
+                </h3>
                 {requestMode && (
                   <div className="uw-request-mode-notice">
                     <span>📩</span>
-                    <span>You're requesting a slot from <strong>{selectedCoach?.name}</strong>. Fill in your details and we'll send your request straight away.</span>
+                    <span>
+                      You're requesting a slot from{" "}
+                      <strong>{selectedCoach?.name}</strong>. Fill in your
+                      details and we'll send your request straight away.
+                    </span>
                   </div>
                 )}
                 <div className="uw-form-grid">
-                  <label>Full Name<input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></label>
-                  <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-                  <label>Phone Number<input value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} /></label>
-                  {!requestMode && <label>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label>}
-                  {!requestMode && <label>Coaching Type<select value={form.coachingType} onChange={(e) => setForm({ ...form, coachingType: e.target.value })}><option>Discovery call</option><option>Individual Executive Coaching</option><option>Group Executive Coaching</option></select></label>}
-                  <label className="wide">{requestMode ? "Anything else you'd like the coach to know? (optional)" : "Top Three Coaching Goals"}<textarea rows={4} placeholder={requestMode ? "e.g. goals, preferred format, availability…" : "Confidence, boundaries, boardroom influence"} value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} /></label>
+                  <label>
+                    Full Name
+                    <input
+                      value={form.fullName}
+                      onChange={(e) =>
+                        setForm({ ...form, fullName: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Email
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Phone Number
+                    <input
+                      value={form.phoneNumber}
+                      onChange={(e) =>
+                        setForm({ ...form, phoneNumber: e.target.value })
+                      }
+                    />
+                  </label>
+                  {!requestMode && (
+                    <label>
+                      Country
+                      <input
+                        value={form.country}
+                        onChange={(e) =>
+                          setForm({ ...form, country: e.target.value })
+                        }
+                      />
+                    </label>
+                  )}
+                  {!requestMode && (
+                    <label>
+                      Coaching Type
+                      <select
+                        value={form.coachingType}
+                        onChange={(e) =>
+                          setForm({ ...form, coachingType: e.target.value })
+                        }
+                      >
+                        <option>Discovery call</option>
+                        <option>Individual Executive Coaching</option>
+                        <option>Group Executive Coaching</option>
+                      </select>
+                    </label>
+                  )}
+                  <label className="wide">
+                    {requestMode
+                      ? "Anything else you'd like the coach to know? (optional)"
+                      : "Top Three Coaching Goals"}
+                    <textarea
+                      rows={4}
+                      placeholder={
+                        requestMode
+                          ? "e.g. goals, preferred format, availability…"
+                          : "Confidence, boundaries, boardroom influence"
+                      }
+                      value={form.goals}
+                      onChange={(e) =>
+                        setForm({ ...form, goals: e.target.value })
+                      }
+                    />
+                  </label>
                 </div>
                 <div className="uw-form-actions">
-                  <button className="uw-btn uw-btn-quiet" onClick={() => setStep(3)}>Back</button>
+                  <button
+                    className="uw-btn uw-btn-quiet"
+                    onClick={() => setStep(3)}
+                  >
+                    Back
+                  </button>
                   {requestMode ? (
                     <button
                       className="uw-btn uw-btn-primary"
                       onClick={submitSlotRequest}
                       disabled={submittingRequest}
                     >
-                      {submittingRequest ? "Sending request…" : "📩 Send slot request"}
+                      {submittingRequest
+                        ? "Sending request…"
+                        : "📩 Send slot request"}
                     </button>
                   ) : (
-                    <button className="uw-btn uw-btn-primary" onClick={submitBooking} disabled={submitting}>{submitting ? "Submitting..." : "Submit booking"}</button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={submitBooking}
+                      disabled={submitting}
+                    >
+                      {submitting ? "Submitting..." : "Submit booking"}
+                    </button>
                   )}
                 </div>
               </div>
@@ -669,7 +913,16 @@ const MainContent: React.FC<MainContentProps> = ({
                   reschedule notices by email. WhatsApp notifications are
                   structured for future activation.
                 </p>
-                <button className="uw-btn uw-btn-primary" onClick={() => { setStep(1); setRequestSent(false); setRequestMode(false); }}>Book another call</button>
+                <button
+                  className="uw-btn uw-btn-primary"
+                  onClick={() => {
+                    setStep(1);
+                    setRequestSent(false);
+                    setRequestMode(false);
+                  }}
+                >
+                  Book another call
+                </button>
               </div>
             )}
 
@@ -678,8 +931,10 @@ const MainContent: React.FC<MainContentProps> = ({
                 <span className="uw-request-pending-badge">⏳ Pending</span>
                 <h3>Slot request sent to {selectedCoach?.name}!</h3>
                 <p>
-                  Your request has been sent and <strong>{selectedCoach?.name}</strong> has been notified.
-                  You will receive an email confirmation as soon as your coach approves and sets a session time.
+                  Your request has been sent and{" "}
+                  <strong>{selectedCoach?.name}</strong> has been notified. You
+                  will receive an email confirmation as soon as your coach
+                  approves and sets a session time.
                 </p>
                 <div className="uw-request-details-panel">
                   <div className="uw-request-detail-row">
@@ -692,15 +947,28 @@ const MainContent: React.FC<MainContentProps> = ({
                   </div>
                   <div className="uw-request-detail-row">
                     <span>Status</span>
-                    <strong style={{ color: "#f59e0b" }}>Awaiting coach approval</strong>
+                    <strong style={{ color: "#f59e0b" }}>
+                      Awaiting coach approval
+                    </strong>
                   </div>
                 </div>
                 <p className="uw-request-next-steps">
-                  💡 Keep an eye on your inbox. Once approved, you'll receive a confirmation email with your session time and coach contact details.
+                  💡 Keep an eye on your inbox. Once approved, you'll receive a
+                  confirmation email with your session time and coach contact
+                  details.
                 </p>
                 <button
                   className="uw-btn uw-btn-primary"
-                  onClick={() => { setStep(1); setRequestSent(false); setRequestMode(false); setSlotRequestForm({ message: "", preferredDate: "", preferredTime: "" }); }}
+                  onClick={() => {
+                    setStep(1);
+                    setRequestSent(false);
+                    setRequestMode(false);
+                    setSlotRequestForm({
+                      message: "",
+                      preferredDate: "",
+                      preferredTime: "",
+                    });
+                  }}
                 >
                   Done
                 </button>
@@ -733,13 +1001,19 @@ const MainContent: React.FC<MainContentProps> = ({
           <div>
             <span className="uw-kicker">Contact us</span>
             <h2>Start the conversation.</h2>
-            <p>Tell us what you are navigating and the kind of leadership support you need.</p>
+            <p>
+              Tell us what you are navigating and the kind of leadership support
+              you need.
+            </p>
           </div>
           <form
             className="uw-contact-form"
             onSubmit={(event) => {
               event.preventDefault();
-              showToast("Thank you. The Unwantra team will follow up by email.", "success");
+              showToast(
+                "Thank you. The Unwantra team will follow up by email.",
+                "success",
+              );
               event.currentTarget.reset();
             }}
           >
@@ -748,8 +1022,56 @@ const MainContent: React.FC<MainContentProps> = ({
             <input name="phone" placeholder="Phone Number" required />
             <input name="interest" placeholder="Coaching Interest" required />
             <textarea name="goals" placeholder="Goals" rows={5} required />
-            <button className="uw-btn uw-btn-primary" type="submit">Send message</button>
+            <button className="uw-btn uw-btn-primary" type="submit">
+              Send message
+            </button>
           </form>
+        </div>
+      </section>
+      <section id="mission" className="uw-section uw-band">
+        <div className="uw-container uw-statement-grid">
+          <article>
+            <span className="uw-kicker">Mission</span>
+            <h2>Empowering leaders to own their voice.</h2>
+            <p>
+              Unwantra Coaching strengthens confidence, boundaries, influence,
+              and values-based leadership through transformational executive
+              coaching.
+            </p>
+          </article>
+          <article>
+            <span className="uw-kicker">Why we exist</span>
+            {/* <h2>Because leadership should feel both brave and whole.</h2>
+            <p>
+              We exist for leaders who are done performing confidence and ready
+              to lead from clarity, compassion, and deeply held values.
+            </p> */}
+            <p>
+              We help leaders own their voice, lead with integrity and live with
+              intention through transformational coaching that strengthens
+              confidence, boudaries, influence and values-based leadership.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section id="story" className="uw-section uw-story">
+        <div className="uw-container uw-story-grid">
+          <div>
+            <span className="uw-kicker">Our story</span>
+            <h2>Created for leaders whose impact is bigger than a title.</h2>
+          </div>
+          <div>
+            <p>
+              Unwantra Coaching was created to offer premium, African-led and
+              women-led coaching for executives navigating visibility,
+              responsibility, transition, and purpose.
+            </p>
+            <p>
+              Our philosophy blends rigorous coaching practice with cultural
+              intelligence, reflective inquiry, and practical leadership tools.
+              We honor ambition without asking leaders to abandon humanity.
+            </p>
+          </div>
         </div>
       </section>
     </>
@@ -757,6 +1079,3 @@ const MainContent: React.FC<MainContentProps> = ({
 };
 
 export default MainContent;
-
-
-
