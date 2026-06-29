@@ -1040,20 +1040,69 @@ const MainContent: React.FC<MainContentProps> = ({
               height: "100%",
               maxWidth: "100%",
               flexDirection: "column",
-              padding:"20px"
+              padding: "20px",
             }}
           >
-            <span className="uw-kicker">Our story</span>
-            <p>
-              Our story began with a simple conviction: leadership development
-              should be deeply human transformative and grouded in values. As a
-              premium executive coaching firm that is proudly women-led,
-              African-led and value based, we partner with ambitious
-              professionals and executives who are ready to elevate their
-              influence, strengthen their executive presence, navigate career
-              transitions with confidence and building meaningful workplace
-              relationships.
-            </p>
+            <section id="story" className="uw-section uw-story-section">
+              <div className="uw-container">
+                <div className="uw-story-grid">
+                  <div className="uw-story-content">
+                    <span className="uw-kicker uw-story-kicker">Our story</span>
+                    <h2 className="uw-story-title">
+                      A coaching firm built on <em>values</em> and{" "}
+                      <em>transformation</em>.
+                    </h2>
+                    <div className="uw-story-text">
+                      <p className="uw-story-paragraph uw-story-paragraph-lead">
+                        Our story began with a simple conviction: leadership
+                        development should be <strong>deeply human</strong>,{" "}
+                        <strong>transformative</strong>, and{" "}
+                        <strong>grounded in values</strong>.
+                      </p>
+                      <p className="uw-story-paragraph">
+                        As a premium executive coaching firm that is proudly
+                        <span className="uw-story-highlight"> women-led</span>,
+                        <span className="uw-story-highlight"> African-led</span>
+                        , and
+                        <span className="uw-story-highlight">
+                          {" "}
+                          values-based
+                        </span>
+                        , we partner with ambitious professionals and executives
+                        who are ready to elevate their influence, strengthen
+                        their executive presence, navigate career transitions
+                        with confidence, and build meaningful workplace
+                        relationships.
+                      </p>
+                    </div>
+                    <div className="uw-story-values">
+                      <span className="uw-story-value-tag">🌍 African-led</span>
+                      <span className="uw-story-value-tag">👩‍💼 Women-led</span>
+                      <span className="uw-story-value-tag">
+                        💡 Values-based
+                      </span>
+                      <span className="uw-story-value-tag">
+                        🚀 Transformational
+                      </span>
+                    </div>
+                  </div>
+                  <div className="uw-story-visual">
+                    <div className="uw-story-quote-block">
+                      <div className="uw-story-quote-icon">"</div>
+                      <blockquote className="uw-story-quote">
+                        Leadership development should be deeply human,
+                        transformative, and grounded in values.
+                      </blockquote>
+                      <div className="uw-story-quote-attribute">
+                        <span className="uw-story-quote-line"></span>
+                        <span>Our founding conviction</span>
+                      </div>
+                    </div>
+                    <div className="uw-story-stats"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
           {/* <div>
             <p>
