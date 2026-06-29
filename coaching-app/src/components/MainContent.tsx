@@ -995,7 +995,80 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </section>
-
+      <section id="mission" className="uw-section uw-band">
+        <div className="uw-container uw-statement-grid">
+          <article>
+            <span className="uw-kicker">Mission</span>
+            <h2>Empowering leaders to own their voice.</h2>
+            <p>
+              Unwantra Coaching strengthens confidence, boundaries, influence,
+              and values-based leadership through transformational executive
+              coaching.
+            </p>
+          </article>
+          <article>
+            <span className="uw-kicker">Why we exist</span>
+            {/* <h2>Because leadership should feel both brave and whole.</h2>
+            <p>
+              We exist for leaders who are done performing confidence and ready
+              to lead from clarity, compassion, and deeply held values.
+            </p> */}
+            <p>
+              We help leaders own their voice, lead with integrity and live with
+              intention through transformational coaching that strengthens
+              confidence, boudaries, influence and values-based leadership.
+            </p>
+          </article>
+          <article className="uw-kicker">
+            <p>Vision</p>
+            <p>Leaders leading with courage, clarity, and compassion.</p>
+            <div className="uw-values">
+              <span>Courage</span>
+              <span>Clarity</span>
+              <span>Connection</span>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section id="story">
+        <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              maxWidth: "100%",
+              flexDirection: "column",
+              padding:"20px"
+            }}
+          >
+            <span className="uw-kicker">Our story</span>
+            <p>
+              Our story began with a simple conviction: leadership development
+              should be deeply human transformative and grouded in values. As a
+              premium executive coaching firm that is proudly women-led,
+              African-led and value based, we partner with ambitious
+              professionals and executives who are ready to elevate their
+              influence, strengthen their executive presence, navigate career
+              transitions with confidence and building meaningful workplace
+              relationships.
+            </p>
+          </div>
+          {/* <div>
+            <p>
+              Unwantra Coaching was created to offer premium, African-led and
+              women-led coaching for executives navigating visibility,
+              responsibility, transition, and purpose.
+            </p>
+            <p>
+              Our philosophy blends rigorous coaching practice with cultural
+              intelligence, reflective inquiry, and practical leadership tools.
+              We honor ambition without asking leaders to abandon humanity.
+            </p>
+          </div> */}
+        </div>
+      </section>
       <section id="contact" className="uw-section uw-contact">
         <div className="uw-container uw-contact-grid">
           <div>
@@ -1026,52 +1099,6 @@ const MainContent: React.FC<MainContentProps> = ({
               Send message
             </button>
           </form>
-        </div>
-      </section>
-      <section id="mission" className="uw-section uw-band">
-        <div className="uw-container uw-statement-grid">
-          <article>
-            <span className="uw-kicker">Mission</span>
-            <h2>Empowering leaders to own their voice.</h2>
-            <p>
-              Unwantra Coaching strengthens confidence, boundaries, influence,
-              and values-based leadership through transformational executive
-              coaching.
-            </p>
-          </article>
-          <article>
-            <span className="uw-kicker">Why we exist</span>
-            {/* <h2>Because leadership should feel both brave and whole.</h2>
-            <p>
-              We exist for leaders who are done performing confidence and ready
-              to lead from clarity, compassion, and deeply held values.
-            </p> */}
-            <p>
-              We help leaders own their voice, lead with integrity and live with
-              intention through transformational coaching that strengthens
-              confidence, boudaries, influence and values-based leadership.
-            </p>
-          </article>
-        </div>
-      </section>
-      <section id="story" className="uw-section uw-story">
-        <div className="uw-container uw-story-grid">
-          <div>
-            <span className="uw-kicker">Our story</span>
-            <h2>Created for leaders whose impact is bigger than a title.</h2>
-          </div>
-          <div>
-            <p>
-              Unwantra Coaching was created to offer premium, African-led and
-              women-led coaching for executives navigating visibility,
-              responsibility, transition, and purpose.
-            </p>
-            <p>
-              Our philosophy blends rigorous coaching practice with cultural
-              intelligence, reflective inquiry, and practical leadership tools.
-              We honor ambition without asking leaders to abandon humanity.
-            </p>
-          </div>
         </div>
       </section>
     </>
