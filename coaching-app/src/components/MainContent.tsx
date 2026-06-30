@@ -609,7 +609,10 @@ const MainContent: React.FC<MainContentProps> = ({
                     <input
                       type="radio"
                       checked={coachChoice === "choose"}
-                      onChange={() => setCoachChoice("choose")}
+                      onChange={() => {
+                        setCoachChoice("choose");
+                        setAssignedCoach(null);
+                      }}
                     />
                     <span>I want to choose</span>
                   </label>
@@ -617,7 +620,9 @@ const MainContent: React.FC<MainContentProps> = ({
                 {coachChoice === "choose" && (
                   <select
                     value={selectedCoachId}
-                    onChange={(event) => setSelectedCoachId(event.target.value)}
+                    onChange={(event) => {
+                      setSelectedCoachId(event.target.value);
+                    }}
                   >
                     <option value="">Select coach</option>
                     {eligibleCoaches.map((coach) => (
