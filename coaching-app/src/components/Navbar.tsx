@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   ["Coaches", "#coaches"],
   ["Mission", "#mission"],
   ["Our Story", "#story"],
+  ["About", "/about"],
   ["Contact", "#contact"],
 ];
 
@@ -43,11 +44,17 @@ const Navbar: React.FC = () => {
         <span />
       </button>
       <div className={`uw-nav-links ${menuOpen ? "open" : ""}`}>
-        {links.map(([label, href]) => (
-          <a key={href} href={href} onClick={closeMenu}>
-            {label}
-          </a>
-        ))}
+        {links.map(([label, href]) =>
+          href.startsWith("/") ? (
+            <Link key={href} to={href} onClick={closeMenu}>
+              {label}
+            </Link>
+          ) : (
+            <a key={href} href={href} onClick={closeMenu}>
+              {label}
+            </a>
+          ),
+        )}
         {!user && (
           <button
             type="button"

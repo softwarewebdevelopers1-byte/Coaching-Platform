@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MainContent from "./components/MainContent";
 import Footer from "./components/Footer";
+import AboutPage from "./components/AboutPage";
 import AdminDashboard from "./components/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -139,6 +140,16 @@ function AppContent() {
               <CoachDashboard programs={PROGRAMS} showToast={showToast} />
             </>
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <div className="app">
+            <Navbar />
+            <AboutPage />
+            <Footer />
+          </div>
         }
       />
       <Route
