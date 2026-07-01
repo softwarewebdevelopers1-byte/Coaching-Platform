@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
-  ["Why We Exist / Our Story", "#why"],
-  ["Our Services", "#services"],
-  ["Engage With Us", "#engage"],
+  ["Mission", "#mission"],
+  ["Services", "#services"],
+  ["Our Story", "#story"],
+  ["Coaches", "#coaches"],
+  ["Contact", "#contact"],
 ];
 
 const Navbar: React.FC = () => {
@@ -54,7 +56,7 @@ const Navbar: React.FC = () => {
             Staff Login
           </button>
         )}
-        <a className="uw-nav-cta" href="#engage" onClick={(event) => {
+        <a className="uw-nav-cta" href="#discovery-call" onClick={(event) => {
           if (user) {
             event.preventDefault();
             logout();
