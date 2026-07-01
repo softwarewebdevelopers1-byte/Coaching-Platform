@@ -6,7 +6,7 @@ function DatabaseConnection(): voidFunction {
   mongoose
     .connect(DotEnvConfig.MongoLocalUri)
     .then(() => {
-      console.log("Connected to MongoDB...");
+      console.log("Database connected successfully");
     })
     .catch((error) => {
       console.error("Error connecting to MongoDB:", error);

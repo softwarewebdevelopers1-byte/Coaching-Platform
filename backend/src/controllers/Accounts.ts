@@ -205,6 +205,8 @@ router.put("/:id", async (req, res): Promise<void> => {
     fullName,
     email,
     phone,
+    role,
+    status,
     programName,
     password,
     bio,
@@ -220,6 +222,8 @@ router.put("/:id", async (req, res): Promise<void> => {
   if (fullName !== undefined) update.fullName = fullName;
   if (email !== undefined) update.email = email;
   if (phone !== undefined) update.phone = phone;
+  if (role !== undefined) update.role = role;
+  if (status !== undefined) update.status = status;
   if (programName !== undefined) update.programName = programName;
   if (bio !== undefined) update.bio = bio;
   if (experience !== undefined) update.experience = experience;
