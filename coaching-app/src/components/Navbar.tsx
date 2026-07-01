@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
+  ["Home", "#home"],
   ["Services", "#services"],
   ["Coaches", "#coaches"],
   ["Mission", "#mission"],
