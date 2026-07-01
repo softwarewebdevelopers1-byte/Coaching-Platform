@@ -194,7 +194,7 @@ img { max-width: 100%; display: block; }
 .uw-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .uw-form-grid .wide { grid-column: 1 / -1; }
 .uw-form-grid label, .uw-contact-form label { color: var(--uw-sage-dark); font-size: 0.82rem; font-weight: 900; display: grid; gap: 7px; }
-.uw-booking-card input, .uw-booking-card textarea, .uw-booking-card select, .uw-contact-form input, .uw-contact-form textarea {
+.uw-booking-card input, .uw-booking-card textarea, .uw-booking-card select, .uw-contact-form input, .uw-contact-form textarea, .uw-contact-form select {
   width: 100%;
   border: 1px solid var(--uw-line);
   border-radius: 8px;
@@ -202,7 +202,7 @@ img { max-width: 100%; display: block; }
   color: var(--uw-ink);
   background: #fff;
 }
-.uw-booking-card input:focus, .uw-booking-card textarea:focus, .uw-booking-card select:focus, .uw-contact-form input:focus, .uw-contact-form textarea:focus {
+.uw-booking-card input:focus, .uw-booking-card textarea:focus, .uw-booking-card select:focus, .uw-contact-form input:focus, .uw-contact-form textarea:focus, .uw-contact-form select:focus {
   outline: 3px solid rgba(217, 169, 40, 0.25);
   border-color: var(--uw-yellow-dark);
 }
@@ -219,6 +219,22 @@ img { max-width: 100%; display: block; }
 
 .uw-contact { background: #fff; }
 .uw-contact-form { display: grid; gap: 14px; }
+.uw-data-note {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid rgba(127, 154, 122, 0.25);
+  border-radius: 8px;
+  background: #f7faf3;
+}
+.uw-data-note strong {
+  color: var(--uw-sage-dark);
+  font-size: 0.9rem;
+}
+.uw-data-note p {
+  margin: 8px 0 0;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
 .toast-container { position: fixed; top: 92px; right: 18px; z-index: 1000; }
 .toast { min-width: 280px; background: #fff; border: 1px solid var(--uw-line); border-left: 5px solid var(--uw-sage); border-radius: 8px; padding: 14px 16px; box-shadow: var(--uw-shadow); display: flex; gap: 10px; align-items: center; font-weight: 800; }
 .toast.error { border-left-color: #b42318; }

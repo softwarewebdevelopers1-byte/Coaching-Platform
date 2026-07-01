@@ -109,6 +109,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CoachTab>("overview");
+  const [navOpen, setNavOpen] = useState(false);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -454,7 +455,24 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
   /* ── Render ──────────────────────────────────────────────── */
   return (
-    <div className="dashboard-wrapper coach-dashboard-wrapper">
+    <div className={`dashboard-wrapper coach-dashboard-wrapper ${navOpen ? "dashboard-nav-open" : ""}`}>
+      <button
+        className="dashboard-mobile-menu-btn"
+        type="button"
+        aria-label="Open dashboard navigation"
+        aria-expanded={navOpen}
+        onClick={() => setNavOpen((value) => !value)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+      <button
+        className="dashboard-nav-backdrop"
+        type="button"
+        aria-label="Close dashboard navigation"
+        onClick={() => setNavOpen(false)}
+      />
       {/* ── Sidebar ─────────────────────────────── */}
       <aside className="dashboard-sidebar coach-sidebar">
         <div className="dashboard-sidebar-header">
@@ -471,7 +489,10 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
               <li key={item.id} className="dashboard-sidebar-item">
                 <button
                   className={`dashboard-sidebar-link ${activeTab === item.id ? "active" : ""}`}
-                  onClick={() => setActiveTab(item.id as CoachTab)}
+                  onClick={() => {
+                    setActiveTab(item.id as CoachTab);
+                    setNavOpen(false);
+                  }}
                 >
                   <span className="sidebar-active-indicator" />
                   <span className="dashboard-sidebar-link-icon">{item.icon}</span>

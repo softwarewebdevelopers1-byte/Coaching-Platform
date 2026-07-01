@@ -1132,22 +1132,66 @@ const MainContent: React.FC<MainContentProps> = ({
               Tell us what you are navigating and the kind of leadership support
               you need.
             </p>
+            <div className="uw-data-note">
+              <strong>How your data supports coaching</strong>
+              <p>
+                We use your contact details to respond to your enquiry and your
+                coaching goals to understand demand, recommend the most relevant
+                coaching pathway, improve coach matching, and identify common
+                leadership themes across the platform. Your submission is used
+                for coaching operations and platform insight, not for selling
+                unrelated services.
+              </p>
+            </div>
           </div>
           <form
             className="uw-contact-form"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
-              showToast(
-                "Thank you. The Unwantra team will follow up by email.",
-                "success",
-              );
-              event.currentTarget.reset();
+              const formEl = event.currentTarget;
+              const formData = new FormData(formEl);
+              try {
+                const response = await fetch(`${API_BASE_URL}/api/contact`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: String(formData.get("name") || ""),
+                    email: String(formData.get("email") || ""),
+                    phone: String(formData.get("phone") || ""),
+                    interest: String(formData.get("interest") || ""),
+                    goals: String(formData.get("goals") || ""),
+                    source: "contact-us",
+                  }),
+                });
+
+                if (!response.ok) {
+                  const error = await response.json().catch(() => null);
+                  throw new Error(error?.message || "Could not submit contact form");
+                }
+
+                showToast(
+                  "Thank you. The Unwantra team will follow up by email.",
+                  "success",
+                );
+                formEl.reset();
+              } catch (error) {
+                showToast(
+                  error instanceof Error ? error.message : "Could not submit contact form",
+                  "error",
+                  5000,
+                );
+              }
             }}
           >
             <input name="name" placeholder="Name" required />
             <input name="email" type="email" placeholder="Email" required />
-            <input name="phone" placeholder="Phone Number" required />
-            <input name="interest" placeholder="Coaching Interest" required />
+            <input name="phone" placeholder="Phone number with country code" required />
+            <select name="interest" required defaultValue="">
+              <option value="" disabled>Coaching Interest</option>
+              <option value="Individual Executive Coaching">Individual Executive Coaching</option>
+              <option value="Group Executive Coaching">Group Executive Coaching</option>
+              <option value="Both">Both</option>
+            </select>
             <textarea name="goals" placeholder="Goals" rows={5} required />
             <button className="uw-btn uw-btn-primary" type="submit">
               Send message

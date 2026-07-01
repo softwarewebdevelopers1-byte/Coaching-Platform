@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
-  ["Mission", "#mission"],
   ["Services", "#services"],
-  ["Our Story", "#story"],
   ["Coaches", "#coaches"],
+  ["Mission", "#mission"],
+  ["Our Story", "#story"],
   ["Contact", "#contact"],
 ];
 
@@ -43,7 +43,9 @@ const Navbar: React.FC = () => {
       </button>
       <div className={`uw-nav-links ${menuOpen ? "open" : ""}`}>
         {links.map(([label, href]) => (
-          <a key={href} href={href} onClick={closeMenu}>{label}</a>
+          <a key={href} href={href} onClick={closeMenu}>
+            {label}
+          </a>
         ))}
         {!user && (
           <button
@@ -56,14 +58,18 @@ const Navbar: React.FC = () => {
             Staff Login
           </button>
         )}
-        <a className="uw-nav-cta" href="#discovery-call" onClick={(event) => {
-          if (user) {
-            event.preventDefault();
-            logout();
-            navigate("/");
-          }
-          closeMenu();
-        }}>
+        <a
+          className="uw-nav-cta"
+          href="#discovery-call"
+          onClick={(event) => {
+            if (user) {
+              event.preventDefault();
+              logout();
+              navigate("/");
+            }
+            closeMenu();
+          }}
+        >
           {user ? `Logout ${user.fullName}` : "Book discovery call"}
         </a>
       </div>
