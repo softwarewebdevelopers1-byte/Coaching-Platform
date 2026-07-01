@@ -9,16 +9,21 @@ const Hero: React.FC = () => (
         <span className="uw-kicker">African-led executive coaching</span>
         <h1>Unwantra Coaching</h1>
         <p>
-          We help leaders own their voice, lead with integrity, and live with
-          intention through transformational coaching that strengthens
-          confidence, boundaries, influence and values-based leadersip.{" "}
+          To cultivate a world where leaders lead with courage, clarity, and
+          compassion owning their voice, honoring their values, and creating
+          meaningful impact in work and life.
         </p>
+        <div className="uw-hero-pillars" aria-label="Core pillars">
+          <span>Courage</span>
+          <span>Clarity</span>
+          <span>Connection</span>
+        </div>
         <div className="uw-hero-actions">
-          <a className="uw-btn uw-btn-primary" href="#discovery-call">
-            Book a discovery call
+          <a className="uw-btn uw-btn-primary" href="#engage">
+            Engage With Us
           </a>
-          <a className="uw-btn uw-btn-quiet" href="#services">
-            Explore services
+          <a className="uw-btn uw-btn-quiet" href="#why">
+            Learn more
           </a>
         </div>
       </div>

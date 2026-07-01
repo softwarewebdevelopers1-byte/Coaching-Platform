@@ -150,6 +150,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
   });
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -176,23 +177,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
 
   useEffect(() => { loadDashboardData(); }, []);
 
+  const resetAccountForm = () => {
+    setAccountForm({
+      fullName: "",
+      email: "",
+      phone: "",
+      password: "",
+      programName: "individual-executive",
+      role: "coach",
+      status: "active",
+    });
+    setEditingAccountId(null);
+  };
+
   const saveAccount = async () => {
-    const res = await fetch(`${API_BASE_URL}/api/accounts`, {
-      method: "POST",
+    const endpoint = editingAccountId
+      ? `${API_BASE_URL}/api/accounts/${editingAccountId}`
+      : `${API_BASE_URL}/api/accounts`;
+    const res = await fetch(endpoint, {
+      method: editingAccountId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(accountForm),
     });
     if (res.ok) {
-      showToast("Account created successfully", "success", 3500);
-      setAccountForm({
-        fullName: "",
-        email: "",
-        phone: "",
-        password: "",
-        programName: "individual-executive",
-        role: "coach",
-        status: "active",
-      });
+      showToast(
+        editingAccountId
+          ? "Account updated successfully"
+          : "Account created successfully",
+        "success",
+        3500,
+      );
+      resetAccountForm();
       loadDashboardData();
     } else {
       const error = await res.json().catch(() => null);
@@ -367,8 +382,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                 <div className="dashboard-card-header">
                   <h2 className="dashboard-card-title">
                     <span className="card-title-icon">➕</span>
-                    Create New Account
+                    {editingAccountId ? "Edit Account" : "Create New Account"}
                   </h2>
+                  {editingAccountId && (
+                    <button
+                      className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                      onClick={resetAccountForm}
+                    >
+                      Cancel edit
+                    </button>
+                  )}
                 </div>
                 <div className="dashboard-card-body">
                   <div className="dashboard-form">
@@ -434,7 +457,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                     </select>
                   </div>
                   <button className="dashboard-btn dashboard-btn-primary" onClick={saveAccount}>
-                    {Icons.plus} Create Account
+                    {editingAccountId ? Icons.edit : Icons.plus} {editingAccountId ? "Update Account" : "Create Account"}
                   </button>
                 </div>
               </div>
@@ -479,15 +502,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                 <div className="td-actions">
                                   <button
                                     className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
-                                    onClick={() => setAccountForm({
-                                      fullName: account.fullName,
-                                      email: account.email,
-                                      phone: account.phone || "",
-                                      password: "",
-                                      programName: account.programName || "individual-executive",
-                                      role: account.role,
-                                      status: account.status,
-                                    })}
+                                    onClick={() => {
+                                      setEditingAccountId(account._id);
+                                      setAccountForm({
+                                        fullName: account.fullName,
+                                        email: account.email,
+                                        phone: account.phone || "",
+                                        password: "",
+                                        programName: account.programName || "individual-executive",
+                                        role: account.role,
+                                        status: account.status,
+                                      });
+                                      window.scrollTo({ top: 0, behavior: "smooth" });
+                                    }}
                                   >
                                     {Icons.edit} Edit
                                   </button>

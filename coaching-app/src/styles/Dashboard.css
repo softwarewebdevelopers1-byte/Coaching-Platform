@@ -1667,3 +1667,110 @@
     display: none !important;
   }
 }
+
+/* Compact dashboard navigation: keeps admin/coach links visible on small screens */
+@media (max-width: 820px) {
+  .dashboard-wrapper {
+    display: block;
+  }
+
+  .dashboard-sidebar {
+    position: sticky;
+    top: 0;
+    left: auto;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    z-index: 200;
+    border-right: 0;
+  }
+
+  .dashboard-sidebar-header {
+    padding: 12px 14px 8px;
+  }
+
+  .dashboard-sidebar-title {
+    font-size: 14px;
+  }
+
+  .dashboard-sidebar nav {
+    overflow: visible !important;
+  }
+
+  .sidebar-section-label {
+    display: none;
+  }
+
+  .dashboard-sidebar-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 12px 12px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-sidebar-item {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  .dashboard-sidebar-link {
+    min-width: max-content;
+    min-height: 44px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .dashboard-sidebar-link:hover {
+    transform: none;
+  }
+
+  .sidebar-active-indicator {
+    display: none;
+  }
+
+  .dashboard-sidebar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px 12px;
+  }
+
+  .dashboard-sidebar-footer .dashboard-user-info {
+    display: none;
+  }
+
+  .dashboard-logout-btn {
+    width: auto;
+    min-width: 132px;
+  }
+
+  .dashboard-main {
+    margin-left: 0;
+  }
+
+  .dashboard-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+  }
+}
+
+@media (max-width: 460px) {
+  .dashboard-sidebar-link {
+    font-size: 12px;
+  }
+
+  .dashboard-sidebar-link-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sidebar-link-label {
+    display: inline;
+  }
+}

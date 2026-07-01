@@ -15,10 +15,10 @@ interface MainContentProps {
 
 const fallbackCoaches: Coach[] = [
   {
-    _id: "amina-fallback",
-    name: "Amina Wanjiru",
-    email: "amina@unwantra.co",
-    phone: "+254 700 000 101",
+    _id: "wanja-fallback",
+    name: "Wanja Gitau",
+    email: "hello@unwantracoaching.co.ke",
+    phone: "+254 712281552",
     specialization: "individual-executive",
     bio: "Executive coach and former people leader supporting women executives, founders, and senior managers to strengthen voice, boundaries, and influence.",
     expertise: [
@@ -84,6 +84,9 @@ const MainContent: React.FC<MainContentProps> = ({
   onAddBooking,
   showToast,
 }) => {
+  const [activePanel, setActivePanel] = useState<string>(() =>
+    window.location.hash.replace("#", ""),
+  );
   const [coaches, setCoaches] = useState<Coach[]>(fallbackCoaches);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [step, setStep] = useState(1);
@@ -134,6 +137,13 @@ const MainContent: React.FC<MainContentProps> = ({
     assignedCoach ||
     coaches.find((coach) => coach._id === selectedCoachId) ||
     null;
+
+  useEffect(() => {
+    const syncHash = () => setActivePanel(window.location.hash.replace("#", ""));
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
 
   useEffect(() => {
     const loadCoaches = async () => {
@@ -429,8 +439,14 @@ const MainContent: React.FC<MainContentProps> = ({
         })}`,
       }));
 
+  if (!["why", "services", "engage"].includes(activePanel)) {
+    return null;
+  }
+
   return (
     <>
+      {activePanel === "services" && (
+        <>
       <section id="services" className="uw-section">
         <div className="uw-container">
           <div className="uw-section-head">
@@ -464,9 +480,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     className="uw-btn uw-btn-primary"
                     onClick={() => {
                       setSelectedProgram(program.id);
-                      document
-                        .getElementById("discovery-call")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      window.location.hash = "engage";
                     }}
                   >
                     Start with this service
@@ -529,9 +543,7 @@ const MainContent: React.FC<MainContentProps> = ({
                         getCoachProgramIds(coach.specialization)[0] ||
                           selectedProgram,
                       );
-                      document
-                        .getElementById("discovery-call")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      window.location.hash = "engage";
                     }}
                   >
                     Book session
@@ -542,8 +554,29 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </section>
+      <section id="testimonials" className="uw-section">
+        <div className="uw-container">
+          <div className="uw-section-head">
+            <span className="uw-kicker">Testimonials</span>
+            <h2>Trusted by leaders doing meaningful work.</h2>
+          </div>
+          <div className="uw-testimonial-grid">
+            {testimonials.map((testimonial) => (
+              <article className="uw-testimonial" key={testimonial.name}>
+                <p>"{testimonial.text}"</p>
+                <strong>{testimonial.name}</strong>
+                <span>{testimonial.role}</span>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+        </>
+      )}
 
-      <section id="discovery-call" className="uw-section uw-booking-section">
+      {activePanel === "engage" && (
+        <>
+      <section id="engage" className="uw-section uw-booking-section">
         <div className="uw-container uw-booking-layout">
           <div>
             <span className="uw-kicker">Discovery call booking</span>
@@ -982,51 +1015,29 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </section>
+        </>
+      )}
 
-      <section id="testimonials" className="uw-section">
-        <div className="uw-container">
-          <div className="uw-section-head">
-            <span className="uw-kicker">Testimonials</span>
-            <h2>Trusted by leaders doing meaningful work.</h2>
-          </div>
-          <div className="uw-testimonial-grid">
-            {testimonials.map((testimonial) => (
-              <article className="uw-testimonial" key={testimonial.name}>
-                <p>"{testimonial.text}"</p>
-                <strong>{testimonial.name}</strong>
-                <span>{testimonial.role}</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      {activePanel === "why" && (
+        <>
       <section id="mission" className="uw-section uw-band">
         <div className="uw-container uw-statement-grid">
           <article>
             <span className="uw-kicker">Mission</span>
-            <h2>Empowering leaders to own their voice.</h2>
+            <h2>Empowering leaders to own their voice, lead with confidence, clarity, and values.</h2>
             <p>
-              Unwantra Coaching strengthens confidence, boundaries, influence,
-              and values-based leadership through transformational executive
-              coaching.
+              Empowering leaders to own their voice, lead with confidence, clarity, and values.
             </p>
           </article>
           <article>
             <span className="uw-kicker">Why we exist</span>
-            {/* <h2>Because leadership should feel both brave and whole.</h2>
             <p>
-              We exist for leaders who are done performing confidence and ready
-              to lead from clarity, compassion, and deeply held values.
-            </p> */}
-            <p>
-              We help leaders own their voice, lead with integrity and live with
-              intention through transformational coaching that strengthens
-              confidence, boudaries, influence and values-based leadership.
+              To cultivate a world where leaders lead with courage, clarity, and compassion owning their voice, honoring their values, and creating meaningful impact in work and life.
             </p>
           </article>
           <article className="uw-kicker">
             <p>Vision</p>
-            <p>Leaders leading with courage, clarity, and compassion.</p>
+            <p>To cultivate a world where leaders lead with courage, clarity, and compassion owning their voice, honoring their values, and creating meaningful impact in work and life.</p>
             <div className="uw-values">
               <span>Courage</span>
               <span>Clarity</span>
@@ -1059,10 +1070,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     </h2>
                     <div className="uw-story-text">
                       <p className="uw-story-paragraph uw-story-paragraph-lead">
-                        Our story began with a simple conviction: leadership
-                        development should be <strong>deeply human</strong>,{" "}
-                        <strong>transformative</strong>, and{" "}
-                        <strong>grounded in values</strong>.
+                        Our story began with a simple conviction: leadership development should be deeply human, transformative, and grounded in values.
                       </p>
                       <p className="uw-story-paragraph">
                         As a premium executive coaching firm that is proudly
@@ -1123,6 +1131,10 @@ const MainContent: React.FC<MainContentProps> = ({
           </div> */}
         </div>
       </section>
+        </>
+      )}
+
+      {activePanel === "engage" && (
       <section id="contact" className="uw-section uw-contact">
         <div className="uw-container uw-contact-grid">
           <div>
@@ -1146,8 +1158,12 @@ const MainContent: React.FC<MainContentProps> = ({
           >
             <input name="name" placeholder="Name" required />
             <input name="email" type="email" placeholder="Email" required />
-            <input name="phone" placeholder="Phone Number" required />
-            <input name="interest" placeholder="Coaching Interest" required />
+            <input name="phone" placeholder="Phone number with country code" required />
+            <select name="interest" required defaultValue="">
+              <option value="" disabled>Coaching Interest</option>
+              <option value="Individual Executive Coaching">Individual Executive Coaching</option>
+              <option value="Group Executive Coaching">Group Executive Coaching</option>
+            </select>
             <textarea name="goals" placeholder="Goals" rows={5} required />
             <button className="uw-btn uw-btn-primary" type="submit">
               Send message
@@ -1155,6 +1171,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </form>
         </div>
       </section>
+      )}
     </>
   );
 };
