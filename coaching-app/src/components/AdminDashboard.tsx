@@ -14,6 +14,8 @@ interface AdminDashboardProps {
 
 type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
 
+const DEFAULT_ACCOUNT_PASSWORD = "Coach@123";
+
 const COACH_PROGRAMS = [
   { id: "individual-executive", title: "Individual Executive Coaching" },
   { id: "group-executive", title: "Group Executive Coaching" },
@@ -146,7 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     fullName: "",
     email: "",
     phone: "",
-    password: "",
+    password: DEFAULT_ACCOUNT_PASSWORD,
     programName: "individual-executive",
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
@@ -183,7 +185,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
       fullName: "",
       email: "",
       phone: "",
-      password: "",
+      password: DEFAULT_ACCOUNT_PASSWORD,
       programName: "individual-executive",
       role: "coach",
       status: "active",
@@ -195,10 +197,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     const endpoint = editingAccountId
       ? `${API_BASE_URL}/api/accounts/${editingAccountId}`
       : `${API_BASE_URL}/api/accounts`;
+
+    const payload: Record<string, unknown> = {
+      fullName: accountForm.fullName,
+      email: accountForm.email,
+      phone: accountForm.phone,
+      role: accountForm.role,
+      status: accountForm.status,
+      programName: accountForm.programName,
+    };
+
+    if (!editingAccountId || accountForm.password) {
+      payload.password = accountForm.password;
+    }
+
     const res = await fetch(endpoint, {
       method: editingAccountId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(accountForm),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       showToast(
@@ -432,7 +448,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                     />
                     <div className="password-input-wrapper">
                       <input
-                        placeholder="Password"
+                        placeholder={editingAccountId ? "New password (leave blank to keep current)" : "Password"
+                        }
                         type={showAccountPassword ? "text" : "password"}
                         value={accountForm.password}
                         onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
@@ -447,6 +464,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                         <PasswordVisibilityIcon hidden={showAccountPassword} />
                       </button>
                     </div>
+                    {editingAccountId ? (
+                      <p className="dashboard-field-note">
+                        Leave this blank to retain the existing password.
+                      </p>
+                    ) : null}
                     {accountForm.role === "coach" && (
                       <select
                         value={accountForm.programName}
@@ -461,7 +483,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                     )}
                     <select
                       value={accountForm.role}
-                      onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value as Account["role"] })}
+                      onChange={(e) => {
+                        const newRole = e.target.value as Account["role"];
+                        setAccountForm({
+                          ...accountForm,
+                          role: newRole,
+                          password: editingAccountId
+                            ? accountForm.password
+                            : accountForm.password || DEFAULT_ACCOUNT_PASSWORD,
+                        });
+                      }}
                     >
                       <option value="user">User</option>
                       <option value="coach">Coach</option>
