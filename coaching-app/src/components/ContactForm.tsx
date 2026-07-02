@@ -62,7 +62,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ showToast }) => {
               <div>
                 <p className="contact-label">Email Us</p>
                 <a
-                  href="mailto:hello@apexcoaching.com"
+                  href="mailto:hello@unwantracoaching.co.ke"
                   className="contact-value"
                 >
                   hello@unwantracoaching.co.ke

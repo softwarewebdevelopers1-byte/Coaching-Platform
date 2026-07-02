@@ -25,11 +25,11 @@ export async function sendBookingConfirmationEmail(
 
   const payload: BrevoEmailPayload = {
     sender: {
-      name: "Unwantra Coaching",
+      name: "UnWantraCoaching",
       email: "softwarewebdevelopers1@gmail.com",
     },
     to: [{ email: booking.email, name: booking.fullName }],
-    subject: "Your Apex Coaching session is booked",
+    subject: "Your UnWantraCoaching session is booked",
     htmlContent: generateBookingEmailTemplate(booking),
   };
 
@@ -92,12 +92,12 @@ export async function sendContactAcknowledgmentEmail(
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Unwantra<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>Thank you for reaching out</p>
     </div>
     <div class="content">
       <p class="lead">Hello ${escapeHtml(details.name)},</p>
-      <p>We have received your enquiry and a member of the Unwantra team will follow up within 1–2 business days to discuss your coaching goals and schedule a discovery call if appropriate.</p>
+      <p>We have received your enquiry and a member of the UnWantraCoaching team will follow up within 1–2 business days to discuss your coaching goals and schedule a discovery call if appropriate.</p>
 
       <div class="panel">
         <div class="row">
@@ -112,11 +112,11 @@ export async function sendContactAcknowledgmentEmail(
         <p>You can also book a discovery call directly from our website whenever you are ready.</p>
       </div>
 
-      <p>Thank you for choosing Unwantra Coaching.</p>
+      <p>Thank you for choosing UnWantraCoaching.</p>
     </div>
 
     <div class="footer">
-      &copy; ${currentYear} Unwantra Coaching. Need help? Contact hello@unwantracoaching.co.ke.
+      &copy; ${currentYear} UnWantraCoaching. Need help? Contact hello@unwantracoaching.co.ke.
     </div>
   </div>
 </body>
@@ -195,7 +195,7 @@ export async function sendSlotRequestReceivedEmail(
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Apex<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>We've received your session request.</p>
     </div>
     <div class="content">
@@ -223,19 +223,19 @@ export async function sendSlotRequestReceivedEmail(
       </div>
 
       <p>You'll receive another email once your coach confirms a session time. If you have any questions in the meantime, feel free to reach out.</p>
-      <p>Thank you for choosing Apex Coaching!</p>
+      <p>Thank you for choosing UnWantraCoaching!</p>
     </div>
     <div class="footer">
-      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+      &copy; ${currentYear} UnWantraCoaching. Need help? Contact hello@unwantracoaching.co.ke.
     </div>
   </div>
 </body>
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
     to: [{ email: details.email, name: details.fullName }],
-    subject: "Your session request has been received — Apex Coaching",
+    subject: "Your session request has been received — UnWantraCoaching",
     htmlContent,
   };
 
@@ -305,7 +305,7 @@ export async function sendSlotRequestApprovedEmail(
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Apex<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>Great news — your session has been scheduled!</p>
     </div>
     <div class="content">
@@ -341,19 +341,19 @@ export async function sendSlotRequestApprovedEmail(
       </div>
 
       <p>Your coach may reach out to share a meeting link or any preparation notes before the session.</p>
-      <p>Thank you for choosing Apex Coaching!</p>
+      <p>Thank you for choosing UnWantraCoaching!</p>
     </div>
     <div class="footer">
-      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+      &copy; ${currentYear} UnWantraCoaching. Need help? Contact hello@unwantracoaching.co.ke.
     </div>
   </div>
 </body>
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
     to: [{ email: details.email, name: details.fullName }],
-    subject: "Your coaching session is scheduled — Apex Coaching",
+    subject: "Your coaching session is scheduled — UnWantraCoaching",
     htmlContent,
   };
 
@@ -414,7 +414,7 @@ export async function sendSlotRequestDeclinedEmail(
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Apex<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>Update on your session request.</p>
     </div>
     <div class="content">
@@ -442,19 +442,19 @@ export async function sendSlotRequestDeclinedEmail(
       </div>
 
       <p>If you have questions, feel free to reach out or browse other available coaches on our website.</p>
-      <p>Thank you for choosing Apex Coaching!</p>
+      <p>Thank you for choosing UnWantraCoaching!</p>
     </div>
     <div class="footer">
-      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+      &copy; ${currentYear} UnWantraCoaching. Need help? Contact hello@unwantracoaching.co.ke.
     </div>
   </div>
 </body>
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
     to: [{ email: details.email, name: details.fullName }],
-    subject: "Your session request was declined — Apex Coaching",
+    subject: "Your session request was declined — UnWantraCoaching",
     htmlContent,
   };
 
@@ -517,7 +517,7 @@ export async function sendSlotRequestCoachNotificationEmail(
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Apex<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>You have a new session request.</p>
     </div>
     <div class="content">
@@ -548,16 +548,16 @@ export async function sendSlotRequestCoachNotificationEmail(
       <p>Log in to your coach portal to approve or decline this request.</p>
     </div>
     <div class="footer">
-      &copy; ${currentYear} Apex Coaching. Coach portal notification.
+      &copy; ${currentYear} UnWantraCoaching. Coach portal notification.
     </div>
   </div>
 </body>
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "Apex Coaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
     to: [{ email: details.coachEmail, name: details.coachName }],
-    subject: "New session request — Apex Coaching",
+    subject: "New session request — UnWantraCoaching",
     htmlContent,
   };
 
@@ -576,7 +576,7 @@ export async function sendSlotRequestCoachNotificationEmail(
 function generateBookingEmailTemplate(booking: BookingConfirmationDetails): string {
   const currentYear = new Date().getFullYear();
   const coachName = booking.coachName || `Coach #${booking.coachId}`;
-  const coachEmail = booking.coachEmail || "hello@apexcoaching.com";
+  const coachEmail = booking.coachEmail || "hello@unwantracoaching.co.ke";
   const coachPhone = booking.coachPhone || "+1 800 555 0100";
 
   return `<!DOCTYPE html>
@@ -584,7 +584,7 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Apex Coaching Booking</title>
+  <title>Your UnWantraCoaching Booking</title>
   <style>
     body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
     .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
@@ -613,7 +613,7 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
 <body>
   <div class="email-container">
     <div class="header">
-      <p class="brand">Apex<span>Coaching</span></p>
+      <p class="brand">UnWantraCoaching</p>
       <p>Your coaching session has been booked successfully.</p>
     </div>
 
@@ -647,11 +647,11 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
       </div>
 
       <p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>
-      <p>Thank you for booking with Apex Coaching.</p>
+      <p>Thank you for booking with UnWantraCoaching.</p>
     </div>
 
     <div class="footer">
-      &copy; ${currentYear} Apex Coaching. Need help? Contact hello@apexcoaching.com.
+      &copy; ${currentYear} UnWantraCoaching. Need help? Contact hello@unwantracoaching.co.ke.
     </div>
   </div>
 </body>
