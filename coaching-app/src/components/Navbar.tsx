@@ -15,6 +15,7 @@ const links = [
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState("#home");
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,11 +31,51 @@ const Navbar: React.FC = () => {
     const scrollTarget = (location.state as { scrollTo?: string } | undefined)?.scrollTo;
 
     if (location.pathname === "/" && scrollTarget) {
+      setActiveHash(`#${scrollTarget}`);
       requestAnimationFrame(() => {
         document.getElementById(scrollTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
   }, [location.pathname, location.state]);
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setActiveHash("#home");
+      return;
+    }
+
+    const hashFromLocation = location.hash || "#home";
+    setActiveHash(hashFromLocation);
+
+    const sectionIds = links
+      .filter(([, href]) => href.startsWith("#"))
+      .map(([, href]) => href.slice(1));
+
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((element): element is HTMLElement => Boolean(element));
+
+    if (elements.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (visible) {
+          setActiveHash(`#${visible.target.id}`);
+        }
+      },
+      { threshold: [0.2, 0.4, 0.6], rootMargin: "-20% 0px -45% 0px" },
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [location.pathname, location.hash]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -44,14 +85,7 @@ const Navbar: React.FC = () => {
     }
 
     if (href.startsWith("#")) {
-      const targetId = href.slice(1);
-      const scrollTo = (location.state as { scrollTo?: string } | undefined)?.scrollTo;
-      return (
-        location.pathname === "/" &&
-        (location.hash === href ||
-          (!location.hash && href === "#home") ||
-          scrollTo === targetId)
-      );
+      return location.pathname === "/" && activeHash === href;
     }
 
     return false;
@@ -71,6 +105,7 @@ const Navbar: React.FC = () => {
     const targetId = href.slice(1);
 
     if (location.pathname === "/") {
+      setActiveHash(href);
       const target = document.getElementById(targetId);
       target?.scrollIntoView({ behavior: "smooth", block: "start" });
       window.history.replaceState({ scrollTo: targetId }, "", `/#${targetId}`);
