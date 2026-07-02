@@ -73,6 +73,12 @@
   background: rgba(127, 154, 122, 0.12);
 }
 
+.uw-nav-links a.active, .uw-nav-links button.active {
+  color: var(--uw-ink);
+  background: rgba(217, 169, 40, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(217, 169, 40, 0.24);
+}
+
 .uw-nav-links .uw-nav-cta {
   margin-left: 10px;
   color: var(--uw-ink);

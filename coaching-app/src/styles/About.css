@@ -231,6 +231,46 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   PLATFORM FOCUS
+   ═══════════════════════════════════════════════════════════════ */
+.about-platform {
+  padding: 64px 0;
+  background: #f8f5ec;
+}
+
+.about-platform-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.about-platform-card {
+  border-radius: var(--about-radius-lg);
+  padding: 28px 24px;
+  background: #fff;
+  border: 1px solid var(--about-line);
+  transition: transform var(--about-transition), box-shadow var(--about-transition);
+}
+
+.about-platform-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--about-shadow);
+}
+
+.about-platform-card h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  margin: 0 0 12px;
+  color: var(--about-ink);
+}
+
+.about-platform-card p {
+  color: var(--about-muted);
+  line-height: 1.75;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    OUR STORY
    ═══════════════════════════════════════════════════════════════ */
 .about-story {
@@ -672,6 +712,7 @@
     gap: 32px;
   }
 
+  .about-platform-grid,
   .about-values-grid,
   .about-commitment-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -684,6 +725,7 @@
 
 @media (max-width: 900px) {
   .about-vm-grid,
+  .about-platform-grid,
   .about-story-grid {
     grid-template-columns: 1fr;
   }

@@ -7,6 +7,7 @@ import BookingSlot from "./controllers/BookSlot.js";
 import Accounts from "./controllers/Accounts.js";
 import SlotRequests from "./controllers/SlotRequests.js";
 import Platform from "./controllers/Platform.js";
+import Contact from "./controllers/Contact.js";
 import cors from "cors";
 let app = express();
 // Database connection function
@@ -23,6 +24,7 @@ app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
 app.use("/api/slot-requests", SlotRequests);
 app.use("/api/platform", Platform);
+app.use("/api/contact", Contact);
 app.listen(DotEnvConfig.ServerPort||process.env.PORT, () => {
   console.log("Server started...", DotEnvConfig.ServerPort);
 });

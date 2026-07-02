@@ -1495,6 +1495,8 @@
     flex-wrap: wrap;
     border-right: none;
     border-bottom: 1px solid var(--sidebar-border);
+    background: rgba(251, 250, 245, 0.96);
+    box-shadow: none;
   }
 
   .dashboard-sidebar-header {
@@ -1504,11 +1506,16 @@
     flex: 1;
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 6px;
     padding: 10px 14px;
   }
   .dashboard-sidebar-item {
     margin: 0;
+    flex: 1 1 48%;
+  }
+  .dashboard-sidebar-link {
+    min-width: 0;
+    font-size: 13px;
   }
   .dashboard-sidebar-footer {
     flex: 0 0 100%;

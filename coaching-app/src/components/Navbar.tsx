@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -17,6 +17,7 @@ const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12);
@@ -25,11 +26,63 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const scrollTarget = (location.state as { scrollTo?: string } | undefined)?.scrollTo;
+
+    if (location.pathname === "/" && scrollTarget) {
+      requestAnimationFrame(() => {
+        document.getElementById(scrollTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [location.pathname, location.state]);
+
   const closeMenu = () => setMenuOpen(false);
+
+  const isLinkActive = (href: string) => {
+    if (href.startsWith("/")) {
+      return location.pathname === href;
+    }
+
+    if (href.startsWith("#")) {
+      const targetId = href.slice(1);
+      const scrollTo = (location.state as { scrollTo?: string } | undefined)?.scrollTo;
+      return (
+        location.pathname === "/" &&
+        (location.hash === href ||
+          (!location.hash && href === "#home") ||
+          scrollTo === targetId)
+      );
+    }
+
+    return false;
+  };
+
+  const handleAnchorClick = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (!href.startsWith("#")) {
+      return;
+    }
+
+    event.preventDefault();
+    closeMenu();
+
+    const targetId = href.slice(1);
+
+    if (location.pathname === "/") {
+      const target = document.getElementById(targetId);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.history.replaceState({ scrollTo: targetId }, "", `/#${targetId}`);
+      return;
+    }
+
+    navigate("/", { state: { scrollTo: targetId } });
+  };
 
   return (
     <nav className={`uw-nav ${scrolled ? "is-scrolled" : ""}`}>
-      <a className="uw-logo" href="#home" onClick={closeMenu}>
+      <a className="uw-logo" href="#home" onClick={(event) => handleAnchorClick(event, "#home")}>
         <span>U</span>
         <strong>Unwantra Coaching</strong>
       </a>
@@ -46,11 +99,16 @@ const Navbar: React.FC = () => {
       <div className={`uw-nav-links ${menuOpen ? "open" : ""}`}>
         {links.map(([label, href]) =>
           href.startsWith("/") ? (
-            <Link key={href} to={href} onClick={closeMenu}>
+            <NavLink key={href} to={href} onClick={closeMenu} className={({ isActive }) => (isActive ? "active" : "")}>
               {label}
-            </Link>
+            </NavLink>
           ) : (
-            <a key={href} href={href} onClick={closeMenu}>
+            <a
+              key={href}
+              href={href}
+              onClick={(event) => handleAnchorClick(event, href)}
+              className={isLinkActive(href) ? "active" : ""}
+            >
               {label}
             </a>
           ),

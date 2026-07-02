@@ -14,14 +14,15 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
         <div className="about-hero-overlay" />
         <div className="about-container">
           <div className="about-hero-content">
-            <span className="about-kicker">About Unwantra Coaching</span>
+            <span className="about-kicker">About the Unwantra Coaching Platform</span>
             <h1 className="about-hero-title">
-              Empowering leaders to own their <em>voice</em>.
+              Connecting bold leaders with coaching that is purposeful,
+              practical, and values-driven.
             </h1>
             <p className="about-hero-subtitle">
-              We help leaders lead with integrity and live with intention —
-              through transformational coaching that strengthens confidence,
-              boundaries, influence, and values-based leadership.
+              Our platform is designed to help executives, teams, and coaches
+              grow together through intentional leadership development,
+              trusted guidance, and seamless session management.
             </p>
           </div>
         </div>
@@ -35,18 +36,56 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
               <span className="about-vm-icon">👁️</span>
               <h2>Our Vision</h2>
               <p>
-                To cultivate a world where leaders lead with courage, clarity,
-                and compassion — owning their voice, honoring their values, and
-                creating meaningful impact in work and life.
+                To shape a coaching platform where leaders and teams access
+                values-led transformation, sustainable confidence, and powerful
+                people-first leadership.
               </p>
             </div>
             <div className="about-mission">
               <span className="about-vm-icon">🎯</span>
               <h2>Our Mission</h2>
               <p>
-                Empowering leaders to own their voice, lead with confidence,
-                clarity, and values — through coaching that is deeply human,
-                transformative, and grounded in purpose.
+                To build a trusted African coaching platform that connects
+                executive leaders, teams, and coaches with purposeful growth
+                journeys and transparent, measurable coaching outcomes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="about-platform">
+        <div className="about-container">
+          <div className="about-section-head">
+            <span className="about-kicker">Platform Focus</span>
+            <h2>Built for leaders, coaches, and growth-driven organisations</h2>
+            <p>
+              Our platform brings people, coaching operations, and progress
+              tracking together so your leadership development feels clear,
+              secure, and scalable.
+            </p>
+          </div>
+          <div className="about-platform-grid">
+            <div className="about-platform-card">
+              <h3>Trusted coach connection</h3>
+              <p>
+                Match with vetted executive and leadership coaches who support
+                the outcomes you care about — from confidence and influence to
+                team alignment and executive presence.
+              </p>
+            </div>
+            <div className="about-platform-card">
+              <h3>Streamlined booking</h3>
+              <p>
+                Book sessions, manage availability, and keep your calendar in
+                sync without chasing email threads or spreadsheets.
+              </p>
+            </div>
+            <div className="about-platform-card">
+              <h3>Clear progress and values</h3>
+              <p>
+                Stay aligned around values, goals, and coaching momentum with
+                a platform designed for intentional leadership development.
               </p>
             </div>
           </div>
@@ -110,14 +149,10 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 <strong>grounded in values</strong>.
               </p>
               <p>
-                As a premium executive coaching firm that is proudly
-                <span className="about-highlight"> women-led</span>,
-                <span className="about-highlight"> African-led</span>, and
-                <span className="about-highlight"> values-based</span>, we
-                partner with ambitious professionals and executives who are
-                ready to elevate their influence, strengthen their executive
-                presence, navigate career transitions with confidence, and build
-                meaningful workplace relationships.
+                Built as a coaching platform for ambitious leaders, teams, and
+                coaches, Unwantra brings together personalised growth journeys,
+                clear booking, and values-led accountability across every
+                coaching relationship.
               </p>
               <div className="about-story-tags">
                 <span className="about-story-tag">🌍 African-led</span>

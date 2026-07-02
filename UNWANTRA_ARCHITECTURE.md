@@ -9,6 +9,20 @@
 - Contact Us: name, email, phone, coaching interest, goals.
 - Staff Areas: authenticated coach and admin dashboards.
 
+## Contact Form Submission Flow
+- User fills the contact form with `name`, `email`, `phone`, `interest` (individual / group / both), and `goals`.
+- Frontend posts the form payload to `POST /api/contact`.
+- Backend validates required fields and persists the record to `contact_submissions`.
+- The submission is returned as a lead record for staff review and later scheduling.
+- `source` is captured as a tracking field such as `contact-us` to distinguish lead origin.
+- This data supports Unwantra by powering coaching intake, coach matching, and follow-up workflow.
+
+## Data Science Value
+- Interest segmentation identifies demand for individual vs group discovery calls.
+- Goal themes expose the most common leadership challenges and inform program development.
+- Source tracking shows which channels drive qualified leads and helps optimize marketing.
+- Contact submissions provide a structured dataset for lead scoring, prioritization, and outcome analytics.
+
 ## Database Entities And Relationships
 - `user_accounts`: coaches/admins. Coaches own availability slots, bookings, and session notes.
 - `programs`: coaching service catalog. Coaches and bookings reference program slugs through `programName`.
