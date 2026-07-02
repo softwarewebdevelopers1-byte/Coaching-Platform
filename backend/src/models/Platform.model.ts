@@ -26,7 +26,8 @@ interface NotificationInterface {
     | "booking_approval"
     | "booking_rejection"
     | "session_reminder"
-    | "reschedule_notice";
+    | "reschedule_notice"
+    | "contact_acknowledgment";
   status: "queued" | "sent" | "failed";
   payload: Record<string, unknown>;
 }
@@ -83,6 +84,7 @@ const NotificationSchema = new mongoose.Schema<NotificationInterface>(
         "booking_rejection",
         "session_reminder",
         "reschedule_notice",
+        "contact_acknowledgment",
       ],
       required: true,
     },
