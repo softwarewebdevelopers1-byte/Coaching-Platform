@@ -10,6 +10,7 @@ import {
   BookingsSessionsModel,
 } from "../models/Bookings.model.js";
 import { UserAccountsModel } from "../models/users.model.js";
+import { ContactSubmissionModel } from "../models/Contact.model.js";
 
 const router = Router();
 
@@ -70,15 +71,46 @@ router.get("/session-notes", async (req, res): Promise<void> => {
 });
 
 router.get("/analytics", async (_req, res): Promise<void> => {
-  const [coaches, activeCoaches, bookings, openSlots, bookedSlots, notifications] =
-    await Promise.all([
-      UserAccountsModel.countDocuments({ role: "coach" }),
-      UserAccountsModel.countDocuments({ role: "coach", status: "active" }),
-      BookingsSessionsModel.countDocuments(),
-      BookingsCreatedModel.countDocuments({ status: "open" }),
-      BookingsCreatedModel.countDocuments({ status: "booked" }),
-      NotificationModel.countDocuments(),
-    ]);
+  const [
+    coaches,
+    activeCoaches,
+    bookings,
+    openSlots,
+    bookedSlots,
+    notifications,
+    contactLeads,
+    newLeads,
+    contactedLeads,
+    scheduledLeads,
+    convertedLeads,
+    closedLeads,
+    individualInterest,
+    groupInterest,
+    bothInterest,
+  ] = await Promise.all([
+    UserAccountsModel.countDocuments({ role: "coach" }),
+    UserAccountsModel.countDocuments({ role: "coach", status: "active" }),
+    BookingsSessionsModel.countDocuments(),
+    BookingsCreatedModel.countDocuments({ status: "open" }),
+    BookingsCreatedModel.countDocuments({ status: "booked" }),
+    NotificationModel.countDocuments(),
+    ContactSubmissionModel.countDocuments(),
+    ContactSubmissionModel.countDocuments({ status: "new" }),
+    ContactSubmissionModel.countDocuments({ status: "contacted" }),
+    ContactSubmissionModel.countDocuments({ status: "scheduled" }),
+    ContactSubmissionModel.countDocuments({ status: "converted" }),
+    ContactSubmissionModel.countDocuments({ status: "closed" }),
+    ContactSubmissionModel.countDocuments({
+      interest: "Individual Executive Coaching",
+    }),
+    ContactSubmissionModel.countDocuments({
+      interest: "Group Executive Coaching",
+    }),
+    ContactSubmissionModel.countDocuments({ interest: "Both" }),
+  ]);
+
+  const leadToBookingConversionRate =
+    contactLeads > 0 ? Number((scheduledLeads / contactLeads).toFixed(2)) : 0;
 
   res.status(200).json({
     analytics: {
@@ -88,6 +120,20 @@ router.get("/analytics", async (_req, res): Promise<void> => {
       openSlots,
       bookedSlots,
       notifications,
+      contactLeads,
+      leadsByStatus: {
+        new: newLeads,
+        contacted: contactedLeads,
+        scheduled: scheduledLeads,
+        converted: convertedLeads,
+        closed: closedLeads,
+      },
+      leadsByInterest: {
+        individual: individualInterest,
+        group: groupInterest,
+        both: bothInterest,
+      },
+      leadToBookingConversionRate,
       generatedAt: new Date().toISOString(),
     },
   });

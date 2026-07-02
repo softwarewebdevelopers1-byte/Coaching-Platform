@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { Account, BookingSession, CoachSlot } from "../types";
+import type { Account, BookingSession, CoachSlot, ContactSubmission, PlatformAnalytics } from "../types";
 import "../styles/Dashboard.css";
 
 const API_BASE_URL =
@@ -12,7 +12,7 @@ interface AdminDashboardProps {
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
-type AdminTab = "overview" | "accounts" | "coaches" | "bookings";
+type AdminTab = "overview" | "accounts" | "coaches" | "bookings" | "leads";
 
 const DEFAULT_ACCOUNT_PASSWORD = "Coach@123";
 
@@ -144,6 +144,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [sessions, setSessions] = useState<BookingSession[]>([]);
+  const [contactLeads, setContactLeads] = useState<ContactSubmission[]>([]);
+  const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>("");
+  const [schedulingLeadId, setSchedulingLeadId] = useState<string | null>(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    programName: "individual-executive",
+    coachId: "",
+    slotId: "",
+    bookingTime: "",
+    action: "book" as "book" | "slot_request",
+  });
   const [accountForm, setAccountForm] = useState({
     fullName: "",
     email: "",
@@ -162,23 +173,147 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const activeAccounts = accounts.filter((a) => a.status === "active").length;
   const availableSlots = slots.filter((s) => s.status === "open").length;
   const disabledAccounts = accounts.filter((a) => a.status === "disabled").length;
+  const newLeads = contactLeads.filter((lead) => lead.status === "new").length;
+  const coachAccounts = accounts.filter((a) => a.role === "coach" && a.status === "active");
 
   const loadDashboardData = async () => {
     try {
-      const [accountsRes, slotsRes, sessionsRes] = await Promise.all([
+      const leadQuery = leadStatusFilter ? `?status=${encodeURIComponent(leadStatusFilter)}` : "";
+      const [accountsRes, slotsRes, sessionsRes, leadsRes, analyticsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/accounts`),
         fetch(`${API_BASE_URL}/api/bookings/coach-slots`),
         fetch(`${API_BASE_URL}/api/bookings/sessions`),
+        fetch(`${API_BASE_URL}/api/contact${leadQuery}`),
+        fetch(`${API_BASE_URL}/api/platform/analytics`),
       ]);
       if (accountsRes.ok) setAccounts((await accountsRes.json()).accounts || []);
       if (slotsRes.ok) setSlots((await slotsRes.json()).slots || []);
       if (sessionsRes.ok) setSessions((await sessionsRes.json()).sessions || []);
+      if (leadsRes.ok) setContactLeads((await leadsRes.json()).submissions || []);
+      if (analyticsRes.ok) setAnalytics((await analyticsRes.json()).analytics || null);
     } catch {
       showToast("Error loading dashboard data", "error", 5000);
     }
   };
 
-  useEffect(() => { loadDashboardData(); }, []);
+  useEffect(() => { loadDashboardData(); }, [leadStatusFilter]);
+
+  const updateLeadStatus = async (id: string, status: ContactSubmission["status"]) => {
+    const res = await fetch(`${API_BASE_URL}/api/contact/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      showToast(`Lead marked as ${status}`, "success", 3500);
+      loadDashboardData();
+    } else {
+      const error = await res.json().catch(() => null);
+      showToast(error?.message || "Could not update lead", "error", 5000);
+    }
+  };
+
+  const openSchedulePanel = async (lead: ContactSubmission) => {
+    const defaultProgram =
+      lead.programSlug ||
+      (lead.interest === "Group Executive Coaching"
+        ? "group-executive"
+        : "individual-executive");
+
+    setSchedulingLeadId(lead._id);
+    setScheduleForm({
+      programName: defaultProgram,
+      coachId: lead.assignedCoachId || "",
+      slotId: "",
+      bookingTime: "",
+      action: "book",
+    });
+
+    if (!lead.assignedCoachId) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bookings/assign-coach`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            programName: defaultProgram,
+            goals: lead.goals.split(/[,;\n]/).map((g) => g.trim()).filter(Boolean),
+          }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          setScheduleForm((prev) => ({
+            ...prev,
+            coachId: result.coach?._id || "",
+          }));
+        }
+      } catch {
+        // Admin can still pick a coach manually.
+      }
+    }
+  };
+
+  const scheduleLead = async (lead: ContactSubmission) => {
+    const coach = coachAccounts.find((account) => account._id === scheduleForm.coachId);
+    if (!coach) {
+      showToast("Select a coach before scheduling", "error", 4000);
+      return;
+    }
+
+    const selectedSlot = slots.find((slot) => slot._id === scheduleForm.slotId);
+    const bookingTime =
+      scheduleForm.bookingTime ||
+      (selectedSlot ? new Date(selectedSlot.bookingDate).toLocaleString() : "");
+
+    const res = await fetch(`${API_BASE_URL}/api/contact/${lead._id}/schedule`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: scheduleForm.action,
+        programName: scheduleForm.programName,
+        coachId: coach._id,
+        coachName: coach.fullName,
+        coachEmail: coach.email,
+        coachPhone: coach.phone || "",
+        slotId: scheduleForm.slotId || undefined,
+        bookingTime: scheduleForm.action === "book" ? bookingTime : undefined,
+        message: lead.goals,
+      }),
+    });
+
+    if (res.ok) {
+      showToast(
+        scheduleForm.action === "book"
+          ? "Discovery call scheduled for lead"
+          : "Slot request sent to coach",
+        "success",
+        4000,
+      );
+      setSchedulingLeadId(null);
+      loadDashboardData();
+    } else {
+      const error = await res.json().catch(() => null);
+      showToast(error?.message || "Could not schedule lead", "error", 5000);
+    }
+  };
+
+  const copyBookingLink = (lead: ContactSubmission) => {
+    const program =
+      lead.programSlug ||
+      (lead.interest === "Group Executive Coaching"
+        ? "group-executive"
+        : "individual-executive");
+    const link = `${window.location.origin}/#discovery-call?email=${encodeURIComponent(lead.email)}&interest=${encodeURIComponent(program)}`;
+    navigator.clipboard.writeText(link).then(() => {
+      showToast("Booking link copied to clipboard", "success", 3500);
+    });
+  };
+
+  const coachSlotsForSchedule = slots.filter(
+    (slot) =>
+      slot.status === "open" &&
+      slot.coachId === scheduleForm.coachId &&
+      slot.programName === scheduleForm.programName,
+  );
 
   const resetAccountForm = () => {
     setAccountForm({
@@ -257,6 +392,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Icons.grid },
+    { id: "leads", label: "Contact Leads", icon: Icons.mail },
     { id: "accounts", label: "Accounts", icon: Icons.users },
     { id: "coaches", label: "Coaches", icon: Icons.coach },
     { id: "bookings", label: "Bookings", icon: Icons.calendar },
@@ -264,6 +400,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
 
   const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {
     overview: { title: "Dashboard Overview", subtitle: "Platform health at a glance" },
+    leads: { title: "Contact Leads", subtitle: "Review enquiries and schedule discovery calls" },
     accounts: { title: "Account Management", subtitle: "Create and manage platform accounts" },
     coaches: { title: "Coach Management", subtitle: "Invite coaches and view availability slots" },
     bookings: { title: "Booking Sessions", subtitle: "All user booking sessions across the platform" },
@@ -387,7 +524,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                   <p className="stat-card-value">{activeAccounts}</p>
                   <p className="stat-card-change negative">↓ {disabledAccounts} disabled</p>
                 </div>
+                <div className="stat-card">
+                  <div className="stat-card-icon">📨</div>
+                  <p className="stat-card-label">Contact Leads</p>
+                  <p className="stat-card-value">{analytics?.contactLeads ?? contactLeads.length}</p>
+                  <p className="stat-card-change">{newLeads} awaiting follow-up</p>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-icon">📈</div>
+                  <p className="stat-card-label">Lead Conversion</p>
+                  <p className="stat-card-value">
+                    {analytics
+                      ? `${Math.round(analytics.leadToBookingConversionRate * 100)}%`
+                      : "—"}
+                  </p>
+                  <p className="stat-card-change positive">
+                    {analytics?.leadsByStatus.scheduled ?? 0} scheduled from contact
+                  </p>
+                </div>
               </div>
+
+              {analytics && (
+                <div className="dashboard-card">
+                  <div className="dashboard-card-header">
+                    <h2 className="dashboard-card-title">
+                      <span className="card-title-icon">📊</span>
+                      Lead Intelligence
+                    </h2>
+                  </div>
+                  <div className="dashboard-card-body">
+                    <div className="dashboard-badge-list">
+                      <span className="dashboard-badge success">
+                        Individual: {analytics.leadsByInterest.individual}
+                      </span>
+                      <span className="dashboard-badge warning">
+                        Group: {analytics.leadsByInterest.group}
+                      </span>
+                      <span className="dashboard-badge">
+                        Both: {analytics.leadsByInterest.both}
+                      </span>
+                      <span className="dashboard-badge success">
+                        Scheduled: {analytics.leadsByStatus.scheduled}
+                      </span>
+                      <span className="dashboard-badge error">
+                        Closed: {analytics.leadsByStatus.closed}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="dashboard-card dashboard-card-highlight">
                 <div className="dashboard-card-header">
@@ -677,6 +862,249 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                 </div>
               </div>
             </>
+          )}
+
+          {/* ── CONTACT LEADS TAB ──────────────────────── */}
+          {activeTab === "leads" && (
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">📨</span>
+                  Contact Form Leads
+                </h2>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <select
+                    value={leadStatusFilter}
+                    onChange={(e) => setLeadStatusFilter(e.target.value)}
+                    style={{ padding: "6px 10px", fontSize: "12px", borderRadius: "8px" }}
+                  >
+                    <option value="">All statuses</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="converted">Converted</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>
+                    {contactLeads.length} leads
+                  </span>
+                </div>
+              </div>
+              <div className="dashboard-card-body" style={{ padding: 0 }}>
+                {contactLeads.length === 0 ? (
+                  <div className="dashboard-empty">
+                    <span className="dashboard-empty-icon">📨</span>
+                    <p className="dashboard-empty-text">No contact leads yet</p>
+                    <p className="dashboard-empty-sub">
+                      Submissions from the contact form will appear here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="dashboard-table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Contact</th>
+                          <th>Interest</th>
+                          <th>Goals</th>
+                          <th>Status</th>
+                          <th>Submitted</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contactLeads.map((lead) => (
+                          <React.Fragment key={lead._id}>
+                            <tr>
+                              <td className="td-name">{lead.name}</td>
+                              <td>
+                                <div className="td-email">{lead.email}</div>
+                                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                                  {lead.phone}
+                                </div>
+                              </td>
+                              <td style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                                {lead.interest}
+                              </td>
+                              <td
+                                style={{
+                                  color: "var(--text-secondary)",
+                                  fontSize: "12px",
+                                  maxWidth: "220px",
+                                }}
+                                title={lead.goals}
+                              >
+                                {lead.goals.length > 80
+                                  ? `${lead.goals.slice(0, 80)}…`
+                                  : lead.goals}
+                              </td>
+                              <td><StatusPill status={lead.status} /></td>
+                              <td style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                                {lead.createdAt
+                                  ? new Date(lead.createdAt).toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td>
+                                <div className="lead-actions">
+                                  {lead.status === "new" && (
+                                    <button
+                                      className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                      onClick={() => updateLeadStatus(lead._id, "contacted")}
+                                    >
+                                      Mark contacted
+                                    </button>
+                                  )}
+                                  {lead.status !== "scheduled" && lead.status !== "closed" && (
+                                    <button
+                                      className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
+                                      onClick={() => openSchedulePanel(lead)}
+                                    >
+                                      Schedule
+                                    </button>
+                                  )}
+                                  <button
+                                    className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                    onClick={() => copyBookingLink(lead)}
+                                  >
+                                    Copy link
+                                  </button>
+                                  {lead.status !== "closed" && lead.status !== "converted" && (
+                                    <button
+                                      className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                      onClick={() => updateLeadStatus(lead._id, "closed")}
+                                    >
+                                      Close
+                                    </button>
+                                  )}
+                                  {lead.status === "scheduled" && (
+                                    <button
+                                      className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                      onClick={() => updateLeadStatus(lead._id, "converted")}
+                                    >
+                                      Mark converted
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            {schedulingLeadId === lead._id && (
+                              <tr>
+                                <td colSpan={7}>
+                                  <div className="lead-schedule-panel">
+                                    <strong>Schedule discovery call for {lead.name}</strong>
+                                    <select
+                                      value={scheduleForm.programName}
+                                      onChange={(e) =>
+                                        setScheduleForm({
+                                          ...scheduleForm,
+                                          programName: e.target.value,
+                                          slotId: "",
+                                        })
+                                      }
+                                    >
+                                      <option value="individual-executive">
+                                        Individual Executive Coaching
+                                      </option>
+                                      <option value="group-executive">
+                                        Group Executive Coaching
+                                      </option>
+                                    </select>
+                                    <select
+                                      value={scheduleForm.coachId}
+                                      onChange={(e) =>
+                                        setScheduleForm({
+                                          ...scheduleForm,
+                                          coachId: e.target.value,
+                                          slotId: "",
+                                        })
+                                      }
+                                    >
+                                      <option value="">Select coach</option>
+                                      {coachAccounts.map((coach) => (
+                                        <option key={coach._id} value={coach._id}>
+                                          {coach.fullName}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      value={scheduleForm.action}
+                                      onChange={(e) =>
+                                        setScheduleForm({
+                                          ...scheduleForm,
+                                          action: e.target.value as "book" | "slot_request",
+                                        })
+                                      }
+                                    >
+                                      <option value="book">Book open slot</option>
+                                      <option value="slot_request">
+                                        Request slot from coach
+                                      </option>
+                                    </select>
+                                    {scheduleForm.action === "book" && (
+                                      <>
+                                        <select
+                                          value={scheduleForm.slotId}
+                                          onChange={(e) => {
+                                            const slot = coachSlotsForSchedule.find(
+                                              (item) => item._id === e.target.value,
+                                            );
+                                            setScheduleForm({
+                                              ...scheduleForm,
+                                              slotId: e.target.value,
+                                              bookingTime: slot
+                                                ? new Date(slot.bookingDate).toLocaleString()
+                                                : scheduleForm.bookingTime,
+                                            });
+                                          }}
+                                        >
+                                          <option value="">Select open slot</option>
+                                          {coachSlotsForSchedule.map((slot) => (
+                                            <option key={slot._id} value={slot._id}>
+                                              {slot.title} —{" "}
+                                              {new Date(slot.bookingDate).toLocaleString()}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <input
+                                          type="text"
+                                          placeholder="Or enter booking time manually"
+                                          value={scheduleForm.bookingTime}
+                                          onChange={(e) =>
+                                            setScheduleForm({
+                                              ...scheduleForm,
+                                              bookingTime: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </>
+                                    )}
+                                    <div className="lead-actions">
+                                      <button
+                                        className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
+                                        onClick={() => scheduleLead(lead)}
+                                      >
+                                        Confirm scheduling
+                                      </button>
+                                      <button
+                                        className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                        onClick={() => setSchedulingLeadId(null)}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* ── BOOKINGS TAB ──────────────────────── */}

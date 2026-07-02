@@ -111,3 +111,48 @@ export interface SlotRequest {
   coachNotes?: string;
   createdAt?: string;
 }
+
+export type ContactLeadStatus =
+  | "new"
+  | "contacted"
+  | "scheduled"
+  | "converted"
+  | "closed";
+
+export interface ContactSubmission {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  interest: string;
+  goals: string;
+  source?: string;
+  status: ContactLeadStatus;
+  programSlug?: string | null;
+  assignedCoachId?: string;
+  assignedCoachName?: string;
+  bookingSessionId?: string;
+  adminNotes?: string;
+  contactedAt?: string;
+  scheduledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlatformAnalytics {
+  coaches: number;
+  activeCoaches: number;
+  bookings: number;
+  openSlots: number;
+  bookedSlots: number;
+  notifications: number;
+  contactLeads: number;
+  leadsByStatus: Record<ContactLeadStatus, number>;
+  leadsByInterest: {
+    individual: number;
+    group: number;
+    both: number;
+  };
+  leadToBookingConversionRate: number;
+  generatedAt: string;
+}

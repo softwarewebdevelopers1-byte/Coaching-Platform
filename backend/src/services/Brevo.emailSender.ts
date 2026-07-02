@@ -51,6 +51,105 @@ export async function sendBookingConfirmationEmail(
   }
 }
 
+interface ContactAcknowledgmentDetails {
+  email: string;
+  name: string;
+  interest: string;
+}
+
+export async function sendContactAcknowledgmentEmail(
+  details: ContactAcknowledgmentDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>We received your enquiry</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .brand span { color: #e8b96a; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .panel { border: 1px solid #e7ded2; border-radius: 10px; overflow: hidden; margin: 24px 0; }
+    .row { display: flex; gap: 18px; padding: 14px 16px; border-bottom: 1px solid #eee8df; }
+    .row:last-child { border-bottom: 0; }
+    .label { min-width: 140px; color: #6d6258; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size: 15px; color: #1a1612; }
+    .next-steps { background: #fbf4e7; border: 1px solid #e8b96a; border-radius: 10px; padding: 18px; margin: 24px 0; }
+    .next-steps h2 { margin: 0 0 10px; font-size: 18px; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+    a { color: #9b6a17; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">Unwantra<span>Coaching</span></p>
+      <p>Thank you for reaching out</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.name)},</p>
+      <p>We have received your enquiry and a member of the Unwantra team will follow up within 1–2 business days to discuss your coaching goals and schedule a discovery call if appropriate.</p>
+
+      <div class="panel">
+        <div class="row">
+          <div class="label">Coaching interest</div>
+          <div class="value">${escapeHtml(details.interest)}</div>
+        </div>
+      </div>
+
+      <div class="next-steps">
+        <h2>What happens next</h2>
+        <p>Our team will review your goals, match you with the most suitable coach, and reach out to arrange a discovery call at a time that works for you.</p>
+        <p>You can also book a discovery call directly from our website whenever you are ready.</p>
+      </div>
+
+      <p>Thank you for choosing Unwantra Coaching.</p>
+    </div>
+
+    <div class="footer">
+      &copy; ${currentYear} Unwantra Coaching. Need help? Contact hello@unwantracoaching.co.ke.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: {
+      name: "Unwantra Coaching",
+      email: "softwarewebdevelopers1@gmail.com",
+    },
+    to: [{ email: details.email, name: details.name }],
+    subject: "We received your coaching enquiry — Unwantra",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    console.log("Contact acknowledgment email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
 // ── Slot Request: received by user ────────────────────────────────────────────
 interface SlotRequestReceivedDetails {
   email: string;
