@@ -669,54 +669,24 @@ const MainContent: React.FC<MainContentProps> = ({
 
       {isBookingModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(7, 15, 23, 0.85)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            zIndex: 2000,
-            overflowY: "auto",
-            padding: "24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Discovery call booking"
+          className="uw-booking-overlay"
+          onClick={closeBookingModal}
         >
           <div
-            style={{
-              maxWidth: "720px",
-              width: "100%",
-              position: "relative",
-            }}
+            className="uw-booking-modal"
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={closeBookingModal}
-              style={{
-                position: "absolute",
-                top: "-44px",
-                right: "0",
-                zIndex: 1,
-                border: "none",
-                background: "rgba(255,255,255,0.95)",
-                color: "#111827",
-                width: "40px",
-                height: "40px",
-                borderRadius: "999px",
-                cursor: "pointer",
-                fontSize: "1.1rem",
-              }}
+              className="uw-booking-close-btn"
               aria-label="Close booking form"
             >
               ×
             </button>
-            <section id="discovery-call" className="uw-section uw-booking-section" style={{ padding: 0 }}>
-              <div className="uw-container" style={{ width: "100%", padding: 0, margin: 0 }}>
-                <div className="uw-booking-card" style={{ boxShadow: "var(--uw-shadow)" }}>
+            <section className="uw-booking-section">
+              <div className="uw-booking-modal-body">
+                <div className="uw-booking-card">
                   {step === 1 && (
                     <div className="uw-form-panel">
                       <h3>Step 1: Your full name</h3>
