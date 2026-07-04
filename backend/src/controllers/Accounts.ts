@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { Router } from "express";
+import fs from "fs";
+import path from "path";
 import { CoachInviteModel, UserAccountsModel } from "../models/users.model.js";
+import { sendResetPasswordEmail } from "../services/Brevo.emailSender.js";
 
 const router = Router();
 
@@ -294,7 +297,7 @@ router.post("/coach-invites", async (req, res): Promise<void> => {
   res.status(201).json({
     message: "Coach invite created",
     invite,
-    link: `${inviteBaseUrl}/?coachInvite=${token}`,
+    link: `${inviteBaseUrl}/signup?token=${token}`,
   });
 });
 
@@ -329,6 +332,8 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
     photo,
     availabilitySummary,
     maxWorkload,
+    availabilityType,
+    availableDays,
   } = req.body;
   if (!fullName) {
     res.status(400).json({ message: "Full name is required" });
@@ -336,6 +341,12 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
   }
 
   const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+  
+  const derivedAvailabilitySummary = availabilitySummary || (
+    availabilityType === "whole_week" 
+      ? "Whole week" 
+      : (availableDays && availableDays.length > 0 ? availableDays.join(", ") : "By discovery call")
+  );
 
   const account = await UserAccountsModel.findOneAndUpdate(
     { email: invite.email },
@@ -349,11 +360,13 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
       languages,
       expertise,
       photo,
-      availabilitySummary,
+      availabilitySummary: derivedAvailabilitySummary,
       maxWorkload,
       password: hashedPassword,
       role: "coach",
       status: "active",
+      availabilityType: availabilityType || "whole_week",
+      availableDays: availableDays || [],
     },
     { new: true, upsert: true, setDefaultsOnInsert: true },
   );
@@ -362,6 +375,117 @@ router.post("/coach-invites/:token/register", async (req, res): Promise<void> =>
   await invite.save();
 
   res.status(201).json({ message: "Coach account created", account });
+});
+
+router.post("/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ message: "Email is required" });
+    return;
+  }
+
+  const account = await UserAccountsModel.findOne({ email });
+  if (account) {
+    const token = crypto.randomBytes(24).toString("hex");
+    account.resetPasswordToken = token;
+    account.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    await account.save();
+
+    const baseUrl = req.body.baseUrl || "http://localhost:5173";
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+
+    sendResetPasswordEmail({
+      email: account.email,
+      fullName: account.fullName,
+      resetLink,
+    }).catch((err) => {
+      console.error("Error sending reset password email:", err);
+    });
+  }
+
+  res.status(200).json({
+    message: "If the account exists, a reset link has been sent to the email.",
+  });
+});
+
+router.post("/reset-password", async (req, res): Promise<void> => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    res.status(400).json({ message: "Token and password are required" });
+    return;
+  }
+
+  const account = await UserAccountsModel.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: new Date() },
+  });
+
+  if (!account) {
+    res.status(400).json({ message: "Reset token is invalid or has expired." });
+    return;
+  }
+
+  account.password = await bcrypt.hash(password, 10);
+  delete account.resetPasswordToken;
+  delete account.resetPasswordExpires;
+  await account.save();
+
+  res.status(200).json({ message: "Password has been reset successfully." });
+});
+
+router.post("/upload", async (req, res): Promise<void> => {
+  const { photoData, originalName } = req.body;
+  if (!photoData || !originalName) {
+    res.status(400).json({ message: "Photo data and original name are required." });
+    return;
+  }
+
+  try {
+    const ext = path.extname(originalName) || ".jpg";
+    const filename = `coach_${Date.now()}${ext}`;
+
+    const frontendPublicPath = path.resolve(process.cwd(), "../coaching-app/public/uploads");
+    const base64Image = photoData.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Image, 'base64');
+
+    let savedPath = "";
+    let wroteFile = false;
+
+    try {
+      if (!fs.existsSync(frontendPublicPath)) {
+        fs.mkdirSync(frontendPublicPath, { recursive: true });
+      }
+      fs.writeFileSync(path.join(frontendPublicPath, filename), buffer);
+      savedPath = `/uploads/${filename}`;
+      wroteFile = true;
+      console.log("Uploaded file saved to frontend public uploads:", savedPath);
+    } catch (e) {
+      console.log("Could not write to frontend public uploads, falling back...", e);
+    }
+
+    const backendPublicPath = path.resolve(process.cwd(), "public/uploads");
+    try {
+      if (!fs.existsSync(backendPublicPath)) {
+        fs.mkdirSync(backendPublicPath, { recursive: true });
+      }
+      fs.writeFileSync(path.join(backendPublicPath, filename), buffer);
+      if (!wroteFile) {
+        savedPath = `/uploads/${filename}`;
+      }
+      console.log("Uploaded file saved to backend public uploads:", path.join(backendPublicPath, filename));
+    } catch (err) {
+      console.error("Failed to write fallback to backend uploads folder:", err);
+      if (!wroteFile) {
+        res.status(500).json({ message: "Failed to save uploaded file." });
+        return;
+      }
+    }
+
+    res.status(200).json({ photoUrl: savedPath });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ message: "An error occurred during file upload." });
+  }
 });
 
 export default router;

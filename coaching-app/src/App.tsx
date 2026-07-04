@@ -11,6 +11,9 @@ import AdminDashboard from "./components/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import LoginPage from "./components/LoginPage";
+import ForgotPasswordPage from "./components/ForgotPasswordPage";
+import ResetPasswordPage from "./components/ResetPasswordPage";
+import CoachSignupPage from "./components/CoachSignupPage";
 import { AuthProvider } from "./context/AuthContext";
 import type { Booking, Program, Testimonial } from "./types";
 
@@ -120,6 +123,9 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/coach-signup" element={<CoachSignupPage />} />
       <Route
         path="/admin"
         element={

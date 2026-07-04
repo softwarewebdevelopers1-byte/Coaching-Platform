@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import type { Request, Response, NextFunction } from "express";
+import path from "path";
 import DotEnvConfig from "./configs/DotEnv.js";
 import DatabaseConnection from "./database/ConnectDB.js";
 import BookingSlot from "./controllers/BookSlot.js";
@@ -20,6 +21,7 @@ app.use(
     methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
   }),
 );
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
 app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
 app.use("/api/slot-requests", SlotRequests);

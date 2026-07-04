@@ -2,6 +2,7 @@ import { Router } from "express";
 import { SlotRequestModel } from "../models/SlotRequests.model.js";
 import { BookingsSessionsModel } from "../models/Bookings.model.js";
 import { UserAccountsModel } from "../models/users.model.js";
+import { AppNotificationModel } from "../models/Platform.model.js";
 
 import {
   sendSlotRequestReceivedEmail,
@@ -54,6 +55,14 @@ router.post("/", async (req, res): Promise<void> => {
     coachEmail,
     message: message || "",
     status: "pending",
+  });
+
+  await AppNotificationModel.create({
+    recipientId: coachId,
+    title: "New slot request",
+    message: `${fullName} requested a coaching slot for ${programName}.`,
+    type: "slot_request",
+    read: false,
   });
 
   sendSlotRequestReceivedEmail({

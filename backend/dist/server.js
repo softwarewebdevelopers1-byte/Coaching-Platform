@@ -1,0 +1,28 @@
+import express from "express";
+import path from "path";
+import DotEnvConfig from "./configs/DotEnv.js";
+import DatabaseConnection from "./database/ConnectDB.js";
+import BookingSlot from "./controllers/BookSlot.js";
+import Accounts from "./controllers/Accounts.js";
+import SlotRequests from "./controllers/SlotRequests.js";
+import Platform from "./controllers/Platform.js";
+import Contact from "./controllers/Contact.js";
+import cors from "cors";
+let app = express();
+// Database connection function
+DatabaseConnection();
+app.use(express.json());
+app.use(cors({
+    origin: ["http://localhost:5173", "https://coaching-platform-rust.vercel.app"],
+    methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
+}));
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+app.use("/api/bookings", BookingSlot);
+app.use("/api/accounts", Accounts);
+app.use("/api/slot-requests", SlotRequests);
+app.use("/api/platform", Platform);
+app.use("/api/contact", Contact);
+app.listen(DotEnvConfig.ServerPort || process.env.PORT, () => {
+    console.log("Server started...", DotEnvConfig.ServerPort);
+});
+//# sourceMappingURL=server.js.map

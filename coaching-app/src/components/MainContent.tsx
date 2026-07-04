@@ -122,6 +122,18 @@ const MainContent: React.FC<MainContentProps> = ({
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
+  const isCoachAvailableToday = (coach: Coach) => {
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+    const normalizedToday = today.toLowerCase();
+
+    if (coach.availabilityType === "whole_week") return true;
+    if (coach.availableDays?.length) {
+      return coach.availableDays.some((day) => day.toLowerCase() === normalizedToday);
+    }
+
+    return Boolean(coach.availabilitySummary);
+  };
+
   const eligibleCoaches = useMemo(
     () =>
       coaches.filter((coach) =>
@@ -157,6 +169,8 @@ const MainContent: React.FC<MainContentProps> = ({
           currentWorkload: account.currentWorkload,
           maxWorkload: account.maxWorkload,
           availabilitySummary: account.availabilitySummary,
+          availabilityType: account.availabilityType,
+          availableDays: account.availableDays,
           rating: 5,
         }));
         if (mapped.length) setCoaches(mapped);
@@ -484,61 +498,94 @@ const MainContent: React.FC<MainContentProps> = ({
             <h2>Experienced guides for courageous leadership.</h2>
           </div>
           <div className="uw-coach-grid">
-            {coaches.map((coach) => (
-              <article className="uw-coach-card" key={coach._id}>
-                <img
-                  src={coach.photo || fallbackCoaches[0].photo}
-                  alt={coach.name}
-                />
-                <div>
-                  <h3>{coach.name}</h3>
-                  <p>
-                    {coach.bio ||
-                      "Executive coach focused on clarity, courage, and connection."}
-                  </p>
-                  <dl>
-                    <div>
-                      <dt>Expertise</dt>
-                      <dd>
-                        {(coach.expertise || ["Executive leadership"]).join(
-                          ", ",
-                        )}
-                      </dd>
+            {coaches.map((coach) => {
+              const availableToday = isCoachAvailableToday(coach);
+              return (
+                <article
+                  className="uw-coach-card"
+                  key={coach._id}
+                  style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "6px 10px",
+                        borderRadius: "999px",
+                        background: availableToday ? "rgba(217, 169, 40, 0.16)" : "rgba(120, 120, 120, 0.12)",
+                        color: availableToday ? "#8b6a10" : "#5f5f5f",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {availableToday ? "Available today" : "Unavailable today"}
+                    </span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--clr-ink-soft)" }}>
+                      {coach.experience || 10}+ yrs
+                    </span>
+                  </div>
+                  <img
+                    src={coach.photo || fallbackCoaches[0].photo}
+                    alt={coach.name}
+                    style={{ width: "100%", height: "220px", objectFit: "cover", borderRadius: "16px" }}
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <h3 style={{ margin: 0 }}>{coach.name}</h3>
+                    <p style={{ margin: 0, color: "var(--clr-ink-soft)" }}>
+                      {coach.bio ||
+                        "Executive coach focused on clarity, courage, and connection."}
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                      {(coach.expertise || ["Executive leadership"]).slice(0, 3).map((item) => (
+                        <span
+                          key={item}
+                          style={{
+                            padding: "6px 10px",
+                            background: "rgba(29, 42, 56, 0.06)",
+                            borderRadius: "999px",
+                            fontSize: "0.8rem",
+                            color: "var(--clr-ink-soft)",
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
                     </div>
-                    <div>
-                      <dt>Experience</dt>
-                      <dd>{coach.experience || 10}+ years</dd>
-                    </div>
-                    <div>
-                      <dt>Languages</dt>
-                      <dd>{(coach.languages || ["English"]).join(", ")}</dd>
-                    </div>
-                    <div>
-                      <dt>Availability</dt>
-                      <dd>
-                        {coach.availabilitySummary || "By discovery call"}
-                      </dd>
-                    </div>
-                  </dl>
-                  <button
-                    className="uw-btn uw-btn-secondary"
-                    onClick={() => {
-                      setCoachChoice("choose");
-                      setSelectedCoachId(coach._id);
-                      setSelectedProgram(
-                        getCoachProgramIds(coach.specialization)[0] ||
-                          selectedProgram,
-                      );
-                      document
-                        .getElementById("discovery-call")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  >
-                    Book session
-                  </button>
-                </div>
-              </article>
-            ))}
+                    <dl style={{ display: "grid", gap: "10px", margin: 0 }}>
+                      <div>
+                        <dt style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--clr-ink-soft)" }}>Languages</dt>
+                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>{(coach.languages || ["English"]).join(", ")}</dd>
+                      </div>
+                      <div>
+                        <dt style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--clr-ink-soft)" }}>Availability</dt>
+                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                          {coach.availabilitySummary || "By discovery call"}
+                        </dd>
+                      </div>
+                    </dl>
+                    <button
+                      className="uw-btn uw-btn-secondary"
+                      onClick={() => {
+                        setCoachChoice("choose");
+                        setSelectedCoachId(coach._id);
+                        setSelectedProgram(
+                          getCoachProgramIds(coach.specialization)[0] ||
+                            selectedProgram,
+                        );
+                        document
+                          .getElementById("discovery-call")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      Book session
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

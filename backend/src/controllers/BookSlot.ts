@@ -6,6 +6,7 @@ import {
 import {
   ClientModel,
   NotificationModel,
+  AppNotificationModel,
 } from "../models/Platform.model.js";
 import { UserAccountsModel } from "../models/users.model.js";
 import { sendBookingConfirmationEmail } from "../services/Brevo.emailSender.js";
@@ -287,8 +288,24 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     status: "pending",
   });
 
+  await AppNotificationModel.create({
+    recipientId: coachId,
+    title: "New Booking Confirmed",
+    message: `Client ${fullName} booked a slot for ${program} on ${bookingTime}.`,
+    type: "slot_booking",
+    read: false,
+  });
+
   await UserAccountsModel.findByIdAndUpdate(coachId, {
     $inc: { currentWorkload: 1 },
+  });
+
+  await AppNotificationModel.create({
+    recipientId: coachId,
+    title: "New booking received",
+    message: `${fullName} booked a discovery session for ${program} with you.`,
+    type: "slot_booking",
+    read: false,
   });
 
   await NotificationModel.create({

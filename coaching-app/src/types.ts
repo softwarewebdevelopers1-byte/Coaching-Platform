@@ -28,6 +28,8 @@ export interface Coach {
   currentWorkload?: number;
   maxWorkload?: number;
   expertise?: string[];
+  availabilityType?: "whole_week" | "selected_days";
+  availableDays?: string[];
 }
 
 export interface Testimonial {

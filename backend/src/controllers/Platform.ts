@@ -4,6 +4,7 @@ import {
   ProgramModel,
   SessionNoteModel,
   TestimonialModel,
+  AppNotificationModel,
 } from "../models/Platform.model.js";
 import {
   BookingsCreatedModel,
@@ -137,6 +138,50 @@ router.get("/analytics", async (_req, res): Promise<void> => {
       generatedAt: new Date().toISOString(),
     },
   });
+});
+
+router.get("/app-notifications", async (req, res): Promise<void> => {
+  const { recipientId } = req.query;
+  if (!recipientId) {
+    res.status(400).json({ message: "recipientId is required" });
+    return;
+  }
+
+  const notifications = await AppNotificationModel.find({ recipientId: String(recipientId) })
+    .sort({ createdAt: -1 })
+    .limit(100);
+
+  res.status(200).json({ notifications });
+});
+
+router.patch("/app-notifications/:id/read", async (req, res): Promise<void> => {
+  const notification = await AppNotificationModel.findByIdAndUpdate(
+    req.params.id,
+    { read: true },
+    { new: true }
+  );
+
+  if (!notification) {
+    res.status(404).json({ message: "Notification not found" });
+    return;
+  }
+
+  res.status(200).json({ message: "Notification marked as read", notification });
+});
+
+router.patch("/app-notifications/read-all", async (req, res): Promise<void> => {
+  const { recipientId } = req.body;
+  if (!recipientId) {
+    res.status(400).json({ message: "recipientId is required" });
+    return;
+  }
+
+  await AppNotificationModel.updateMany(
+    { recipientId: String(recipientId), read: false },
+    { read: true }
+  );
+
+  res.status(200).json({ message: "All notifications marked as read" });
 });
 
 export default router;

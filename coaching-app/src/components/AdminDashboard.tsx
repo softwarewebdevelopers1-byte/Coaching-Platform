@@ -216,9 +216,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const openSchedulePanel = async (lead: ContactSubmission) => {
     const defaultProgram =
       lead.programSlug ||
-      (lead.interest === "Group Executive Coaching"
-        ? "group-executive"
-        : "individual-executive");
+      (lead.interest === "Both"
+        ? "both"
+        : lead.interest === "Group Executive Coaching"
+          ? "group-executive"
+          : "individual-executive");
 
     setSchedulingLeadId(lead._id);
     setScheduleForm({
@@ -1009,6 +1011,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                       <option value="group-executive">
                                         Group Executive Coaching
                                       </option>
+                                      <option value="both">Both</option>
                                     </select>
                                     <select
                                       value={scheduleForm.coachId}

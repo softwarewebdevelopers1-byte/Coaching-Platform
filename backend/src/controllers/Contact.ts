@@ -4,7 +4,7 @@ import {
   BookingsSessionsModel,
 } from "../models/Bookings.model.js";
 import { ContactSubmissionModel } from "../models/Contact.model.js";
-import { ClientModel, NotificationModel } from "../models/Platform.model.js";
+import { ClientModel, NotificationModel, AppNotificationModel } from "../models/Platform.model.js";
 import { SlotRequestModel } from "../models/SlotRequests.model.js";
 import { UserAccountsModel } from "../models/users.model.js";
 import {
@@ -37,6 +37,14 @@ router.post("/", async (req, res): Promise<void> => {
     source: source || "website",
     status: "new",
     programSlug: interestToProgramSlug(interest),
+  });
+
+  await AppNotificationModel.create({
+    recipientId: "admin",
+    title: "New Contact Lead",
+    message: `Lead ${name} submitted contact details. Interest: ${interest}`,
+    type: "contact_submission",
+    read: false,
   });
 
   await NotificationModel.create({
@@ -178,6 +186,14 @@ router.post("/:id/schedule", async (req, res): Promise<void> => {
       status: "pending",
     });
 
+    await AppNotificationModel.create({
+      recipientId: coachId,
+      title: "New Slot Request",
+      message: `Admin requested a slot on behalf of lead ${lead.name} for ${resolvedProgram}.`,
+      type: "slot_request",
+      read: false,
+    });
+
     await ContactSubmissionModel.findByIdAndUpdate(lead._id, {
       status: "contacted",
       contactedAt: new Date(),
@@ -277,6 +293,14 @@ router.post("/:id/schedule", async (req, res): Promise<void> => {
     coachPhone: coachPhone || "",
     bookingTime,
     status: "pending",
+  });
+
+  await AppNotificationModel.create({
+    recipientId: coachId,
+    title: "New Booking Scheduled",
+    message: `Admin scheduled a discovery call with client ${lead.name} on your behalf for ${resolvedProgram} on ${bookingTime}.`,
+    type: "slot_booking",
+    read: false,
   });
 
   await UserAccountsModel.findByIdAndUpdate(coachId, {

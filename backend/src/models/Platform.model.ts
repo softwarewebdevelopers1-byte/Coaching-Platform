@@ -136,12 +136,41 @@ const SessionNoteModel =
   (mongoose.models.session_notes as Model<SessionNoteInterface>) ||
   mongoose.model<SessionNoteInterface>("session_notes", SessionNoteSchema);
 
+interface AppNotificationInterface {
+  recipientId: string; // "admin" or coachId
+  title: string;
+  message: string;
+  read: boolean;
+  type: "contact_submission" | "slot_request" | "slot_booking";
+  createdAt?: Date;
+}
+
+const AppNotificationSchema = new mongoose.Schema<AppNotificationInterface>(
+  {
+    recipientId: { type: String, required: true, index: true },
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    read: { type: Boolean, default: false },
+    type: {
+      type: String,
+      enum: ["contact_submission", "slot_request", "slot_booking"],
+      required: true,
+    },
+  },
+  { timestamps: true },
+);
+
+const AppNotificationModel =
+  (mongoose.models.app_notifications as Model<AppNotificationInterface>) ||
+  mongoose.model<AppNotificationInterface>("app_notifications", AppNotificationSchema);
+
 export type {
   ClientInterface,
   NotificationInterface,
   ProgramInterface,
   SessionNoteInterface,
   TestimonialInterface,
+  AppNotificationInterface,
 };
 export {
   ClientModel,
@@ -149,4 +178,5 @@ export {
   ProgramModel,
   SessionNoteModel,
   TestimonialModel,
+  AppNotificationModel,
 };

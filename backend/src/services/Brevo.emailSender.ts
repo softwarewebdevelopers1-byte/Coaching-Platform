@@ -658,6 +658,79 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
 </html>`;
 }
 
+interface ResetPasswordDetails {
+  email: string;
+  fullName: string;
+  resetLink: string;
+}
+
+export async function sendResetPasswordEmail(
+  details: ResetPasswordDetails,
+): Promise<void> {
+  const apiKey = DotEnvConfig.BrevoApiKey.trim();
+  const currentYear = new Date().getFullYear();
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your UnWantraCoaching password</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f6f3ee; color: #1a1612; font-family: Arial, sans-serif; line-height: 1.6; }
+    .email-container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e7ded2; }
+    .header { background: #1a1612; color: #ffffff; padding: 32px 28px; }
+    .brand { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+    .header p { margin: 0; color: #f4e7d1; }
+    .content { padding: 30px 28px; }
+    .lead { font-size: 17px; margin: 0 0 22px; }
+    .btn-container { text-align: center; margin: 30px 0; }
+    .btn { background: #e8b96a; color: #1a1612; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 8px; font-size: 16px; display: inline-block; }
+    .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <p class="brand">UnWantraCoaching</p>
+      <p>Password Reset Request</p>
+    </div>
+    <div class="content">
+      <p class="lead">Hello ${escapeHtml(details.fullName)},</p>
+      <p>We received a request to reset your password. Click the button below to choose a new password. This link will expire in 1 hour.</p>
+      <div class="btn-container">
+        <a href="${details.resetLink}" class="btn">Reset Password</a>
+      </div>
+      <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
+      <p><a href="${details.resetLink}">${details.resetLink}</a></p>
+      <p>If you didn't request a password reset, you can safely ignore this email.</p>
+    </div>
+    <div class="footer">
+      &copy; ${currentYear} UnWantraCoaching.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const payload: BrevoEmailPayload = {
+    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    to: [{ email: details.email, name: details.fullName }],
+    subject: "Reset your UnWantraCoaching password",
+    htmlContent,
+  };
+
+  try {
+    const response = await axios.post<BrevoResponse>(
+      "https://api.brevo.com/v3/smtp/email",
+      payload,
+      { headers: { "api-key": apiKey, "Content-Type": "application/json" } },
+    );
+    console.log("Reset password email sent:", response.data.messageId);
+  } catch (err) {
+    handleEmailError(err as AxiosError<BrevoErrorResponse>);
+  }
+}
+
 function escapeHtml(value: string): string {
   return String(value)
     .replace(/&/g, "&amp;")
