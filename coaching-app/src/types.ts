@@ -65,6 +65,9 @@ export interface Account {
   languages?: string[];
   expertise?: string[];
   photo?: string;
+  availabilitySummary?: string;
+  availabilityType?: "whole_week" | "selected_days";
+  availableDays?: string[];
   currentWorkload?: number;
   maxWorkload?: number;
 }

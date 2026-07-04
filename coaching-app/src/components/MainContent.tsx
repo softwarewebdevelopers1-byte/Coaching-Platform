@@ -125,13 +125,14 @@ const MainContent: React.FC<MainContentProps> = ({
   const isCoachAvailableToday = (coach: Coach) => {
     const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
     const normalizedToday = today.toLowerCase();
+    const normalizeDay = (day: string) => day.trim().toLowerCase();
 
     if (coach.availabilityType === "whole_week") return true;
     if (coach.availableDays?.length) {
-      return coach.availableDays.some((day) => day.toLowerCase() === normalizedToday);
+      return coach.availableDays.some((day) => normalizeDay(day) === normalizedToday || normalizeDay(day).startsWith(normalizedToday.slice(0, 3)));
     }
 
-    return Boolean(coach.availabilitySummary);
+    return false;
   };
 
   const eligibleCoaches = useMemo(
@@ -230,6 +231,9 @@ const MainContent: React.FC<MainContentProps> = ({
           languages: data.coach.languages,
           expertise: data.coach.expertise,
           photo: data.coach.photo,
+          availabilitySummary: data.coach.availabilitySummary,
+          availabilityType: data.coach.availabilityType,
+          availableDays: data.coach.availableDays,
           currentWorkload: data.coach.currentWorkload,
           maxWorkload: data.coach.maxWorkload,
         });
@@ -506,7 +510,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   key={coach._id}
                   style={{ display: "flex", flexDirection: "column", gap: "16px" }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     <span
                       style={{
                         display: "inline-flex",
@@ -523,7 +527,7 @@ const MainContent: React.FC<MainContentProps> = ({
                     >
                       {availableToday ? "Available today" : "Unavailable today"}
                     </span>
-                    <span style={{ fontSize: "0.82rem", color: "var(--clr-ink-soft)" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px", borderRadius: "999px", background: "rgba(29, 42, 56, 0.06)", color: "var(--clr-ink-soft)", fontSize: "0.78rem", fontWeight: 700 }}>
                       {coach.experience || 10}+ yrs
                     </span>
                   </div>

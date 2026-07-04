@@ -15,6 +15,8 @@ interface CoachDashboardProps {
 
 type CoachTab = "overview" | "availability" | "bookings" | "requests" | "rejected" | "settings";
 
+const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 /* ── SVG Icons ───────────────────────────────────────────────── */
 const Icons = {
   grid: (
@@ -122,11 +124,20 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   });
 
   const [settingsForm, setSettingsForm] = useState({
+    fullName: user?.fullName || "",
     email: user?.email || "",
     phone: user?.phone || "",
     programName: user?.programName || programs[0]?.id || "",
+    experience: user?.experience?.toString() || "",
+    languages: user?.languages?.join(", ") || "",
+    availabilityType: (user?.availabilityType as "whole_week" | "selected_days") || "whole_week",
+    photo: user?.photo || "",
+    password: "",
+    confirmPassword: "",
   });
+  const [selectedDays, setSelectedDays] = useState<string[]>(user?.availableDays || []);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Slot requests state
   const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
@@ -176,10 +187,16 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     if (user) {
       setSettingsForm((prev) => ({
         ...prev,
+        fullName: user.fullName || "",
         email: user.email || "",
         phone: user.phone || "",
         programName: user.programName || programs[0]?.id || "",
+        experience: user.experience?.toString() || "",
+        languages: user.languages?.join(", ") || "",
+        availabilityType: (user.availabilityType as "whole_week" | "selected_days") || "whole_week",
+        photo: user.photo || "",
       }));
+      setSelectedDays(user.availableDays || []);
       setSlotForm((prev) => ({
         ...prev,
         programName: getProgramIds(user.programName)[0] || programs[0]?.id || "",
@@ -393,6 +410,39 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     }
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`${API_BASE_URL}/api/accounts/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoData: base64, originalName: file.name }),
+      });
+
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(result?.message || "Could not upload profile photo");
+      }
+
+      setSettingsForm((prev) => ({ ...prev, photo: result.photoUrl || "" }));
+      showToast("Profile photo uploaded", "success", 3000);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not upload profile photo", "error", 5000);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
   const saveSettings = async () => {
     if (!coachId) return;
 
@@ -401,13 +451,36 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       return;
     }
 
+    if ((settingsForm.password || settingsForm.confirmPassword) && settingsForm.password !== settingsForm.confirmPassword) {
+      showToast("New passwords do not match", "error", 3000);
+      return;
+    }
+
     setIsSavingSettings(true);
     try {
-      const payload: Record<string, string> = {
+      const payload: Record<string, unknown> = {
+        fullName: settingsForm.fullName.trim(),
         email: settingsForm.email.trim(),
         phone: settingsForm.phone.trim(),
         programName: settingsForm.programName,
+        experience: Number(settingsForm.experience || 0),
+        languages: settingsForm.languages
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        photo: settingsForm.photo,
+        availabilityType: settingsForm.availabilityType,
+        availableDays: selectedDays,
+        availabilitySummary: settingsForm.availabilityType === "whole_week"
+          ? "Whole week"
+          : selectedDays.length
+            ? selectedDays.join(", ")
+            : "By discovery call",
       };
+
+      if (settingsForm.password) {
+        payload.password = settingsForm.password;
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/accounts/${coachId}`, {
         method: "PUT",
@@ -422,11 +495,19 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       }
 
       updateUser({
+        fullName: result.account.fullName,
         email: result.account.email,
         phone: result.account.phone,
         programName: result.account.programName,
+        experience: result.account.experience,
+        languages: result.account.languages || [],
+        photo: result.account.photo,
+        availabilitySummary: result.account.availabilitySummary,
+        availabilityType: result.account.availabilityType,
+        availableDays: result.account.availableDays || [],
       });
 
+      setSettingsForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
       showToast("Settings updated successfully", "success", 4000);
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not update settings", "error", 5000);
@@ -1052,6 +1133,15 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
               <div className="dashboard-card-body">
                 <div className="dashboard-form">
                   <div className="form-field">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      type="text"
+                      value={settingsForm.fullName}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, fullName: e.target.value })}
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div className="form-field">
                     <label className="form-label">Email</label>
                     <input
                       type="email"
@@ -1068,6 +1158,79 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
                       placeholder="+1 555 000 0000"
                     />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Years of Experience</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settingsForm.experience}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, experience: e.target.value })}
+                      placeholder="8"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Languages</label>
+                    <input
+                      type="text"
+                      value={settingsForm.languages}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
+                      placeholder="English, Kiswahili"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Availability</label>
+                    <select
+                      value={settingsForm.availabilityType}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, availabilityType: e.target.value as "whole_week" | "selected_days" })}
+                    >
+                      <option value="whole_week">Whole week</option>
+                      <option value="selected_days">Selected days</option>
+                    </select>
+                  </div>
+                  {settingsForm.availabilityType === "selected_days" && (
+                    <div className="form-field dashboard-form-full">
+                      <label className="form-label">Available Days</label>
+                      <div className="program-checkbox-group">
+                        {WEEK_DAYS.map((day) => {
+                          const checked = selectedDays.includes(day);
+                          return (
+                            <label className="program-checkbox" key={day}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setSelectedDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day])}
+                              />
+                              <span>{day}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div className="form-field">
+                    <label className="form-label">New Password</label>
+                    <input
+                      type="password"
+                      value={settingsForm.password}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                      placeholder="Leave blank to keep current"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={settingsForm.confirmPassword}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <div className="form-field dashboard-form-full">
+                    <label className="form-label">Profile Photo</label>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+                    {isUploadingPhoto ? <p style={{ marginTop: 8, color: "var(--text-secondary)" }}>Uploading photo…</p> : null}
+                    {settingsForm.photo ? <p style={{ marginTop: 8, color: "#198754" }}>Photo ready to save.</p> : null}
                   </div>
                   <div className="form-field dashboard-form-full">
                     <label className="form-label">Coaching Programs Offered</label>
@@ -1088,7 +1251,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                 <button
                   className="dashboard-btn dashboard-btn-primary"
                   onClick={saveSettings}
-                  disabled={isSavingSettings}
+                  disabled={isSavingSettings || isUploadingPhoto}
                   style={{ marginTop: 8 }}
                 >
                   {isSavingSettings ? "Saving…" : "Save Settings"}

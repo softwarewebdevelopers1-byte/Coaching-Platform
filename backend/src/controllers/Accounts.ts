@@ -72,6 +72,8 @@ router.post("/login", async (req, res): Promise<void> => {
       expertise: account.expertise,
       photo: account.photo,
       availabilitySummary: account.availabilitySummary,
+      availabilityType: account.availabilityType,
+      availableDays: account.availableDays,
       currentWorkload: account.currentWorkload,
       maxWorkload: account.maxWorkload,
     },
@@ -218,6 +220,8 @@ router.put("/:id", async (req, res): Promise<void> => {
     expertise,
     photo,
     availabilitySummary,
+    availabilityType,
+    availableDays,
     maxWorkload,
   } = req.body;
   const update: Record<string, unknown> = {};
@@ -234,6 +238,8 @@ router.put("/:id", async (req, res): Promise<void> => {
   if (expertise !== undefined) update.expertise = expertise;
   if (photo !== undefined) update.photo = photo;
   if (availabilitySummary !== undefined) update.availabilitySummary = availabilitySummary;
+  if (availabilityType !== undefined) update.availabilityType = availabilityType;
+  if (availableDays !== undefined) update.availableDays = availableDays;
   if (maxWorkload !== undefined) update.maxWorkload = maxWorkload;
 
   if (password) {

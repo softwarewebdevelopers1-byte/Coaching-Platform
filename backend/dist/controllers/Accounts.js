@@ -62,6 +62,8 @@ router.post("/login", async (req, res) => {
             expertise: account.expertise,
             photo: account.photo,
             availabilitySummary: account.availabilitySummary,
+            availabilityType: account.availabilityType,
+            availableDays: account.availableDays,
             currentWorkload: account.currentWorkload,
             maxWorkload: account.maxWorkload,
         },
@@ -162,7 +164,7 @@ router.post("/", async (req, res) => {
     res.status(201).json({ message: "Account saved", account });
 });
 router.put("/:id", async (req, res) => {
-    const { fullName, email, phone, role, status, programName, password, bio, experience, languages, expertise, photo, availabilitySummary, maxWorkload, } = req.body;
+    const { fullName, email, phone, role, status, programName, password, bio, experience, languages, expertise, photo, availabilitySummary, availabilityType, availableDays, maxWorkload, } = req.body;
     const update = {};
     if (fullName !== undefined)
         update.fullName = fullName;
@@ -188,6 +190,10 @@ router.put("/:id", async (req, res) => {
         update.photo = photo;
     if (availabilitySummary !== undefined)
         update.availabilitySummary = availabilitySummary;
+    if (availabilityType !== undefined)
+        update.availabilityType = availabilityType;
+    if (availableDays !== undefined)
+        update.availableDays = availableDays;
     if (maxWorkload !== undefined)
         update.maxWorkload = maxWorkload;
     if (password) {
