@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Booking, Coach, CoachSlot, Program, Testimonial } from "../types";
 import { coachMatchesProgram } from "../utils/programs";
-import CoachProfileModal from "./CoachProfileModal";
-import { useAuth } from "../context/AuthContext";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
@@ -86,7 +84,6 @@ const MainContent: React.FC<MainContentProps> = ({
   onAddBooking,
   showToast,
 }) => {
-  const { user } = useAuth();
   const [coaches, setCoaches] = useState<Coach[]>(fallbackCoaches);
   const [slots, setSlots] = useState<CoachSlot[]>([]);
   const [step, setStep] = useState(1);
@@ -116,10 +113,6 @@ const MainContent: React.FC<MainContentProps> = ({
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
-  const [selectedCoachProfile, setSelectedCoachProfile] =
-    useState<Coach | null>(null);
-
-  const isRegularUser = !user || user.role === "user";
 
   const selectedProgramData = programs.find(
     (program) => program.id === selectedProgram,
@@ -158,32 +151,6 @@ const MainContent: React.FC<MainContentProps> = ({
     assignedCoach ||
     coaches.find((coach) => coach._id === selectedCoachId) ||
     null;
-
-  const getProgramLabel = (id: string) =>
-    programs.find((program) => program.id === id)?.title || "Coaching";
-
-  const renderStars = (rating: number) => {
-    const rounded = Math.max(1, Math.min(5, Math.round(rating)));
-    return "★".repeat(rounded) + "☆".repeat(5 - rounded);
-  };
-
-  const openCoachProfile = (coach: Coach) => {
-    setSelectedCoachProfile(coach);
-  };
-
-  const closeCoachProfile = () => {
-    setSelectedCoachProfile(null);
-  };
-
-  const handleBookCoachFromModal = (coach: Coach) => {
-    setCoachChoice("choose");
-    setSelectedCoachId(coach._id);
-    setSelectedProgram(
-      getCoachProgramIds(coach.specialization)[0] || selectedProgram,
-    );
-    setSelectedCoachProfile(null);
-    document.getElementById("discovery-call")?.scrollIntoView({ behavior: "smooth" });
-  };
 
   useEffect(() => {
     const loadCoaches = async () => {
@@ -684,17 +651,7 @@ const MainContent: React.FC<MainContentProps> = ({
                         {coach.experience || 10} years of experience
                       </span>
                     </dl>
-                    {isRegularUser && (
-                      <button
-                        type="button"
-                        className="uw-btn uw-btn-secondary"
-                        onClick={() => openCoachProfile(coach)}
-                      >
-                        Full view profile
-                      </button>
-                    )}
                     <button
-                      type="button"
                       className="uw-btn uw-btn-secondary"
                       onClick={() => {
                         setCoachChoice("choose");
@@ -717,22 +674,6 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </section>
-
-      <CoachProfileModal
-        coach={selectedCoachProfile}
-        getInitials={(name) =>
-          name
-            .split(" ")
-            .map((part) => part[0])
-            .slice(0, 2)
-            .join("")
-            .toUpperCase()
-        }
-        getProgramLabel={getProgramLabel}
-        renderStars={renderStars}
-        onClose={closeCoachProfile}
-        onBook={handleBookCoachFromModal}
-      />
 
       <section id="discovery-call" className="uw-section uw-booking-section">
         <div className="uw-container uw-booking-layout">

@@ -132,8 +132,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     languages: user?.languages?.join(", ") || "",
     availabilityType: (user?.availabilityType as "whole_week" | "selected_days") || "whole_week",
     photo: user?.photo || "",
-    expertise: user?.expertise?.join(", ") || "",
-    bio: user?.bio || "",
     password: "",
     confirmPassword: "",
   });
@@ -197,10 +195,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         languages: user.languages?.join(", ") || "",
         availabilityType: (user.availabilityType as "whole_week" | "selected_days") || "whole_week",
         photo: user.photo || "",
-        expertise: user.expertise?.join(", ") || "",
-        bio: user.bio || "",
-        password: "",
-        confirmPassword: "",
       }));
       setSelectedDays(user.availableDays || []);
       setSlotForm((prev) => ({
@@ -474,11 +468,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
-        expertise: settingsForm.expertise
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        bio: settingsForm.bio.trim(),
         photo: settingsForm.photo,
         availabilityType: settingsForm.availabilityType,
         availableDays: selectedDays,
@@ -512,8 +501,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         programName: result.account.programName,
         experience: result.account.experience,
         languages: result.account.languages || [],
-        expertise: result.account.expertise || [],
-        bio: result.account.bio || "",
         photo: result.account.photo,
         availabilitySummary: result.account.availabilitySummary,
         availabilityType: result.account.availabilityType,
@@ -1154,15 +1141,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       placeholder="Your full name"
                     />
                   </div>
-                  <div className="form-field dashboard-form-full">
-                    <label className="form-label">Short Bio</label>
-                    <textarea
-                      value={settingsForm.bio}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, bio: e.target.value })}
-                      placeholder="Executive coach focused on clarity, courage, and connection..."
-                      rows={3}
-                    />
-                  </div>
                   <div className="form-field">
                     <label className="form-label">Email</label>
                     <input
@@ -1188,15 +1166,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       value={settingsForm.languages}
                       onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
                       placeholder="English, Kiswahili"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Specialization</label>
-                    <input
-                      type="text"
-                      value={settingsForm.expertise}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, expertise: e.target.value })}
-                      placeholder="e.g. Executive presence, Confidence, Team alignment"
                     />
                   </div>
                   <div className="form-field">
@@ -1246,7 +1215,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       value={settingsForm.password}
                       onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
                       placeholder="Leave blank to keep current"
-                      autoComplete="new-password"
                     />
                   </div>
                   <div className="form-field">
@@ -1256,7 +1224,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       value={settingsForm.confirmPassword}
                       onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
                       placeholder="Confirm new password"
-                      autoComplete="new-password"
                     />
                   </div>
                   <div className="form-field dashboard-form-full">
