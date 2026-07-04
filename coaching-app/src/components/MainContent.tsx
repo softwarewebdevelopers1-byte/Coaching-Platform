@@ -503,54 +503,24 @@ const MainContent: React.FC<MainContentProps> = ({
                 <article
                   className="uw-coach-card"
                   key={coach._id}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    position: "relative",
-                  }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      position: "absolute",
-                      top: "12px",
-                      left: "12px",
-                      zIndex: 1,
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="uw-coach-badge">
                     <span
+                      className="uw-coach-status-pill"
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 12px 6px 10px",
-                        borderRadius: "999px",
                         background: availableToday
                           ? "rgba(5, 85, 18, 0.92)"
                           : "rgba(30, 32, 28, 0.82)",
-                        backdropFilter: "blur(6px)",
-                        WebkitBackdropFilter: "blur(6px)",
                         boxShadow: "0 4px 14px rgba(0, 0, 0, 0.18)",
-                        color: "#fff",
-                        fontSize: "0.72rem",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        lineHeight: 1,
                       }}
                     >
                       <span
+                        className="uw-coach-status-dot"
                         style={{
-                          width: "6px",
-                          height: "6px",
-                          borderRadius: "50%",
                           background: availableToday ? "#4ade80" : "#f87171",
                           boxShadow: availableToday
                             ? "0 0 0 3px rgba(74, 222, 128, 0.25)"
                             : "0 0 0 3px rgba(248, 113, 113, 0.25)",
-                          flexShrink: 0,
                         }}
                       />
                       {availableToday ? "Available today" : "Unavailable today"}
@@ -559,100 +529,56 @@ const MainContent: React.FC<MainContentProps> = ({
                   <img
                     src={coach.photo || fallbackCoaches[0].photo}
                     alt={coach.name}
-                    style={{
-                      width: "100%",
-                      height: "220px",
-                      objectFit: "cover",
-                      borderRadius: "16px",
-                    }}
+                    className="uw-coach-media"
                   />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    <h3 style={{ margin: 0 }}>{coach.name}</h3>
+                  <div className="uw-coach-body">
+                    <h3>{coach.name}</h3>
                     {!isBookingModalOpen && (
                       <>
-                        <p style={{ margin: 0, color: "var(--clr-ink-soft)" }}>
+                        <p>
                           {coach.bio ||
                             "Executive coach focused on clarity, courage, and connection."}
                         </p>
-                        <div
-                          style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
-                        >
+                        <div className="uw-coach-tags">
                           {(coach.expertise || ["Executive leadership"])
                             .slice(0, 3)
                             .map((item) => (
-                              <span
-                                key={item}
-                                style={{
-                                  padding: "6px 10px",
-                                  background: "rgba(29, 42, 56, 0.06)",
-                                  borderRadius: "999px",
-                                  fontSize: "0.8rem",
-                                  color: "var(--clr-ink-soft)",
-                                }}
-                              >
+                              <span key={item} className="uw-coach-tag">
                                 {item}
                               </span>
                             ))}
                         </div>
-                        <dl style={{ display: "grid", gap: "10px", margin: 0 }}>
+                        <dl className="uw-coach-meta">
                           <div>
-                            <dt
-                              style={{
-                                fontSize: "0.75rem",
-                                textTransform: "uppercase",
-                                color: "var(--clr-ink-soft)",
-                              }}
-                            >
-                              Languages
-                            </dt>
-                            <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                            <dt>Languages</dt>
+                            <dd>
                               {(coach.languages || ["English"]).join(", ")}
                             </dd>
                           </div>
                           <div>
-                            <dt
-                              style={{
-                                fontSize: "0.75rem",
-                                textTransform: "uppercase",
-                                color: "var(--clr-ink-soft)",
-                              }}
-                            >
-                              Availability
-                            </dt>
-                            <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                            <dt>Availability</dt>
+                            <dd>
                               {coach.availabilitySummary || "By discovery call"}
                             </dd>
                           </div>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "6px 10px",
-                              borderRadius: "999px",
-                              background: "rgba(29, 42, 56, 0.06)",
-                              color: "var(--clr-ink-soft)",
-                              fontSize: "0.78rem",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {coach.experience || 10} years of experience
-                          </span>
+                          <div>
+                            <dt>Experience</dt>
+                            <dd>
+                              {coach.experience || 10} years
+                            </dd>
+                          </div>
                         </dl>
                       </>
                     )}
+                  </div>
+                  <div className="uw-coach-actions">
                     <button
                        className="uw-btn uw-btn-quiet"
                        style={{ color: "var(--uw-sage-dark)" }}
                        onClick={() => openProfileModal(coach)}
-                     >
+                    >
                        Full View Profile
-                     </button>
+                    </button>
                     <button
                       className="uw-btn uw-btn-secondary"
                       onClick={() => openBookingModal(coach._id)}
