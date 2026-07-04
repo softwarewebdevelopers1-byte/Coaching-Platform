@@ -129,7 +129,11 @@ const MainContent: React.FC<MainContentProps> = ({
 
     if (coach.availabilityType === "whole_week") return true;
     if (coach.availableDays?.length) {
-      return coach.availableDays.some((day) => normalizeDay(day) === normalizedToday || normalizeDay(day).startsWith(normalizedToday.slice(0, 3)));
+      return coach.availableDays.some(
+        (day) =>
+          normalizeDay(day) === normalizedToday ||
+          normalizeDay(day).startsWith(normalizedToday.slice(0, 3)),
+      );
     }
 
     return false;
@@ -508,16 +512,24 @@ const MainContent: React.FC<MainContentProps> = ({
                 <article
                   className="uw-coach-card"
                   key={coach._id}
-                  style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
                 >
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div
+                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                  >
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
                         padding: "6px 10px",
                         borderRadius: "999px",
-                        background: availableToday ? "rgba(217, 169, 40, 0.16)" : "rgba(120, 120, 120, 0.12)",
+                        background: availableToday
+                          ? "rgba(217, 169, 40, 0.16)"
+                          : "rgba(120, 120, 120, 0.12)",
                         color: availableToday ? "#8b6a10" : "#5f5f5f",
                         fontSize: "0.78rem",
                         fontWeight: 700,
@@ -527,48 +539,92 @@ const MainContent: React.FC<MainContentProps> = ({
                     >
                       {availableToday ? "Available today" : "Unavailable today"}
                     </span>
-                    <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px", borderRadius: "999px", background: "rgba(29, 42, 56, 0.06)", color: "var(--clr-ink-soft)", fontSize: "0.78rem", fontWeight: 700 }}>
-                      {coach.experience || 10}+ yrs
-                    </span>
                   </div>
                   <img
                     src={coach.photo || fallbackCoaches[0].photo}
                     alt={coach.name}
-                    style={{ width: "100%", height: "220px", objectFit: "cover", borderRadius: "16px" }}
+                    style={{
+                      width: "100%",
+                      height: "220px",
+                      objectFit: "cover",
+                      borderRadius: "16px",
+                    }}
                   />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
                     <h3 style={{ margin: 0 }}>{coach.name}</h3>
                     <p style={{ margin: 0, color: "var(--clr-ink-soft)" }}>
                       {coach.bio ||
                         "Executive coach focused on clarity, courage, and connection."}
                     </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                      {(coach.expertise || ["Executive leadership"]).slice(0, 3).map((item) => (
-                        <span
-                          key={item}
-                          style={{
-                            padding: "6px 10px",
-                            background: "rgba(29, 42, 56, 0.06)",
-                            borderRadius: "999px",
-                            fontSize: "0.8rem",
-                            color: "var(--clr-ink-soft)",
-                          }}
-                        >
-                          {item}
-                        </span>
-                      ))}
+                    <div
+                      style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+                    >
+                      {(coach.expertise || ["Executive leadership"])
+                        .slice(0, 3)
+                        .map((item) => (
+                          <span
+                            key={item}
+                            style={{
+                              padding: "6px 10px",
+                              background: "rgba(29, 42, 56, 0.06)",
+                              borderRadius: "999px",
+                              fontSize: "0.8rem",
+                              color: "var(--clr-ink-soft)",
+                            }}
+                          >
+                            {item}
+                          </span>
+                        ))}
                     </div>
                     <dl style={{ display: "grid", gap: "10px", margin: 0 }}>
                       <div>
-                        <dt style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--clr-ink-soft)" }}>Languages</dt>
-                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>{(coach.languages || ["English"]).join(", ")}</dd>
+                        <dt
+                          style={{
+                            fontSize: "0.75rem",
+                            textTransform: "uppercase",
+                            color: "var(--clr-ink-soft)",
+                          }}
+                        >
+                          Languages
+                        </dt>
+                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                          {(coach.languages || ["English"]).join(", ")}
+                        </dd>
                       </div>
                       <div>
-                        <dt style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--clr-ink-soft)" }}>Availability</dt>
+                        <dt
+                          style={{
+                            fontSize: "0.75rem",
+                            textTransform: "uppercase",
+                            color: "var(--clr-ink-soft)",
+                          }}
+                        >
+                          Availability
+                        </dt>
                         <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
                           {coach.availabilitySummary || "By discovery call"}
                         </dd>
                       </div>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "6px 10px",
+                          borderRadius: "999px",
+                          background: "rgba(29, 42, 56, 0.06)",
+                          color: "var(--clr-ink-soft)",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {coach.experience || 10} years of experience
+                      </span>
                     </dl>
                     <button
                       className="uw-btn uw-btn-secondary"
@@ -1217,7 +1273,9 @@ const MainContent: React.FC<MainContentProps> = ({
 
                 if (!response.ok) {
                   const error = await response.json().catch(() => null);
-                  throw new Error(error?.message || "Could not submit contact form");
+                  throw new Error(
+                    error?.message || "Could not submit contact form",
+                  );
                 }
 
                 showToast(
@@ -1227,7 +1285,9 @@ const MainContent: React.FC<MainContentProps> = ({
                 formEl.reset();
               } catch (error) {
                 showToast(
-                  error instanceof Error ? error.message : "Could not submit contact form",
+                  error instanceof Error
+                    ? error.message
+                    : "Could not submit contact form",
                   "error",
                   5000,
                 );
@@ -1236,11 +1296,21 @@ const MainContent: React.FC<MainContentProps> = ({
           >
             <input name="name" placeholder="Name" required />
             <input name="email" type="email" placeholder="Email" required />
-            <input name="phone" placeholder="Phone number with country code" required />
+            <input
+              name="phone"
+              placeholder="Phone number with country code"
+              required
+            />
             <select name="interest" required defaultValue="">
-              <option value="" disabled>Coaching Interest</option>
-              <option value="Individual Executive Coaching">Individual Executive Coaching</option>
-              <option value="Group Executive Coaching">Group Executive Coaching</option>
+              <option value="" disabled>
+                Coaching Interest
+              </option>
+              <option value="Individual Executive Coaching">
+                Individual Executive Coaching
+              </option>
+              <option value="Group Executive Coaching">
+                Group Executive Coaching
+              </option>
               <option value="Both">Both</option>
             </select>
             <textarea name="goals" placeholder="Goals" rows={5} required />

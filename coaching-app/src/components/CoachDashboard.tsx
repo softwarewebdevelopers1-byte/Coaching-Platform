@@ -1160,6 +1160,15 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                     />
                   </div>
                   <div className="form-field">
+                    <label className="form-label">Languages</label>
+                    <input
+                      type="text"
+                      value={settingsForm.languages}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
+                      placeholder="English, Kiswahili"
+                    />
+                  </div>
+                  <div className="form-field">
                     <label className="form-label">Years of Experience</label>
                     <input
                       type="number"
@@ -1167,15 +1176,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       value={settingsForm.experience}
                       onChange={(e) => setSettingsForm({ ...settingsForm, experience: e.target.value })}
                       placeholder="8"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Languages</label>
-                    <input
-                      type="text"
-                      value={settingsForm.languages}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
-                      placeholder="English, Kiswahili"
                     />
                   </div>
                   <div className="form-field">
