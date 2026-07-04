@@ -90,6 +90,7 @@ const MainContent: React.FC<MainContentProps> = ({
   const [selectedProgram, setSelectedProgram] = useState(programs[0]?.id || "");
   const [selectedCoachId, setSelectedCoachId] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
@@ -379,6 +380,41 @@ const MainContent: React.FC<MainContentProps> = ({
         })}`,
       }));
 
+  const openBookingModal = (coachId: string) => {
+    setSelectedCoachId(coachId);
+    setSelectedProgram(
+      getCoachProgramIds(
+        coaches.find((coach) => coach._id === coachId)?.specialization || "",
+      )[0] || selectedProgram,
+    );
+    setStep(1);
+    setIsBookingModalOpen(true);
+    setForm((current) => ({
+      ...current,
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      preferredDate: "",
+      preferredTime: "",
+      goals: "",
+    }));
+  };
+
+  const closeBookingModal = () => {
+    setIsBookingModalOpen(false);
+    setStep(1);
+    setRequestSent(false);
+    setForm((current) => ({
+      ...current,
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      preferredDate: "",
+      preferredTime: "",
+      goals: "",
+    }));
+  };
+
   return (
     <>
       <section id="services" className="uw-section">
@@ -511,96 +547,87 @@ const MainContent: React.FC<MainContentProps> = ({
                     }}
                   >
                     <h3 style={{ margin: 0 }}>{coach.name}</h3>
-                    <p style={{ margin: 0, color: "var(--clr-ink-soft)" }}>
-                      {coach.bio ||
-                        "Executive coach focused on clarity, courage, and connection."}
-                    </p>
-                    <div
-                      style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
-                    >
-                      {(coach.expertise || ["Executive leadership"])
-                        .slice(0, 3)
-                        .map((item) => (
+                    {!isBookingModalOpen && (
+                      <>
+                        <p style={{ margin: 0, color: "var(--clr-ink-soft)" }}>
+                          {coach.bio ||
+                            "Executive coach focused on clarity, courage, and connection."}
+                        </p>
+                        <div
+                          style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+                        >
+                          {(coach.expertise || ["Executive leadership"])
+                            .slice(0, 3)
+                            .map((item) => (
+                              <span
+                                key={item}
+                                style={{
+                                  padding: "6px 10px",
+                                  background: "rgba(29, 42, 56, 0.06)",
+                                  borderRadius: "999px",
+                                  fontSize: "0.8rem",
+                                  color: "var(--clr-ink-soft)",
+                                }}
+                              >
+                                {item}
+                              </span>
+                            ))}
+                        </div>
+                        <dl style={{ display: "grid", gap: "10px", margin: 0 }}>
+                          <div>
+                            <dt
+                              style={{
+                                fontSize: "0.75rem",
+                                textTransform: "uppercase",
+                                color: "var(--clr-ink-soft)",
+                              }}
+                            >
+                              Languages
+                            </dt>
+                            <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                              {(coach.languages || ["English"]).join(", ")}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt
+                              style={{
+                                fontSize: "0.75rem",
+                                textTransform: "uppercase",
+                                color: "var(--clr-ink-soft)",
+                              }}
+                            >
+                              Availability
+                            </dt>
+                            <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
+                              {coach.availabilitySummary || "By discovery call"}
+                            </dd>
+                          </div>
                           <span
-                            key={item}
                             style={{
+                              display: "inline-flex",
+                              alignItems: "center",
                               padding: "6px 10px",
-                              background: "rgba(29, 42, 56, 0.06)",
                               borderRadius: "999px",
-                              fontSize: "0.8rem",
+                              background: "rgba(29, 42, 56, 0.06)",
                               color: "var(--clr-ink-soft)",
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
                             }}
                           >
-                            {item}
+                            {coach.experience || 10} years of experience
                           </span>
-                        ))}
-                    </div>
-                    <dl style={{ display: "grid", gap: "10px", margin: 0 }}>
-                      <div>
-                        <dt
-                          style={{
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            color: "var(--clr-ink-soft)",
-                          }}
-                        >
-                          Languages
-                        </dt>
-                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
-                          {(coach.languages || ["English"]).join(", ")}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt
-                          style={{
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            color: "var(--clr-ink-soft)",
-                          }}
-                        >
-                          Availability
-                        </dt>
-                        <dd style={{ margin: "4px 0 0", fontWeight: 600 }}>
-                          {coach.availabilitySummary || "By discovery call"}
-                        </dd>
-                      </div>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "6px 10px",
-                          borderRadius: "999px",
-                          background: "rgba(29, 42, 56, 0.06)",
-                          color: "var(--clr-ink-soft)",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {coach.experience || 10} years of experience
-                      </span>
-                    </dl>
+                        </dl>
+                      </>
+                    )}
+                    <button
+                       className="uw-btn uw-btn-quiet"
+                       style={{ color: "var(--uw-sage-dark)" }}
+                     >
+                       Full View Profile
+                    </button>
                     <button
                       className="uw-btn uw-btn-secondary"
-                      onClick={() => {
-                        setSelectedCoachId(coach._id);
-                        setSelectedProgram(
-                          getCoachProgramIds(coach.specialization)[0] ||
-                            selectedProgram,
-                        );
-                        setStep(1);
-                        setForm((current) => ({
-                          ...current,
-                          fullName: "",
-                          email: "",
-                          phoneNumber: "",
-                          preferredDate: "",
-                          preferredTime: "",
-                          goals: "",
-                        }));
-                        document
-                          .getElementById("discovery-call")
-                          ?.scrollIntoView({ behavior: "smooth" });
-                      }}
+                      onClick={() => openBookingModal(coach._id)}
                     >
                       Book Discovery Call
                     </button>
@@ -612,548 +639,584 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </section>
 
-      <section id="discovery-call" className="uw-section uw-booking-section">
-        <div className="uw-container uw-booking-layout">
-          <div>
-            <span className="uw-kicker">Discovery call booking</span>
-            <h2>A premium booking experience with no account required.</h2>
-            <p>
-              Choose a service, select a coach or let the assignment engine find
-              the best fit, then submit your goals for confirmation.
-            </p>
-            <ol className="uw-steps">
-              {[
-                "Your name",
-                "Email",
-                "Phone",
-                "Service",
-                "Availability",
-                "Confirmation",
-              ].map((item, index) => (
-                <li className={step === index + 1 ? "active" : ""} key={item}>
-                  {item}
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="uw-booking-card">
-            {step === 1 && (
-              <div className="uw-form-panel">
-                <h3>Step 1: Your full name</h3>
-                <p>Let us know how to address you.</p>
-                <label>
-                  Full Name
-                  <input
-                    value={form.fullName}
-                    onChange={(e) =>
-                      setForm({ ...form, fullName: e.target.value })
-                    }
-                  />
-                </label>
-                <div className="uw-form-actions">
-                  <button className="uw-btn uw-btn-primary" onClick={next}>
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="uw-form-panel">
-                <h3>Step 2: Your email address</h3>
-                <p>We’ll use this to confirm your discovery call.</p>
-                <label>
-                  Email
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  />
-                </label>
-                <div className="uw-form-actions">
-                  <button
-                    className="uw-btn uw-btn-quiet"
-                    onClick={() => setStep(1)}
-                  >
-                    Back
-                  </button>
-                  <button className="uw-btn uw-btn-primary" onClick={next}>
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="uw-form-panel">
-                <h3>Step 3: Your phone number</h3>
-                <p>So we can reach you about the booking.</p>
-                <label>
-                  Phone Number
-                  <input
-                    value={form.phoneNumber}
-                    onChange={(e) =>
-                      setForm({ ...form, phoneNumber: e.target.value })
-                    }
-                  />
-                </label>
-                <div className="uw-form-actions">
-                  <button
-                    className="uw-btn uw-btn-quiet"
-                    onClick={() => setStep(2)}
-                  >
-                    Back
-                  </button>
-                  <button className="uw-btn uw-btn-primary" onClick={next}>
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="uw-form-panel">
-                <h3>Step 4: Choose the coaching service</h3>
-                <p>Select whether you want an individual or group discovery call.</p>
-                <div className="uw-choice-list">
-                  {programs.map((program) => (
-                    <button
-                      key={program.id}
-                      className={selectedProgram === program.id ? "selected" : ""}
-                      onClick={() => {
-                        setSelectedProgram(program.id);
-                        setForm({ ...form, coachingType: program.title });
-                      }}
-                    >
-                      <strong>{program.title}</strong>
-                      <span>{program.duration || "Discovery call"}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="uw-form-actions">
-                  <button
-                    className="uw-btn uw-btn-quiet"
-                    onClick={() => setStep(3)}
-                  >
-                    Back
-                  </button>
-                  <button className="uw-btn uw-btn-primary" onClick={next}>
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 5 && (
-              <div className="uw-form-panel">
-                <h3>Step 5: Pick your preferred time</h3>
-                <p>
-                  {selectedCoach
-                    ? `We’ll check ${selectedCoach.name}'s availability first.`
-                    : "We’ll check the selected coach’s availability first."}
-                </p>
-                {selectedCoach && (
-                  <p className="uw-assigned">Coach: {selectedCoach.name}</p>
-                )}
-
-                {slots.length > 0 ? (
-                  <>
-                    <div className="uw-slot-grid">
-                      {slotOptions.map((slot) => (
-                        <button
-                          key={slot.value}
-                          className={selectedSlot === slot.value ? "selected" : ""}
-                          onClick={() => {
-                            setSelectedSlot(slot.value);
-                            setForm({
-                              ...form,
-                              preferredDate: slot.value.split("T")[0] || "",
-                              preferredTime: slot.value.includes("T")
-                                ? new Date(slot.value).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })
-                                : "",
-                            });
-                          }}
-                        >
-                          {slot.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      There are no open slots right now. Choose one of the coach’s
-                      suggested dates below.
-                    </p>
-                    <div className="uw-slot-grid">
-                      {suggestedAvailabilityDates.map((date) => (
-                        <button
-                          key={date}
-                          className={form.preferredDate === date ? "selected" : ""}
-                          onClick={() =>
-                            setForm({ ...form, preferredDate: date })
-                          }
-                        >
-                          {new Date(date).toLocaleDateString([], {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                <div className="uw-form-grid">
-                  <label>
-                    Preferred Date
-                    <input
-                      type="date"
-                      value={form.preferredDate}
-                      onChange={(e) =>
-                        setForm({ ...form, preferredDate: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Optional Time
-                    <input
-                      type="time"
-                      value={form.preferredTime}
-                      onChange={(e) =>
-                        setForm({ ...form, preferredTime: e.target.value })
-                      }
-                    />
-                  </label>
-                </div>
-                <label className="wide">
-                  What would you like to focus on in the session? (optional)
-                  <textarea
-                    rows={3}
-                    placeholder="e.g. confidence, boundaries, leadership presence"
-                    value={form.goals}
-                    onChange={(e) => setForm({ ...form, goals: e.target.value })}
-                  />
-                </label>
-                <div className="uw-form-actions">
-                  <button
-                    className="uw-btn uw-btn-quiet"
-                    onClick={() => setStep(4)}
-                  >
-                    Back
-                  </button>
-                  <button
-                    className="uw-btn uw-btn-primary"
-                    onClick={submitBooking}
-                    disabled={submitting}
-                  >
-                    {submitting ? "Submitting..." : "Submit discovery call"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 6 && !requestSent && (
-              <div className="uw-confirmation">
-                <span>Confirmed</span>
-                <h3>Your discovery call request has been received.</h3>
-                <p>
-                  We will send booking confirmation, approval updates, and any
-                  reschedule notices by email. WhatsApp notifications are
-                  structured for future activation.
-                </p>
-                <button
-                  className="uw-btn uw-btn-primary"
-                  onClick={() => {
-                    setStep(1);
-                    setRequestSent(false);
-                  }}
-                >
-                  Book another call
-                </button>
-              </div>
-            )}
-
-            {step === 6 && requestSent && (
-              <div className="uw-confirmation uw-request-confirmation">
-                <span className="uw-request-pending-badge">⏳ Pending</span>
-                <h3>Slot request sent to {selectedCoach?.name}!</h3>
-                <p>
-                  Your request has been sent and{" "}
-                  <strong>{selectedCoach?.name}</strong> has been notified. You
-                  will receive an email confirmation as soon as your coach
-                  approves and sets a session time.
-                </p>
-                <div className="uw-request-details-panel">
-                  <div className="uw-request-detail-row">
-                    <span>Program</span>
-                    <strong>{selectedProgramData?.title}</strong>
-                  </div>
-                  <div className="uw-request-detail-row">
-                    <span>Coach</span>
-                    <strong>{selectedCoach?.name}</strong>
-                  </div>
-                  <div className="uw-request-detail-row">
-                    <span>Status</span>
-                    <strong style={{ color: "#f59e0b" }}>
-                      Awaiting coach approval
-                    </strong>
-                  </div>
-                </div>
-                <p className="uw-request-next-steps">
-                  💡 Keep an eye on your inbox. Once approved, you'll receive a
-                  confirmation email with your session time and coach contact
-                  details.
-                </p>
-                <button
-                  className="uw-btn uw-btn-primary"
-                  onClick={() => {
-                    setStep(1);
-                    setRequestSent(false);
-                  }}
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section id="testimonials" className="uw-section">
-        <div className="uw-container">
-          <div className="uw-section-head">
-            <span className="uw-kicker">Testimonials</span>
-            <h2>Trusted by leaders doing meaningful work.</h2>
-          </div>
-          <div className="uw-testimonial-grid">
-            {testimonials.map((testimonial) => (
-              <article className="uw-testimonial" key={testimonial.name}>
-                <p>"{testimonial.text}"</p>
-                <strong>{testimonial.name}</strong>
-                <span>{testimonial.role}</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section id="mission" className="uw-section uw-band">
-        <div className="uw-container uw-statement-grid">
-          <article>
-            <span className="uw-kicker">Mission</span>
-            <h2>Empowering leaders to own their voice.</h2>
-            <p>
-              Unwantra Coaching strengthens confidence, boundaries, influence,
-              and values-based leadership through transformational executive
-              coaching.
-            </p>
-          </article>
-          <article>
-            <span className="uw-kicker">Why we exist</span>
-            {/* <h2>Because leadership should feel both brave and whole.</h2>
-            <p>
-              We exist for leaders who are done performing confidence and ready
-              to lead from clarity, compassion, and deeply held values.
-            </p> */}
-            <p>
-              We help leaders own their voice, lead with integrity and live with
-              intention through transformational coaching that strengthens
-              confidence, boudaries, influence and values-based leadership.
-            </p>
-          </article>
-          <article className="uw-kicker">
-            <p>Vision</p>
-            <p>Leaders leading with courage, clarity, and compassion.</p>
-            <div className="uw-values">
-              <span>Courage</span>
-              <span>Clarity</span>
-              <span>Connection</span>
-            </div>
-          </article>
-        </div>
-      </section>
-      <section id="story">
-        <div>
+      {isBookingModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(7, 15, 23, 0.85)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            zIndex: 2000,
+            overflowY: "auto",
+            padding: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Discovery call booking"
+        >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              maxWidth: "100%",
-              flexDirection: "column",
-              padding: "20px",
+              maxWidth: "720px",
+              width: "100%",
+              position: "relative",
             }}
           >
-            <section id="story" className="uw-section uw-story-section">
-              <div className="uw-container">
-                <div className="uw-story-grid">
-                  <div className="uw-story-content">
-                    <span className="uw-kicker uw-story-kicker">Our story</span>
-                    <h2 className="uw-story-title">
-                      A coaching firm built on <em>values</em> and{" "}
-                      <em>transformation</em>.
-                    </h2>
-                    <div className="uw-story-text">
-                      <p className="uw-story-paragraph uw-story-paragraph-lead">
-                        Our story began with a simple conviction: leadership
-                        development should be <strong>deeply human</strong>,{" "}
-                        <strong>transformative</strong>, and{" "}
-                        <strong>grounded in values</strong>.
-                      </p>
-                      <p className="uw-story-paragraph">
-                        As a premium executive coaching firm that is proudly
-                        <span className="uw-story-highlight"> women-led</span>,
-                        <span className="uw-story-highlight"> African-led</span>
-                        , and
-                        <span className="uw-story-highlight">
-                          {" "}
-                          values-based
-                        </span>
-                        , we partner with ambitious professionals and executives
-                        who are ready to elevate their influence, strengthen
-                        their executive presence, navigate career transitions
-                        with confidence, and build meaningful workplace
-                        relationships.
-                      </p>
-                    </div>
-                    <div className="uw-story-values">
-                      <span className="uw-story-value-tag">🌍 African-led</span>
-                      <span className="uw-story-value-tag">👩‍💼 Women-led</span>
-                      <span className="uw-story-value-tag">
-                        💡 Values-based
-                      </span>
-                      <span className="uw-story-value-tag">
-                        🚀 Transformational
-                      </span>
-                    </div>
-                  </div>
-                  <div className="uw-story-visual">
-                    <div className="uw-story-quote-block">
-                      <div className="uw-story-quote-icon">"</div>
-                      <blockquote className="uw-story-quote">
-                        Leadership development should be deeply human,
-                        transformative, and grounded in values.
-                      </blockquote>
-                      <div className="uw-story-quote-attribute">
-                        <span className="uw-story-quote-line"></span>
-                        <span>Our founding conviction</span>
+            <button
+              type="button"
+              onClick={closeBookingModal}
+              style={{
+                position: "absolute",
+                top: "-44px",
+                right: "0",
+                zIndex: 1,
+                border: "none",
+                background: "rgba(255,255,255,0.95)",
+                color: "#111827",
+                width: "40px",
+                height: "40px",
+                borderRadius: "999px",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+              }}
+              aria-label="Close booking form"
+            >
+              ×
+            </button>
+            <section id="discovery-call" className="uw-section uw-booking-section" style={{ padding: 0 }}>
+              <div className="uw-container" style={{ width: "100%", padding: 0, margin: 0 }}>
+                <div className="uw-booking-card" style={{ boxShadow: "var(--uw-shadow)" }}>
+                  {step === 1 && (
+                    <div className="uw-form-panel">
+                      <h3>Step 1: Your full name</h3>
+                      <p>Let us know how to address you.</p>
+                      <label>
+                        Full Name
+                        <input
+                          value={form.fullName}
+                          onChange={(e) =>
+                            setForm({ ...form, fullName: e.target.value })
+                          }
+                        />
+                      </label>
+                      <div className="uw-form-actions">
+                        <button className="uw-btn uw-btn-primary" onClick={next}>
+                          Continue
+                        </button>
                       </div>
                     </div>
-                    <div className="uw-story-stats"></div>
-                  </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="uw-form-panel">
+                      <h3>Step 2: Your email address</h3>
+                      <p>We’ll use this to confirm your discovery call.</p>
+                      <label>
+                        Email
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        />
+                      </label>
+                      <div className="uw-form-actions">
+                        <button
+                          className="uw-btn uw-btn-quiet"
+                          onClick={() => setStep(1)}
+                        >
+                          Back
+                        </button>
+                        <button className="uw-btn uw-btn-primary" onClick={next}>
+                          Continue
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 3 && (
+                    <div className="uw-form-panel">
+                      <h3>Step 3: Your phone number</h3>
+                      <p>So we can reach you about the booking.</p>
+                      <label>
+                        Phone Number
+                        <input
+                          value={form.phoneNumber}
+                          onChange={(e) =>
+                            setForm({ ...form, phoneNumber: e.target.value })
+                          }
+                        />
+                      </label>
+                      <div className="uw-form-actions">
+                        <button
+                          className="uw-btn uw-btn-quiet"
+                          onClick={() => setStep(2)}
+                        >
+                          Back
+                        </button>
+                        <button className="uw-btn uw-btn-primary" onClick={next}>
+                          Continue
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 4 && (
+                    <div className="uw-form-panel">
+                      <h3>Step 4: Choose the coaching service</h3>
+                      <p>Select whether you want an individual or group discovery call.</p>
+                      <div className="uw-choice-list">
+                        {programs.map((program) => (
+                          <button
+                            key={program.id}
+                            className={selectedProgram === program.id ? "selected" : ""}
+                            onClick={() => {
+                              setSelectedProgram(program.id);
+                              setForm({ ...form, coachingType: program.title });
+                            }}
+                          >
+                            <strong>{program.title}</strong>
+                            <span>{program.duration || "Discovery call"}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="uw-form-actions">
+                        <button
+                          className="uw-btn uw-btn-quiet"
+                          onClick={() => setStep(3)}
+                        >
+                          Back
+                        </button>
+                        <button className="uw-btn uw-btn-primary" onClick={next}>
+                          Continue
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 5 && (
+                    <div className="uw-form-panel">
+                      <h3>Step 5: Pick your preferred time</h3>
+                      <p>
+                        {selectedCoach
+                          ? `We’ll check ${selectedCoach.name}'s availability first.`
+                          : "We’ll check the selected coach’s availability first."}
+                      </p>
+                      {selectedCoach && (
+                        <p className="uw-assigned">Coach: {selectedCoach.name}</p>
+                      )}
+
+                      {slots.length > 0 ? (
+                        <>
+                          <div className="uw-slot-grid">
+                            {slotOptions.map((slot) => (
+                              <button
+                                key={slot.value}
+                                className={selectedSlot === slot.value ? "selected" : ""}
+                                onClick={() => {
+                                  setSelectedSlot(slot.value);
+                                  setForm({
+                                    ...form,
+                                    preferredDate: slot.value.split("T")[0] || "",
+                                    preferredTime: slot.value.includes("T")
+                                      ? new Date(slot.value).toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "",
+                                  });
+                                }}
+                              >
+                                {slot.label}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p>
+                            There are no open slots right now. Choose one of the coach’s
+                            suggested dates below.
+                          </p>
+                          <div className="uw-slot-grid">
+                            {suggestedAvailabilityDates.map((date) => (
+                              <button
+                                key={date}
+                                className={form.preferredDate === date ? "selected" : ""}
+                                onClick={() =>
+                                  setForm({ ...form, preferredDate: date })
+                                }
+                              >
+                                {new Date(date).toLocaleDateString([], {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="uw-form-grid">
+                        <label>
+                          Preferred Date
+                          <input
+                            type="date"
+                            value={form.preferredDate}
+                            onChange={(e) =>
+                              setForm({ ...form, preferredDate: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Optional Time
+                          <input
+                            type="time"
+                            value={form.preferredTime}
+                            onChange={(e) =>
+                              setForm({ ...form, preferredTime: e.target.value })
+                            }
+                          />
+                        </label>
+                      </div>
+                      <label className="wide">
+                        What would you like to focus on in the session? (optional)
+                        <textarea
+                          rows={3}
+                          placeholder="e.g. confidence, boundaries, leadership presence"
+                          value={form.goals}
+                          onChange={(e) => setForm({ ...form, goals: e.target.value })}
+                        />
+                      </label>
+                      <div className="uw-form-actions">
+                        <button
+                          className="uw-btn uw-btn-quiet"
+                          onClick={() => setStep(4)}
+                        >
+                          Back
+                        </button>
+                        <button
+                          className="uw-btn uw-btn-primary"
+                          onClick={submitBooking}
+                          disabled={submitting}
+                        >
+                          {submitting ? "Submitting..." : "Submit discovery call"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 6 && !requestSent && (
+                    <div className="uw-confirmation">
+                      <span>Confirmed</span>
+                      <h3>Your discovery call request has been received.</h3>
+                      <p>
+                        We will send booking confirmation, approval updates, and any
+                        reschedule notices by email. WhatsApp notifications are
+                        structured for future activation.
+                      </p>
+                      <button
+                        className="uw-btn uw-btn-primary"
+                        onClick={() => {
+                          setStep(1);
+                          setRequestSent(false);
+                        }}
+                      >
+                        Book another call
+                      </button>
+                    </div>
+                  )}
+
+                  {step === 6 && requestSent && (
+                    <div className="uw-confirmation uw-request-confirmation">
+                      <span className="uw-request-pending-badge">⏳ Pending</span>
+                      <h3>Slot request sent to {selectedCoach?.name}!</h3>
+                      <p>
+                        Your request has been sent and{" "}
+                        <strong>{selectedCoach?.name}</strong> has been notified. You
+                        will receive an email confirmation as soon as your coach
+                        approves and sets a session time.
+                      </p>
+                      <div className="uw-request-details-panel">
+                        <div className="uw-request-detail-row">
+                          <span>Program</span>
+                          <strong>{selectedProgramData?.title}</strong>
+                        </div>
+                        <div className="uw-request-detail-row">
+                          <span>Coach</span>
+                          <strong>{selectedCoach?.name}</strong>
+                        </div>
+                        <div className="uw-request-detail-row">
+                          <span>Status</span>
+                          <strong style={{ color: "#f59e0b" }}>
+                            Awaiting coach approval
+                          </strong>
+                        </div>
+                      </div>
+                      <p className="uw-request-next-steps">
+                        💡 Keep an eye on your inbox. Once approved, you'll receive a
+                        confirmation email with your session time and coach contact
+                        details.
+                      </p>
+                      <button
+                        className="uw-btn uw-btn-primary"
+                        onClick={() => {
+                          setStep(1);
+                          setRequestSent(false);
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
           </div>
-          {/* <div>
-            <p>
-              Unwantra Coaching was created to offer premium, African-led and
-              women-led coaching for executives navigating visibility,
-              responsibility, transition, and purpose.
-            </p>
-            <p>
-              Our philosophy blends rigorous coaching practice with cultural
-              intelligence, reflective inquiry, and practical leadership tools.
-              We honor ambition without asking leaders to abandon humanity.
-            </p>
-          </div> */}
         </div>
-      </section>
-      <section id="contact" className="uw-section uw-contact">
-        <div className="uw-container uw-contact-grid">
-          <div>
-            <span className="uw-kicker">Contact us</span>
-            <h2>Start the conversation.</h2>
-            <p>
-              Tell us what you are navigating and the kind of leadership support
-              you need.
-            </p>
-            <div className="uw-data-note">
-              <strong>How your data supports coaching</strong>
-              <p>
-                We use your contact details to respond to your enquiry and your
-                coaching goals to understand demand, recommend the most relevant
-                coaching pathway, improve coach matching, and identify common
-                leadership themes across the platform. Your submission is used
-                for coaching operations and platform insight, not for selling
-                unrelated services.
-              </p>
+      )}
+
+      {!isBookingModalOpen && (
+        <section id="testimonials" className="uw-section">
+          <div className="uw-container">
+            <div className="uw-section-head">
+              <span className="uw-kicker">Testimonials</span>
+              <h2>Trusted by leaders doing meaningful work.</h2>
+            </div>
+            <div className="uw-testimonial-grid">
+              {testimonials.map((testimonial) => (
+                <article className="uw-testimonial" key={testimonial.name}>
+                  <p>"{testimonial.text}"</p>
+                  <strong>{testimonial.name}</strong>
+                  <span>{testimonial.role}</span>
+                </article>
+              ))}
             </div>
           </div>
-          <form
-            className="uw-contact-form"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const formEl = event.currentTarget;
-              const formData = new FormData(formEl);
-              try {
-                const response = await fetch(`${API_BASE_URL}/api/contact`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name: String(formData.get("name") || ""),
-                    email: String(formData.get("email") || ""),
-                    phone: String(formData.get("phone") || ""),
-                    interest: String(formData.get("interest") || ""),
-                    goals: String(formData.get("goals") || ""),
-                    source: "contact-us",
-                  }),
-                });
+        </section>
+      )}
+      {!isBookingModalOpen && (
+        <section id="mission" className="uw-section uw-band">
+          <div className="uw-container uw-statement-grid">
+            <article>
+              <span className="uw-kicker">Mission</span>
+              <h2>Empowering leaders to own their voice.</h2>
+              <p>
+                Unwantra Coaching strengthens confidence, boundaries, influence,
+                and values-based leadership through transformational executive
+                coaching.
+              </p>
+            </article>
+            <article>
+              <span className="uw-kicker">Why we exist</span>
+              {/* <h2>Because leadership should feel both brave and whole.</h2>
+              <p>
+                We exist for leaders who are done performing confidence and ready
+                to lead from clarity, compassion, and deeply held values.
+              </p> */}
+              <p>
+                We help leaders own their voice, lead with integrity and live with
+                intention through transformational coaching that strengthens
+                confidence, boudaries, influence and values-based leadership.
+              </p>
+            </article>
+            <article className="uw-kicker">
+              <p>Vision</p>
+              <p>Leaders leading with courage, clarity, and compassion.</p>
+              <div className="uw-values">
+                <span>Courage</span>
+                <span>Clarity</span>
+                <span>Connection</span>
+              </div>
+            </article>
+          </div>
+        </section>
+      )}
+      {!isBookingModalOpen && (
+        <section id="story">
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                maxWidth: "100%",
+                flexDirection: "column",
+                padding: "20px",
+              }}
+            >
+              <section id="story" className="uw-section uw-story-section">
+                <div className="uw-container">
+                  <div className="uw-story-grid">
+                    <div className="uw-story-content">
+                      <span className="uw-kicker uw-story-kicker">Our story</span>
+                      <h2 className="uw-story-title">
+                        A coaching firm built on <em>values</em> and{" "}
+                        <em>transformation</em>.
+                      </h2>
+                      <div className="uw-story-text">
+                        <p className="uw-story-paragraph uw-story-paragraph-lead">
+                          Our story began with a simple conviction: leadership
+                          development should be <strong>deeply human</strong>,{" "}
+                          <strong>transformative</strong>, and{" "}
+                          <strong>grounded in values</strong>.
+                        </p>
+                        <p className="uw-story-paragraph">
+                          As a premium executive coaching firm that is proudly
+                          <span className="uw-story-highlight"> women-led</span>,
+                          <span className="uw-story-highlight"> African-led</span>
+                          , and
+                          <span className="uw-story-highlight">
+                            {" "}
+                            values-based
+                          </span>
+                          , we partner with ambitious professionals and executives
+                          who are ready to elevate their influence, strengthen
+                          their executive presence, navigate career transitions
+                          with confidence, and build meaningful workplace
+                          relationships.
+                        </p>
+                      </div>
+                      <div className="uw-story-values">
+                        <span className="uw-story-value-tag">🌍 African-led</span>
+                        <span className="uw-story-value-tag">👩‍💼 Women-led</span>
+                        <span className="uw-story-value-tag">
+                          💡 Values-based
+                        </span>
+                        <span className="uw-story-value-tag">
+                          🚀 Transformational
+                        </span>
+                      </div>
+                    </div>
+                    <div className="uw-story-visual">
+                      <div className="uw-story-quote-block">
+                        <div className="uw-story-quote-icon">"</div>
+                        <blockquote className="uw-story-quote">
+                          Leadership development should be deeply human,
+                          transformative, and grounded in values.
+                        </blockquote>
+                        <div className="uw-story-quote-attribute">
+                          <span className="uw-story-quote-line"></span>
+                          <span>Our founding conviction</span>
+                        </div>
+                      </div>
+                      <div className="uw-story-stats"></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+            {/* <div>
+              <p>
+                Unwantra Coaching was created to offer premium, African-led and
+                women-led coaching for executives navigating visibility,
+                responsibility, transition, and purpose.
+              </p>
+              <p>
+                Our philosophy blends rigorous coaching practice with cultural
+                intelligence, reflective inquiry, and practical leadership tools.
+                We honor ambition without asking leaders to abandon humanity.
+              </p>
+            </div> */}
+          </div>
+        </section>
+      )}
+      {!isBookingModalOpen && (
+        <section id="contact" className="uw-section uw-contact">
+          <div className="uw-container uw-contact-grid">
+            <div>
+              <span className="uw-kicker">Contact us</span>
+              <h2>Start the conversation.</h2>
+              <p>
+                Tell us what you are navigating and the kind of leadership support
+                you need.
+              </p>
+              <div className="uw-data-note">
+                <strong>How your data supports coaching</strong>
+                <p>
+                  We use your contact details to respond to your enquiry and your
+                  coaching goals to understand demand, recommend the most relevant
+                  coaching pathway, improve coach matching, and identify common
+                  leadership themes across the platform. Your submission is used
+                  for coaching operations and platform insight, not for selling
+                  unrelated services.
+                </p>
+              </div>
+            </div>
+            <form
+              className="uw-contact-form"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const formEl = event.currentTarget;
+                const formData = new FormData(formEl);
+                try {
+                  const response = await fetch(`${API_BASE_URL}/api/contact`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name: String(formData.get("name") || ""),
+                      email: String(formData.get("email") || ""),
+                      phone: String(formData.get("phone") || ""),
+                      interest: String(formData.get("interest") || ""),
+                      goals: String(formData.get("goals") || ""),
+                      source: "contact-us",
+                    }),
+                  });
 
-                if (!response.ok) {
-                  const error = await response.json().catch(() => null);
-                  throw new Error(
-                    error?.message || "Could not submit contact form",
+                  if (!response.ok) {
+                    const error = await response.json().catch(() => null);
+                    throw new Error(
+                      error?.message || "Could not submit contact form",
+                    );
+                  }
+
+                  showToast(
+                    "Thank you. The Unwantra team will follow up by email.",
+                    "success",
+                  );
+                  formEl.reset();
+                } catch (error) {
+                  showToast(
+                    error instanceof Error
+                      ? error.message
+                      : "Could not submit contact form",
+                    "error",
+                    5000,
                   );
                 }
-
-                showToast(
-                  "Thank you. The Unwantra team will follow up by email.",
-                  "success",
-                );
-                formEl.reset();
-              } catch (error) {
-                showToast(
-                  error instanceof Error
-                    ? error.message
-                    : "Could not submit contact form",
-                  "error",
-                  5000,
-                );
-              }
-            }}
-          >
-            <input name="name" placeholder="Name" required />
-            <input name="email" type="email" placeholder="Email" required />
-            <input
-              name="phone"
-              placeholder="Phone number with country code"
-              required
-            />
-            <select name="interest" required defaultValue="">
-              <option value="" disabled>
-                Coaching Interest
-              </option>
-              <option value="Individual Executive Coaching">
-                Individual Executive Coaching
-              </option>
-              <option value="Group Executive Coaching">
-                Group Executive Coaching
-              </option>
-              {/* <option value="Both">Both</option> */}
-            </select>
-            <textarea name="goals" placeholder="Goals" rows={5} required />
-            <button className="uw-btn uw-btn-primary" type="submit">
-              Send message
-            </button>
-          </form>
-        </div>
-      </section>
+              }}
+            >
+              <input name="name" placeholder="Name" required />
+              <input name="email" type="email" placeholder="Email" required />
+              <input
+                name="phone"
+                placeholder="Phone number with country code"
+                required
+              />
+              <select name="interest" required defaultValue="">
+                <option value="" disabled>
+                  Coaching Interest
+                </option>
+                <option value="Individual Executive Coaching">
+                  Individual Executive Coaching
+                </option>
+                <option value="Group Executive Coaching">
+                  Group Executive Coaching
+                </option>
+                {/* <option value="Both">Both</option> */}
+              </select>
+              <textarea name="goals" placeholder="Goals" rows={5} required />
+              <button className="uw-btn uw-btn-primary" type="submit">
+                Send message
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
     </>
   );
 };
