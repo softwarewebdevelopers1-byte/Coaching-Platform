@@ -55,9 +55,7 @@ img { max-width: 100%; display: block; }
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 .uw-btn:hover { transform: translateY(-1px); }
-.uw-btn-primary { background: var(--uw-yellow); color: #1d211b; border-color: var(--uw-yellow); box-shadow: 0 14px 30px rgba(217, 169, 40, 0.24); }
-.uw-btn-secondary { background: var(--uw-sage-dark); color: #fff; border-color: var(--uw-sage-dark); }
-.uw-btn-quiet { background: rgba(255,255,255,0.08); color: inherit; }
+
 
 .uw-hero { min-height: 94vh; position: relative; display: flex; align-items: center; overflow: hidden; padding-top: var(--nav-h); }
 .uw-hero-media {
