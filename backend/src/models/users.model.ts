@@ -16,10 +16,6 @@ interface UserAccountInterface {
   availabilitySummary?: string;
   currentWorkload?: number;
   maxWorkload?: number;
-  resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
-  availabilityType?: "whole_week" | "selected_days";
-  availableDays?: string[];
 }
 
 interface CoachInviteInterface {
@@ -55,14 +51,6 @@ const UserAccountSchema = new mongoose.Schema<UserAccountInterface>(
     availabilitySummary: { type: String, required: false },
     currentWorkload: { type: Number, default: 0 },
     maxWorkload: { type: Number, default: 10 },
-    resetPasswordToken: { type: String, required: false },
-    resetPasswordExpires: { type: Date, required: false },
-    availabilityType: {
-      type: String,
-      enum: ["whole_week", "selected_days"],
-      default: "whole_week",
-    },
-    availableDays: [{ type: String }],
   },
   { timestamps: true },
 );

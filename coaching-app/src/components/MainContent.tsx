@@ -516,27 +516,52 @@ const MainContent: React.FC<MainContentProps> = ({
                     display: "flex",
                     flexDirection: "column",
                     gap: "16px",
+                    position: "relative",
                   }}
                 >
                   <div
-                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                    style={{
+                      display: "flex",
+                      position: "absolute",
+                      top: "12px",
+                      left: "12px",
+                      zIndex: 1,
+                      flexWrap: "wrap",
+                    }}
                   >
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        padding: "6px 10px",
+                        gap: "6px",
+                        padding: "6px 12px 6px 10px",
                         borderRadius: "999px",
                         background: availableToday
-                          ? "rgba(217, 169, 40, 0.16)"
-                          : "rgba(120, 120, 120, 0.12)",
-                        color: availableToday ? "#8b6a10" : "#5f5f5f",
-                        fontSize: "0.78rem",
+                          ? "rgba(5, 85, 18, 0.92)"
+                          : "rgba(30, 32, 28, 0.82)",
+                        backdropFilter: "blur(6px)",
+                        WebkitBackdropFilter: "blur(6px)",
+                        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.18)",
+                        color: "#fff",
+                        fontSize: "0.72rem",
                         fontWeight: 700,
                         textTransform: "uppercase",
-                        letterSpacing: "0.04em",
+                        letterSpacing: "0.05em",
+                        lineHeight: 1,
                       }}
                     >
+                      <span
+                        style={{
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "50%",
+                          background: availableToday ? "#4ade80" : "#f87171",
+                          boxShadow: availableToday
+                            ? "0 0 0 3px rgba(74, 222, 128, 0.25)"
+                            : "0 0 0 3px rgba(248, 113, 113, 0.25)",
+                          flexShrink: 0,
+                        }}
+                      />
                       {availableToday ? "Available today" : "Unavailable today"}
                     </span>
                   </div>
@@ -1311,7 +1336,7 @@ const MainContent: React.FC<MainContentProps> = ({
               <option value="Group Executive Coaching">
                 Group Executive Coaching
               </option>
-              <option value="Both">Both</option>
+              {/* <option value="Both">Both</option> */}
             </select>
             <textarea name="goals" placeholder="Goals" rows={5} required />
             <button className="uw-btn uw-btn-primary" type="submit">
