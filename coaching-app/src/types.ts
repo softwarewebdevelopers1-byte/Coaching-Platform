@@ -82,7 +82,6 @@ export interface CoachSlot {
   bookingDate: string;
   bookingEndDate: string;
   status: "open" | "booked" | "cancelled";
-  meetingUrl?: string;
 }
 
 export interface BookingSession {
