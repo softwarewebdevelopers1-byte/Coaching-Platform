@@ -1,11 +1,4 @@
-import { randomBytes } from "crypto";
-
-const generateGoogleMeetLink = () => {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
-  const pick = (n: number) =>
-    Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `https://meet.google.com/${pick(3)}-${pick(4)}-${pick(4)}`;
-};
+import { Router } from "express";
 import {
   BookingsCreatedModel,
   BookingsSessionsModel,
@@ -163,7 +156,6 @@ router.post("/coach-slots", async (req, res): Promise<void> => {
     bookingDate: startDate,
     bookingEndDate: endDate,
     status: "open",
-    meetingUrl: generateGoogleMeetLink(),
   });
 
   res.status(201).json({ message: "Coach booking slot created", slot });

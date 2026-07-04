@@ -13,12 +13,12 @@ interface UserAccountInterface {
     expertise?: string[];
     photo?: string;
     availabilitySummary?: string;
-    availabilityType?: "whole_week" | "selected_days";
-    availableDays?: string[];
-    resetPasswordToken?: string;
-    resetPasswordExpires?: Date;
     currentWorkload?: number;
     maxWorkload?: number;
+    resetPasswordToken?: string;
+    resetPasswordExpires?: Date;
+    availabilityType?: "whole_week" | "selected_days";
+    availableDays?: string[];
 }
 interface CoachInviteInterface {
     token: string;
