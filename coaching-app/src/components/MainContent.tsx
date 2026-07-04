@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Booking, Coach, CoachSlot, Program, Testimonial } from "../types";
 import { coachMatchesProgram } from "../utils/programs";
+import CoachProfileModal from "./CoachProfileModal";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
@@ -104,6 +105,32 @@ const MainContent: React.FC<MainContentProps> = ({
   });
 
   const [requestSent, setRequestSent] = useState(false);
+  const [selectedProfileCoach, setSelectedProfileCoach] = useState<Coach | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+
+  const getProgramLabel = (value: string) => {
+    const program = programs.find((p) => p.id === value || p.title === value);
+    return program?.title || value || "-";
+  };
+
+  const renderStars = (rating: number) => "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
+
+  const openProfileModal = (coach: Coach) => {
+    setSelectedProfileCoach(coach);
+    setIsProfileModalOpen(true);
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setSelectedProfileCoach(null);
+  };
 
   const selectedProgramData = programs.find(
     (program) => program.id === selectedProgram,
@@ -622,9 +649,10 @@ const MainContent: React.FC<MainContentProps> = ({
                     <button
                        className="uw-btn uw-btn-quiet"
                        style={{ color: "var(--uw-sage-dark)" }}
+                       onClick={() => openProfileModal(coach)}
                      >
                        Full View Profile
-                    </button>
+                     </button>
                     <button
                       className="uw-btn uw-btn-secondary"
                       onClick={() => openBookingModal(coach._id)}
@@ -1216,6 +1244,16 @@ const MainContent: React.FC<MainContentProps> = ({
             </form>
           </div>
         </section>
+      )}
+      {isProfileModalOpen && selectedProfileCoach && (
+        <CoachProfileModal
+          coach={selectedProfileCoach}
+          getInitials={getInitials}
+          getProgramLabel={getProgramLabel}
+          renderStars={renderStars}
+          onClose={closeProfileModal}
+          onBook={(coach) => openBookingModal(coach._id)}
+        />
       )}
     </>
   );
