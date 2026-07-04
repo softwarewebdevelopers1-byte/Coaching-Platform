@@ -21,16 +21,12 @@ const UserAccountSchema = new mongoose.Schema({
     expertise: [{ type: String }],
     photo: { type: String, required: false },
     availabilitySummary: { type: String, required: false },
-    currentWorkload: { type: Number, default: 0 },
-    maxWorkload: { type: Number, default: 10 },
+    availabilityType: { type: String, required: false, default: "whole_week" },
+    availableDays: [{ type: String }],
     resetPasswordToken: { type: String, required: false },
     resetPasswordExpires: { type: Date, required: false },
-    availabilityType: {
-        type: String,
-        enum: ["whole_week", "selected_days"],
-        default: "whole_week",
-    },
-    availableDays: [{ type: String }],
+    currentWorkload: { type: Number, default: 0 },
+    maxWorkload: { type: Number, default: 10 },
 }, { timestamps: true });
 const CoachInviteSchema = new mongoose.Schema({
     token: { type: String, required: true, unique: true },

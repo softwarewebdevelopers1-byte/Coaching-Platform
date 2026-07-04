@@ -9,6 +9,7 @@ interface BookingsInterface {
   bookingDate: Date;
   bookingEndDate: Date;
   status: "open" | "booked" | "cancelled";
+  meetingUrl?: string;
 }
 interface BookingsSessionsInterface {
   coachId: string;
@@ -23,6 +24,7 @@ interface BookingsSessionsInterface {
   coachingType?: string;
   programName: string;
   bookingTime: string;
+  meetingUrl?: string;
   status?: "pending" | "approved" | "rejected" | "rescheduled" | "cancelled";
 }
 export type { BookingsInterface, BookingsSessionsInterface };

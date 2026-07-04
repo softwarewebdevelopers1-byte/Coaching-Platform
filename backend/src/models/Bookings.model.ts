@@ -16,12 +16,13 @@ let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>(
     title: { type: String, required: true },
     bookingDate: { type: Date, required: true, index: true },
     bookingEndDate: { type: Date, required: true },
-    status: {
-      type: String,
-      enum: ["open", "booked", "cancelled"],
-      default: "open",
-      index: true,
-    },
+     status: {
+       type: String,
+       enum: ["open", "booked", "cancelled"],
+       default: "open",
+       index: true,
+     },
+     meetingUrl: { type: String, required: false },
   },
   { timestamps: true },
 );
@@ -42,6 +43,7 @@ let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>(
     coachingType: { type: String, required: false },
     programName: { type: String, required: true, index: true },
     bookingTime: { type: String, required: true },
+    meetingUrl: { type: String, required: false },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected", "rescheduled", "cancelled"],
