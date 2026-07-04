@@ -78,6 +78,60 @@ const fallbackSlots = [
   "2026-07-06T11:30",
 ];
 
+const COUNTRY_CODES = [
+  { code: "+254", country: "Kenya", flag: "🇰🇪" },
+  { code: "+255", country: "Tanzania", flag: "🇹🇿" },
+  { code: "+256", country: "Uganda", flag: "🇺🇬" },
+  { code: "+250", country: "Rwanda", flag: "🇷🇼" },
+  { code: "+257", country: "Burundi", flag: "🇧🇮" },
+  { code: "+251", country: "Ethiopia", flag: "🇪🇹" },
+  { code: "+252", country: "Somalia", flag: "🇸🇴" },
+  { code: "+253", country: "Djibouti", flag: "🇩🇯" },
+  { code: "+291", country: "Eritrea", flag: "🇪🇷" },
+  { code: "+260", country: "Zambia", flag: "🇿🇲" },
+  { code: "+263", country: "Zimbabwe", flag: "🇿🇼" },
+  { code: "+267", country: "Botswana", flag: "🇧🇼" },
+  { code: "+264", country: "Namibia", flag: "🇳🇦" },
+  { code: "+268", country: "Eswatini", flag: "🇸🇿" },
+  { code: "+266", country: "Lesotho", flag: "🇱🇸" },
+  { code: "+265", country: "Malawi", flag: "🇲🇼" },
+  { code: "+258", country: "Mozambique", flag: "🇲🇿" },
+  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
+  { code: "+233", country: "Ghana", flag: "🇬🇭" },
+  { code: "+27", country: "South Africa", flag: "🇿🇦" },
+  { code: "+20", country: "Egypt", flag: "🇪🇬" },
+  { code: "+212", country: "Morocco", flag: "🇲🇦" },
+  { code: "+213", country: "Algeria", flag: "🇩🇿" },
+  { code: "+216", country: "Tunisia", flag: "🇹🇳" },
+  { code: "+218", country: "Libya", flag: "🇱🇾" },
+  { code: "+249", country: "Sudan", flag: "🇸🇩" },
+  { code: "+211", country: "South Sudan", flag: "🇸🇸" },
+  { code: "+225", country: "Ivory Coast", flag: "🇨🇮" },
+  { code: "+221", country: "Senegal", flag: "🇸🇳" },
+  { code: "+223", country: "Mali", flag: "🇲🇱" },
+  { code: "+226", country: "Burkina Faso", flag: "🇧🇫" },
+  { code: "+227", country: "Niger", flag: "🇳🇪" },
+  { code: "+229", country: "Benin", flag: "🇧🇯" },
+  { code: "+228", country: "Togo", flag: "🇹🇬" },
+  { code: "+237", country: "Cameroon", flag: "🇨🇲" },
+  { code: "+236", country: "Central African Republic", flag: "🇨🇫" },
+  { code: "+235", country: "Chad", flag: "🇹🇩" },
+  { code: "+242", country: "Congo", flag: "🇨🇬" },
+  { code: "+243", country: "DR Congo", flag: "🇨🇩" },
+  { code: "+241", country: "Gabon", flag: "🇬🇦" },
+  { code: "+240", country: "Equatorial Guinea", flag: "🇬🇶" },
+  { code: "+220", country: "Gambia", flag: "🇬🇲" },
+  { code: "+232", country: "Sierra Leone", flag: "🇸🇱" },
+  { code: "+231", country: "Liberia", flag: "🇱🇷" },
+  { code: "+224", country: "Guinea", flag: "🇬🇳" },
+  { code: "+245", country: "Guinea-Bissau", flag: "🇬🇼" },
+  { code: "+238", country: "Cabo Verde", flag: "🇨🇻" },
+  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
+  { code: "+44", country: "UK", flag: "🇬🇧" },
+  { code: "+91", country: "India", flag: "🇮🇳" },
+  { code: "+86", country: "China", flag: "🇨🇳" },
+];
+
 const MainContent: React.FC<MainContentProps> = ({
   programs,
   testimonials,
@@ -96,6 +150,7 @@ const MainContent: React.FC<MainContentProps> = ({
     fullName: "",
     email: "",
     phoneNumber: "",
+    countryCode: "+254",
     country: "",
     goals: "",
     preferredDate: "",
@@ -302,6 +357,8 @@ const MainContent: React.FC<MainContentProps> = ({
         day: "numeric",
       })}${form.preferredTime ? ` at ${form.preferredTime}` : ""}`;
 
+    const fullPhoneNumber = `${form.countryCode}${form.phoneNumber}`;
+
     setSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/bookings/book-slot`, {
@@ -309,6 +366,7 @@ const MainContent: React.FC<MainContentProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          phoneNumber: fullPhoneNumber,
           programName: selectedProgram,
           coachId: selectedCoach._id,
           coachName: selectedCoach.name,
@@ -356,6 +414,60 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   };
 
+  const submitSlotRequest = async () => {
+    if (!form.fullName.trim() || !form.email.trim() || !form.phoneNumber.trim()) {
+      showToast("Complete your name, email, and phone number first", "error");
+      return;
+    }
+    if (!selectedProgramData || !selectedCoach) {
+      showToast("Please select a coach and a coaching service", "error");
+      return;
+    }
+
+    const fullPhoneNumber = `${form.countryCode}${form.phoneNumber}`;
+
+    setSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/slot-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          email: form.email,
+          phoneNumber: fullPhoneNumber,
+          programName: selectedProgram,
+          coachId: selectedCoach._id,
+          coachName: selectedCoach.name,
+          coachEmail: selectedCoach.email,
+          message: form.goals || "",
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Could not submit slot request");
+      }
+
+      setRequestSent(true);
+      showToast(
+        "Slot request sent! You'll be notified by email when the coach responds.",
+        "success",
+        6000,
+      );
+      setStep(6);
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Could not submit slot request",
+        "error",
+        6000,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const slotOptions = slots.length
     ? slots.map((slot) => ({
         value: slot.bookingDate,
@@ -394,6 +506,7 @@ const MainContent: React.FC<MainContentProps> = ({
       fullName: "",
       email: "",
       phoneNumber: "",
+      countryCode: "+254",
       preferredDate: "",
       preferredTime: "",
       goals: "",
@@ -409,6 +522,7 @@ const MainContent: React.FC<MainContentProps> = ({
       fullName: "",
       email: "",
       phoneNumber: "",
+      countryCode: "+254",
       preferredDate: "",
       preferredTime: "",
       goals: "",
@@ -742,12 +856,31 @@ const MainContent: React.FC<MainContentProps> = ({
                       <p>So we can reach you about the booking.</p>
                       <label>
                         Phone Number
-                        <input
-                          value={form.phoneNumber}
-                          onChange={(e) =>
-                            setForm({ ...form, phoneNumber: e.target.value })
-                          }
-                        />
+                        <div className="uw-phone-row">
+                          <select
+                            value={form.countryCode}
+                            onChange={(e) =>
+                              setForm({ ...form, countryCode: e.target.value })
+                            }
+                            className="uw-country-select"
+                          >
+                            {COUNTRY_CODES.map((item) => (
+                              <option key={item.code} value={item.code}>
+                                {item.flag} {item.code}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={form.phoneNumber}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9]/g, "");
+                              setForm({ ...form, phoneNumber: value });
+                            }}
+                            placeholder="712 345 678"
+                          />
+                        </div>
                       </label>
                       <div className="uw-form-actions">
                         <button
@@ -835,29 +968,58 @@ const MainContent: React.FC<MainContentProps> = ({
                           </div>
                         </>
                       ) : (
-                        <>
+                        <div className="uw-request-slot-notice">
+                          <strong>No open slots available</strong>
                           <p>
-                            There are no open slots right now. Choose one of the coach’s
-                            suggested dates below.
+                            {selectedCoach?.name || "The coach"} does not have any open slots at the moment.
+                            Send a slot request and they will get back to you with a confirmed time.
                           </p>
-                          <div className="uw-slot-grid">
-                            {suggestedAvailabilityDates.map((date) => (
-                              <button
-                                key={date}
-                                className={form.preferredDate === date ? "selected" : ""}
-                                onClick={() =>
-                                  setForm({ ...form, preferredDate: date })
-                                }
-                              >
-                                {new Date(date).toLocaleDateString([], {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </button>
-                            ))}
-                          </div>
+                        </div>
+                      )}
+
+                      <label className="wide">
+                        What would you like to focus on in the session? (optional)
+                        <textarea
+                          rows={3}
+                          placeholder="e.g. confidence, boundaries, leadership presence"
+                          value={form.goals}
+                          onChange={(e) => setForm({ ...form, goals: e.target.value })}
+                        />
+                      </label>
+                      <div className="uw-form-actions">
+                        <button
+                          className="uw-btn uw-btn-quiet"
+                          onClick={() => setStep(4)}
+                        >
+                          Back
+                        </button>
+                        {slots.length > 0 ? (
+                          <button
+                            className="uw-btn uw-btn-primary"
+                            onClick={submitBooking}
+                            disabled={submitting}
+                          >
+                            {submitting ? "Submitting..." : "Submit discovery call"}
+                          </button>
+                        ) : (
+                          <button
+                            className="uw-btn uw-btn-primary"
+                            onClick={submitSlotRequest}
+                            disabled={submitting}
+                          >
+                            {submitting ? "Sending..." : "Send slot request"}
+                          </button>
+                        )}
+                      </div>
                         </>
+                      ) : (
+                        <div className="uw-request-slot-notice">
+                          <strong>No open slots available</strong>
+                          <p>
+                            {selectedCoach?.name || "The coach"} does not have any open slots at the moment.
+                            Send a slot request and they will get back to you with a confirmed time.
+                          </p>
+                        </div>
                       )}
 
                       <div className="uw-form-grid">
