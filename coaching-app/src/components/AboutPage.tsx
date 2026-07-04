@@ -1,30 +1,132 @@
-// AboutPage.tsx
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../styles/About.css";
 
 interface AboutPageProps {
   onBookCall?: () => void;
 }
 
+// Replace these with your real, current figures before shipping.
+const IMPACT_STATS = [
+  { value: 7, suffix: "+", label: "Coaches on the platform" },
+  { value: 12, suffix: "+", label: "Years of combined coaching experience" },
+  { value: 2, suffix: "", label: "Coaching programs" },
+  { value: 3, suffix: "", label: "Countries represented" },
+];
+
+const useAnimatedCounter = (
+  target: number,
+  shouldStart: boolean,
+  duration = 1400,
+) => {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!shouldStart) return;
+    let start: number | null = null;
+    let frame: number;
+    const step = (timestamp: number) => {
+      if (start === null) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      setValue(Math.floor(progress * target));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [shouldStart, target, duration]);
+  return value;
+};
+
+const useRevealOnScroll = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    const elements = root.querySelectorAll(".about-reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+  return containerRef;
+};
+
 const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
+  const pageRef = useRevealOnScroll();
+  const [statsInView, setStatsInView] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = statsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStatsInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="about-page">
+    <div className="about-page" ref={pageRef}>
       {/* ── Hero Section ──────────────────────────────────────── */}
       <section className="about-hero">
         <div className="about-hero-overlay" />
         <div className="about-container">
-          <div className="about-hero-content">
-            <span className="about-kicker">About the Unwantra Coaching Platform</span>
+          <div className="about-hero-content about-reveal">
+            <span className="about-kicker">
+              About the Unwantra Coaching Platform
+            </span>
             <h1 className="about-hero-title">
               Connecting bold leaders with coaching that is purposeful,
               practical, and values-driven.
             </h1>
             <p className="about-hero-subtitle">
               Our platform is designed to help executives, teams, and coaches
-              grow together through intentional leadership development,
-              trusted guidance, and seamless session management.
+              grow together through intentional leadership development, trusted
+              guidance, and seamless session management.
             </p>
+            <div className="about-hero-actions">
+              <button
+                className="about-btn about-btn-primary"
+                onClick={onBookCall}
+              >
+                Book Discovery Call →
+              </button>
+              <a
+                className="about-btn about-btn-ghost"
+                href="#about-story-anchor"
+              >
+                Read our story
+              </a>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Impact stats strip ───────────────────────────────── */}
+      <section className="about-stats" ref={statsRef}>
+        <div className="about-container about-stats-grid">
+          {IMPACT_STATS.map((stat, index) => (
+            <StatItem
+              key={stat.label}
+              stat={stat}
+              shouldStart={statsInView}
+              delay={index * 80}
+            />
+          ))}
         </div>
       </section>
 
@@ -32,7 +134,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       <section className="about-vision-mission">
         <div className="about-container">
           <div className="about-vm-grid">
-            <div className="about-vision">
+            <div className="about-vision about-reveal">
               <span className="about-vm-icon">👁️</span>
               <h2>Our Vision</h2>
               <p>
@@ -41,7 +143,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 people-first leadership.
               </p>
             </div>
-            <div className="about-mission">
+            <div className="about-mission about-reveal">
               <span className="about-vm-icon">🎯</span>
               <h2>Our Mission</h2>
               <p>
@@ -56,7 +158,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
 
       <section className="about-platform">
         <div className="about-container">
-          <div className="about-section-head">
+          <div className="about-section-head about-reveal">
             <span className="about-kicker">Platform Focus</span>
             <h2>Built for leaders, coaches, and growth-driven organisations</h2>
             <p>
@@ -66,7 +168,8 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
             </p>
           </div>
           <div className="about-platform-grid">
-            <div className="about-platform-card">
+            <div className="about-platform-card about-reveal">
+              <div className="about-platform-icon">🤝</div>
               <h3>Trusted coach connection</h3>
               <p>
                 Match with vetted executive and leadership coaches who support
@@ -74,18 +177,20 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 team alignment and executive presence.
               </p>
             </div>
-            <div className="about-platform-card">
+            <div className="about-platform-card about-reveal">
+              <div className="about-platform-icon">📅</div>
               <h3>Streamlined booking</h3>
               <p>
                 Book sessions, manage availability, and keep your calendar in
                 sync without chasing email threads or spreadsheets.
               </p>
             </div>
-            <div className="about-platform-card">
+            <div className="about-platform-card about-reveal">
+              <div className="about-platform-icon">🧭</div>
               <h3>Clear progress and values</h3>
               <p>
-                Stay aligned around values, goals, and coaching momentum with
-                a platform designed for intentional leadership development.
+                Stay aligned around values, goals, and coaching momentum with a
+                platform designed for intentional leadership development.
               </p>
             </div>
           </div>
@@ -95,7 +200,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       {/* ── Values ────────────────────────────────────────────── */}
       <section className="about-values">
         <div className="about-container">
-          <div className="about-section-head">
+          <div className="about-section-head about-reveal">
             <span className="about-kicker">What We Stand For</span>
             <h2>Our Core Values</h2>
             <p>
@@ -104,39 +209,58 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
             </p>
           </div>
           <div className="about-values-grid">
-            <div className="about-value-card">
-              <div className="about-value-icon">🦁</div>
-              <h3>Courage</h3>
-              <p>
-                We speak up — even when our voice shakes. We believe growth
-                begins with brave, imperfect action.
-              </p>
+            <div className="about-value-card about-reveal">
+              <div className="about-value-card-inner">
+                <div className="about-value-face about-value-front">
+                  <div className="about-value-icon">🦁</div>
+                  <h3>Courage</h3>
+                </div>
+                <div className="about-value-face about-value-back">
+                  <p>
+                    We speak up — even when our voice shakes. We believe growth
+                    begins with brave, imperfect action.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="about-value-card">
-              <div className="about-value-icon">🔍</div>
-              <h3>Clarity</h3>
-              <p>
-                We seek clarity of voice, thought, and direction — and help
-                others do the same.
-              </p>
+            <div className="about-value-card about-reveal">
+              <div className="about-value-card-inner">
+                <div className="about-value-face about-value-front">
+                  <div className="about-value-icon">🔍</div>
+                  <h3>Clarity</h3>
+                </div>
+                <div className="about-value-face about-value-back">
+                  <p>
+                    We seek clarity of voice, thought, and direction — and help
+                    others do the same.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="about-value-card">
-              <div className="about-value-icon">🤝</div>
-              <h3>Connection</h3>
-              <p>
-                We prioritize deep, authentic relationships — with self, others,
-                and community.
-              </p>
+            <div className="about-value-card about-reveal">
+              <div className="about-value-card-inner">
+                <div className="about-value-face about-value-front">
+                  <div className="about-value-icon">🤝</div>
+                  <h3>Connection</h3>
+                </div>
+                <div className="about-value-face about-value-back">
+                  <p>
+                    We prioritize deep, authentic relationships — with self,
+                    others, and community.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+          <p className="about-values-hint">Hover a card to read more ↝</p>
         </div>
       </section>
 
       {/* ── Our Story ──────────────────────────────────────────── */}
-      <section className="about-story">
+      <section className="about-story" id="about-story-anchor">
         <div className="about-container">
           <div className="about-story-grid">
-            <div className="about-story-content">
+            <div className="about-story-content about-reveal">
               <span className="about-kicker">Our Story</span>
               <h2>
                 A coaching firm built on <em>values</em> and{" "}
@@ -144,8 +268,8 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
               </h2>
               <p>
                 Our story began with a simple conviction: leadership development
-                should be <strong>deeply human</strong>,
-                <strong>transformative</strong>, and
+                should be <strong>deeply human</strong>,{" "}
+                <strong>transformative</strong>, and{" "}
                 <strong>grounded in values</strong>.
               </p>
               <p>
@@ -161,7 +285,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 <span className="about-story-tag">🚀 Transformational</span>
               </div>
             </div>
-            <div className="about-story-visual">
+            <div className="about-story-visual about-reveal">
               <blockquote className="about-quote">
                 <span className="about-quote-icon">"</span>
                 <p>
@@ -181,12 +305,12 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       {/* ── Our Commitment ─────────────────────────────────────── */}
       <section className="about-commitment">
         <div className="about-container">
-          <div className="about-section-head">
+          <div className="about-section-head about-reveal">
             <span className="about-kicker">Our Commitment to You</span>
             <h2>How We Show Up for You</h2>
           </div>
           <div className="about-commitment-grid">
-            <div className="about-commitment-card">
+            <div className="about-commitment-card about-reveal">
               <span className="about-commitment-number">01</span>
               <h3>Hold the Vision</h3>
               <p>
@@ -194,7 +318,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 identify what comes in the way.
               </p>
             </div>
-            <div className="about-commitment-card">
+            <div className="about-commitment-card about-reveal">
               <span className="about-commitment-number">02</span>
               <h3>Create Actionable Steps</h3>
               <p>
@@ -202,7 +326,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 actionable steps to reclaim your power.
               </p>
             </div>
-            <div className="about-commitment-card">
+            <div className="about-commitment-card about-reveal">
               <span className="about-commitment-number">03</span>
               <h3>Ask the Right Questions</h3>
               <p>
@@ -217,7 +341,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       {/* ── Coaching Packages ──────────────────────────────────── */}
       <section className="about-packages">
         <div className="about-container">
-          <div className="about-section-head">
+          <div className="about-section-head about-reveal">
             <span className="about-kicker">Coaching Packages</span>
             <h2>Designed for Your Growth Journey</h2>
             <p>
@@ -226,7 +350,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
             </p>
           </div>
           <div className="about-packages-grid">
-            <div className="about-package-card about-package-individual">
+            <div className="about-package-card about-package-individual about-reveal">
               <div className="about-package-icon">🌟</div>
               <h3>Individual Executive Coaching</h3>
               <p>
@@ -235,10 +359,10 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 results with purpose and authenticity.
               </p>
               <ul className="about-package-features">
-                <li>✓ Private, confidential coaching</li>
-                <li>✓ Personalized growth plan</li>
-                <li>✓ Focus on executive presence and influence</li>
-                <li>✓ Deep exploration of values and voice</li>
+                <li>Private, confidential coaching</li>
+                <li>Personalized growth plan</li>
+                <li>Focus on executive presence and influence</li>
+                <li>Deep exploration of values and voice</li>
               </ul>
               <button
                 className="about-btn about-btn-primary"
@@ -247,7 +371,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 Book Discovery Call
               </button>
             </div>
-            <div className="about-package-card about-package-group">
+            <div className="about-package-card about-package-group about-reveal">
               <div className="about-package-icon">👥</div>
               <h3>Group Executive Coaching</h3>
               <p>
@@ -256,10 +380,10 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
                 and collaboration. Together, we unlock collective strengths.
               </p>
               <ul className="about-package-features">
-                <li>✓ Facilitated leadership cohorts</li>
-                <li>✓ Team alignment and trust building</li>
-                <li>✓ Shared leadership language</li>
-                <li>✓ Collective problem-solving</li>
+                <li>Facilitated leadership cohorts</li>
+                <li>Team alignment and trust building</li>
+                <li>Shared leadership language</li>
+                <li>Collective problem-solving</li>
               </ul>
               <button
                 className="about-btn about-btn-secondary"
@@ -275,7 +399,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       {/* ── Discovery Call CTA ────────────────────────────────── */}
       <section className="about-cta">
         <div className="about-container">
-          <div className="about-cta-content">
+          <div className="about-cta-content about-reveal">
             <div>
               <span className="about-kicker about-cta-kicker">
                 Start Your Journey
@@ -301,7 +425,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
       {/* ── Contact & Footer Info ──────────────────────────────── */}
       <section className="about-contact">
         <div className="about-container">
-          <div className="about-contact-grid">
+          <div className="about-contact-grid about-reveal">
             <div>
               <h3>Get In Touch</h3>
               <p>
@@ -340,6 +464,29 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBookCall }) => {
           </div>
         </div>
       </section>
+    </div>
+  );
+};
+
+const StatItem: React.FC<{
+  stat: { value: number; suffix: string; label: string };
+  shouldStart: boolean;
+  delay: number;
+}> = ({ stat, shouldStart, delay }) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!shouldStart) return;
+    const timer = setTimeout(() => setReady(true), delay);
+    return () => clearTimeout(timer);
+  }, [shouldStart, delay]);
+  const count = useAnimatedCounter(stat.value, ready);
+  return (
+    <div className="about-stat-item">
+      <span className="about-stat-value">
+        {count}
+        {stat.suffix}
+      </span>
+      <span className="about-stat-label">{stat.label}</span>
     </div>
   );
 };
