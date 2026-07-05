@@ -610,6 +610,8 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
     .value { font-size: 15px; color: #1a1612; }
     .coach-box { background: #fbf4e7; border: 1px solid #e8b96a; border-radius: 10px; padding: 18px; margin: 24px 0; }
     .coach-box h2 { margin: 0 0 10px; font-size: 18px; }
+    .btn-container { text-align: center; margin: 28px 0; }
+    .btn { display: inline-block; background: #1a1612; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-weight: 700; font-size: 15px; }
     .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
     a { color: #9b6a17; }
     @media (max-width: 560px) {
@@ -655,7 +657,12 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
         <p>Phone: <a href="tel:${escapeHtml(coachPhone)}">${escapeHtml(coachPhone)}</a></p>
       </div>
 
-      <p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>
+      ${booking.googleMeetingLink ? `<div class="btn-container">
+        <a href="${booking.googleMeetingLink}" class="btn" target="_blank" rel="noopener noreferrer">Join Google Meeting</a>
+      </div>
+      <p>If the button doesn\'t open automatically, copy and paste the following link into your browser:</p>
+      <p><a href="${booking.googleMeetingLink}">${booking.googleMeetingLink}</a></p>
+      <p>You can open this link in the Google Meet app or browser to join your session.</p>` : `<p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>`}
       <p>Thank you for booking with UnWantraCoaching.</p>
     </div>
 
