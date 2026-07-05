@@ -24,5 +24,6 @@ interface BookingsSessionsInterface {
   programName: string;
   bookingTime: string;
   status?: "pending" | "approved" | "rejected" | "rescheduled" | "cancelled";
+  googleMeetingLink?: string;
 }
 export type { BookingsInterface, BookingsSessionsInterface };

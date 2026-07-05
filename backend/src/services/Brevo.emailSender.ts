@@ -261,6 +261,7 @@ interface SlotRequestApprovedDetails {
   coachPhone?: string;
   scheduledTime: string;
   coachNotes?: string;
+  googleMeetingLink?: string;
 }
 
 export async function sendSlotRequestApprovedEmail(

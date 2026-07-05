@@ -179,7 +179,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
       <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <Link to="/forgot-password" style={{ fontSize: "0.9rem", color: "var(--clr-accent)" }}>Forgot password?</Link>
-        <Link to="/coach-signup" style={{ fontSize: "0.9rem", color: "var(--clr-accent)" }}>Coach signup</Link>
       </div>
 
       <p style={{ marginTop: "16px", fontSize: "0.85rem", color: "var(--clr-ink-soft)", textAlign: "center" }}>

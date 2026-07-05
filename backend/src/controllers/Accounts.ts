@@ -296,7 +296,7 @@ router.post("/coach-invites", async (req, res): Promise<void> => {
     email,
     createdBy,
     used: false,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
   });
   const inviteBaseUrl = baseUrl || "http://localhost:5173";
 

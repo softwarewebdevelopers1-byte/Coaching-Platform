@@ -11,6 +11,9 @@ const SlotRequestSchema = new mongoose.Schema<SlotRequestInterface>(
     coachName: { type: String, required: true },
     coachEmail: { type: String, required: true },
     message: { type: String, required: false },
+    requestedDate: { type: String, required: false },
+    requestedTime: { type: String, required: false },
+    googleMeetingLink: { type: String, required: false },
     status: {
       type: String,
       enum: ["pending", "approved", "declined"],

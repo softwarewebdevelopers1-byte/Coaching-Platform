@@ -10,6 +10,9 @@ interface SlotRequestInterface {
   status: "pending" | "approved" | "declined";
   scheduledTime?: string;
   coachNotes?: string;
+  requestedDate?: string;
+  requestedTime?: string;
+  googleMeetingLink?: string;
 }
 
 export type { SlotRequestInterface };

@@ -25,6 +25,8 @@ router.post("/", async (req, res): Promise<void> => {
     coachName,
     coachEmail,
     message,
+    requestedDate,
+    requestedTime,
   } = req.body;
 
   if (!fullName || !email || !phoneNumber || !programName || !coachId || !coachName || !coachEmail) {
@@ -54,6 +56,8 @@ router.post("/", async (req, res): Promise<void> => {
     coachName,
     coachEmail,
     message: message || "",
+    requestedDate: requestedDate || "",
+    requestedTime: requestedTime || "",
     status: "pending",
   });
 
@@ -112,9 +116,12 @@ router.get("/", async (req, res): Promise<void> => {
 
 // ── PATCH approve a slot request (coach sets time) ───────────────────────────
 router.patch("/:id/approve", async (req, res): Promise<void> => {
-  const { scheduledTime, coachNotes, coachPhone } = req.body;
+  const { scheduledTime, coachNotes, coachPhone, googleMeetingLink } = req.body;
+  const resolvedScheduledTime =
+    scheduledTime ||
+    [req.body.requestedDate, req.body.requestedTime].filter(Boolean).join(" ");
 
-  if (!scheduledTime) {
+  if (!resolvedScheduledTime) {
     res.status(400).json({ message: "Scheduled time is required to approve" });
     return;
   }
@@ -132,8 +139,9 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
   }
 
   slotRequest.status = "approved";
-  slotRequest.scheduledTime = scheduledTime;
+  slotRequest.scheduledTime = resolvedScheduledTime;
   slotRequest.coachNotes = coachNotes || "";
+  slotRequest.googleMeetingLink = googleMeetingLink || "";
   await slotRequest.save();
 
   await BookingsSessionsModel.create({
@@ -145,7 +153,8 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
     coachName: slotRequest.coachName,
     coachEmail: slotRequest.coachEmail,
     coachPhone: coachPhone || "",
-    bookingTime: scheduledTime,
+    bookingTime: resolvedScheduledTime,
+    googleMeetingLink: googleMeetingLink || "",
   });
 
   sendSlotRequestApprovedEmail({
@@ -155,8 +164,9 @@ router.patch("/:id/approve", async (req, res): Promise<void> => {
     coachName: slotRequest.coachName,
     coachEmail: slotRequest.coachEmail,
     coachPhone: coachPhone || "",
-    scheduledTime,
+    scheduledTime: resolvedScheduledTime,
     coachNotes: coachNotes || "",
+    googleMeetingLink: googleMeetingLink || "",
   }).catch((error) => {
     console.log("Error sending slot request approved email:", error);
   });

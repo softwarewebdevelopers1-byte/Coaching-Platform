@@ -82,6 +82,7 @@ export interface CoachSlot {
   bookingDate: string;
   bookingEndDate: string;
   status: "open" | "booked" | "cancelled";
+  meetingLink?: string;
 }
 
 export interface BookingSession {
@@ -99,6 +100,7 @@ export interface BookingSession {
   programName: string;
   bookingTime: string;
   status?: "pending" | "approved" | "rejected" | "rescheduled" | "cancelled";
+  googleMeetingLink?: string;
 }
 
 export interface SlotRequest {
@@ -114,6 +116,9 @@ export interface SlotRequest {
   status: "pending" | "approved" | "declined";
   scheduledTime?: string;
   coachNotes?: string;
+  requestedDate?: string;
+  requestedTime?: string;
+  googleMeetingLink?: string;
   createdAt?: string;
 }
 

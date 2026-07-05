@@ -117,7 +117,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [slotForm, setSlotForm] = useState({
-    title: "",
+    meetingLink: "",
     programName: user?.programName || programs[0]?.id || "",
     bookingDate: "",
     bookingEndDate: "",
@@ -145,6 +145,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const [approveForm, setApproveForm] = useState({
     scheduledTime: "",
     coachNotes: "",
+    googleMeetingLink: "",
   });
   const [decliningId, setDecliningId] = useState<string | null>(null);
 
@@ -254,8 +255,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
   /* ── Create slot ─────────────────────────────────────────── */
   const createCoachSlot = async () => {
-    if (!slotForm.title.trim()) {
-      showToast("Please enter a session title", "error", 3000);
+    if (!slotForm.meetingLink.trim()) {
+      showToast("Please add a Google Meet link", "error", 3000);
       return;
     }
     if (!slotForm.programName) {
@@ -293,7 +294,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         coachEmail,
         coachPhone,
         programName: slotForm.programName,
-        title: slotForm.title,
+        meetingLink: slotForm.meetingLink,
+        title: "Google Meet Session",
         bookingDate: slotForm.bookingDate,
         bookingEndDate: slotForm.bookingEndDate || undefined,
       }),
@@ -301,7 +303,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
     if (res.ok) {
       setSlotForm({
-        title: "",
+        meetingLink: "",
         programName: coachSlotPrograms[0]?.id || programs[0]?.id || "",
         bookingDate: "",
         bookingEndDate: "",
@@ -362,19 +364,22 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scheduledTime: new Date(approveForm.scheduledTime).toLocaleString([], {
-            weekday: "short", month: "short", day: "numeric",
-            hour: "2-digit", minute: "2-digit",
-          }),
+          scheduledTime: approveForm.scheduledTime
+            ? new Date(approveForm.scheduledTime).toLocaleString([], {
+                weekday: "short", month: "short", day: "numeric",
+                hour: "2-digit", minute: "2-digit",
+              })
+            : "",
           coachNotes: approveForm.coachNotes,
           coachPhone,
+          googleMeetingLink: approveForm.googleMeetingLink.trim(),
         }),
       });
 
       if (res.ok) {
         showToast("✓ Request approved — client has been notified by email", "success", 5000);
         setApprovingId(null);
-        setApproveForm({ scheduledTime: "", coachNotes: "" });
+        setApproveForm({ scheduledTime: "", coachNotes: "", googleMeetingLink: "" });
         await loadDashboardData();
         setActiveTab("bookings");
       } else {
@@ -756,9 +761,9 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   <div className="dashboard-form">
                     <input
                       className="dashboard-form-full"
-                      placeholder="Session title (e.g. 'One-on-one coaching session')"
-                      value={slotForm.title}
-                      onChange={(e) => setSlotForm({ ...slotForm, title: e.target.value })}
+                      placeholder="Google Meet link (https://meet.google.com/...)"
+                      value={slotForm.meetingLink}
+                      onChange={(e) => setSlotForm({ ...slotForm, meetingLink: e.target.value })}
                     />
                     <select
                       value={slotForm.programName}
@@ -1019,25 +1024,37 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                                         />
                                       </div>
                                       <div style={{ display: "flex", gap: 6 }}>
-                                        <button
-                                          className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
-                                          onClick={() => approveRequest(request._id)}
-                                        >
-                                          {Icons.check} Confirm
-                                        </button>
-                                        <button
-                                          className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
-                                          onClick={() => { setApprovingId(null); setApproveForm({ scheduledTime: "", coachNotes: "" }); }}
-                                        >
-                                          Cancel
-                                        </button>
+                                        <div className="form-field" style={{ marginBottom: 8 }}>
+                                          <label className="form-label" style={{ fontSize: 11 }}>Google Meet Link</label>
+                                          <input
+                                            type="url"
+                                            placeholder="https://meet.google.com/..."
+                                            value={approveForm.googleMeetingLink}
+                                            onChange={(e) => setApproveForm({ ...approveForm, googleMeetingLink: e.target.value })}
+                                            style={{ fontSize: 12, padding: "6px 8px" }}
+                                          />
+                                        </div>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button
+                                            className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
+                                            onClick={() => approveRequest(request._id)}
+                                          >
+                                            {Icons.check} Confirm
+                                          </button>
+                                          <button
+                                            className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                            onClick={() => { setApprovingId(null); setApproveForm({ scheduledTime: "", coachNotes: "", googleMeetingLink: "" }); }}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   ) : (
                                     <>
                                       <button
                                         className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
-                                        onClick={() => { setApprovingId(request._id); setApproveForm({ scheduledTime: "", coachNotes: "" }); }}
+                                        onClick={() => { setApprovingId(request._id); setApproveForm({ scheduledTime: "", coachNotes: "", googleMeetingLink: "" }); }}
                                       >
                                         {Icons.check} Approve
                                       </button>

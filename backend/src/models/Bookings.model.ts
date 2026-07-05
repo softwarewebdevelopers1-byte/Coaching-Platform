@@ -42,6 +42,7 @@ let BookingsSessions = new mongoose.Schema<BookingsSessionsInterface>(
     coachingType: { type: String, required: false },
     programName: { type: String, required: true, index: true },
     bookingTime: { type: String, required: true },
+    googleMeetingLink: { type: String, required: false },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected", "rescheduled", "cancelled"],

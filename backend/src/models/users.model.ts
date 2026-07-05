@@ -14,8 +14,12 @@ interface UserAccountInterface {
   expertise?: string[];
   photo?: string;
   availabilitySummary?: string;
+  availabilityType?: "whole_week" | "selected_days";
+  availableDays?: string[];
   currentWorkload?: number;
   maxWorkload?: number;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 interface CoachInviteInterface {
@@ -49,8 +53,12 @@ const UserAccountSchema = new mongoose.Schema<UserAccountInterface>(
     expertise: [{ type: String }],
     photo: { type: String, required: false },
     availabilitySummary: { type: String, required: false },
+    availabilityType: { type: String, required: false },
+    availableDays: [{ type: String }],
     currentWorkload: { type: Number, default: 0 },
     maxWorkload: { type: Number, default: 10 },
+    resetPasswordToken: { type: String, required: false },
+    resetPasswordExpires: { type: Date, required: false },
   },
   { timestamps: true },
 );

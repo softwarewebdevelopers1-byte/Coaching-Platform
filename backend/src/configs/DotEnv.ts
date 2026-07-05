@@ -15,5 +15,6 @@ const DotEnvConfig = {
   ServerPort,
   BrevoApiKey,
   MongoLocalUri,
+  GroqApiKey: process.env.GROQ_API_KEY,
 };
 export default DotEnvConfig;
