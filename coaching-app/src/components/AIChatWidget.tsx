@@ -48,10 +48,19 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       });
 
       const data = await res.json().catch(() => null);
-      const reply =
+      let reply =
         data && typeof data.reply === "string"
           ? data.reply
           : "Thanks for your message. If you'd like, you can also browse our coaches or contact us at hello@unwantra.co.";
+
+      const navigateMatch = reply.match(/\[NAVIGATE:([^\]]+)\]/);
+      if (navigateMatch) {
+        const targetPath = navigateMatch[1].trim();
+        reply = reply.replace(/\[NAVIGATE:[^\]]+\]/, "").trim();
+        if (targetPath) {
+          window.location.href = targetPath;
+        }
+      }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
