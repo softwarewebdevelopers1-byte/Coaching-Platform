@@ -14,8 +14,6 @@ interface AdminDashboardProps {
 
 type AdminTab = "overview" | "accounts" | "coaches" | "bookings" | "leads";
 
-const DEFAULT_ACCOUNT_PASSWORD = "Coach@123";
-
 const COACH_PROGRAMS = [
   { id: "individual-executive", title: "Individual Executive Coaching" },
   { id: "group-executive", title: "Group Executive Coaching" },
@@ -159,7 +157,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     fullName: "",
     email: "",
     phone: "",
-    password: DEFAULT_ACCOUNT_PASSWORD,
+    password: "",
     programName: "individual-executive",
     role: "coach" as Account["role"],
     status: "active" as Account["status"],
