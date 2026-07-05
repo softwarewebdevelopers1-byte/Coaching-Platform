@@ -16,6 +16,7 @@ interface BookingConfirmationDetails {
   coachEmail?: string;
   coachPhone?: string;
   bookingTime: string;
+  googleMeetingLink?: string;
 }
 
 export async function sendBookingConfirmationEmail(

@@ -22,6 +22,7 @@ let BookingsCreatedByCoach = new mongoose.Schema<BookingsInterface>(
       default: "open",
       index: true,
     },
+    meetingLink: { type: String, required: false },
   },
   { timestamps: true },
 );

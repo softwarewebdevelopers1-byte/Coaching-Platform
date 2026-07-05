@@ -317,6 +317,9 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     payload: { bookingId: booking._id, programName: program, coachName, bookingTime },
   });
 
+  const slot = slotId ? await BookingsCreatedModel.findById(slotId) : null;
+  const meetingLink = slot?.meetingLink;
+
   sendBookingConfirmationEmail({
     email,
     fullName,
@@ -327,6 +330,7 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     coachEmail,
     coachPhone,
     bookingTime,
+    googleMeetingLink: meetingLink,
   }).catch((error) => {
     console.log(error);
   });

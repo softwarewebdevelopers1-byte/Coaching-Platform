@@ -9,6 +9,7 @@ interface BookingsInterface {
   bookingDate: Date;
   bookingEndDate: Date;
   status: "open" | "booked" | "cancelled";
+  meetingLink?: string;
 }
 interface BookingsSessionsInterface {
   coachId: string;

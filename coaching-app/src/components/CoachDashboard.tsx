@@ -280,8 +280,13 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       return;
     }
 
-    if (startDate < new Date()) {
-      showToast("Slot date must be in the future", "error", 3000);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(startDate);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    if (selectedDay < today) {
+      showToast("Slot date must be today or later", "error", 3000);
       return;
     }
 
@@ -780,6 +785,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                         type="datetime-local"
                         value={slotForm.bookingDate}
                         onChange={(e) => setSlotForm({ ...slotForm, bookingDate: e.target.value })}
+                        min={new Date().toISOString().slice(0, 10) + "T00:00"}
                       />
                     </div>
                     <div className="form-field">
