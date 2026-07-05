@@ -790,6 +790,7 @@ const MainContent: React.FC<MainContentProps> = ({
                           <input
                             type="date"
                             value={form.preferredDate}
+                            disabled
                             onChange={(e) =>
                               setForm({ ...form, preferredDate: e.target.value })
                             }
