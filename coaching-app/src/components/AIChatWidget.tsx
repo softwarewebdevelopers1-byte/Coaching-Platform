@@ -151,7 +151,16 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       >
         {open ? "✕" : (
           <span className="uw-ai-trigger-inner">
-            <span className="uw-ai-trigger-icon" aria-hidden>🧭</span>
+            <span className="uw-ai-trigger-icon" aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#415944"/>
+                <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="12" cy="11" r="1.5" fill="white"/>
+                <path d="M9 9H9.01" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M15 9H15.01" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M10 17L11 19L13 19L14 17" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
             <span className="uw-ai-trigger-text">Ask Unwantra</span>
           </span>
         )}
