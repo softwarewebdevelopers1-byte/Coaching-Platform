@@ -5,6 +5,15 @@ interface Message {
   content: string;
 }
 
+interface CoachOption {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  experience: number;
+}
+
 interface AIChatWidgetProps {
   apiBaseUrl?: string;
 }
@@ -20,11 +29,13 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
     },
   ]);
   const [sending, setSending] = useState(false);
+  const [coachOptions, setCoachOptions] = useState<CoachOption[]>([]);
+  const [selectedCoachId, setSelectedCoachId] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+  }, [messages, open, coachOptions]);
 
   const baseUrl = apiBaseUrl || "https://coaching-platform-38p5.onrender.com";
 
@@ -36,6 +47,81 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setSending(true);
+    setCoachOptions([]);
+    setSelectedCoachId("");
+
+    try {
+      const res = await fetch(`${baseUrl}/api/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          history: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      let reply =
+        data && typeof data.reply === "string"
+          ? data.reply
+          : "Thanks for your message. If you'd like, you can also browse our coaches or contact us at hello@unwantra.co.";
+
+      const navigateTo = res.headers.get("X-Navigate-To");
+      if (navigateTo) {
+        if (navigateTo.startsWith("#")) {
+          const targetId = navigateTo.slice(1);
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else {
+            window.location.hash = targetId;
+          }
+        } else {
+          window.location.href = navigateTo;
+        }
+      }
+
+      const coachSelectionHeader = res.headers.get("X-Coach-Selection");
+      if (coachSelectionHeader) {
+        try {
+          const parsed = JSON.parse(coachSelectionHeader);
+          if (Array.isArray(parsed.coaches)) {
+            setCoachOptions(parsed.coaches);
+          }
+        } catch {
+          // ignore parse error
+        }
+      }
+
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "I'm having trouble connecting right now. Please try again in a moment or email hello@unwantra.co for help.",
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCoachSelect = (coach: CoachOption) => {
+    setSelectedCoachId(coach.id);
+    const text = `I choose ${coach.name}`;
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    setInput(text);
+    setCoachOptions([]);
+    setTimeout(() => {
+      sendMessageDirect(text);
+    }, 300);
+  };
+
+  const sendMessageDirect = async (text: string) => {
+    setSending(true);
+    setInput("");
 
     try {
       const res = await fetch(`${baseUrl}/api/ai/chat`, {
@@ -89,7 +175,16 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
         <div className="uw-ai-chat">
           <div className="uw-ai-header">
             <div className="uw-ai-header-info">
-              <span className="uw-ai-avatar" aria-hidden>🧭</span>
+              <span className="uw-ai-avatar" aria-hidden>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#415944"/>
+                  <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  <circle cx="12" cy="11" r="1.5" fill="white"/>
+                  <path d="M9 9H9.01" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M15 9H15.01" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M10 17L11 19L13 19L14 17" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
               <div>
                 <strong>Unwantra Assistant</strong>
                 <span>Typically replies instantly</span>
@@ -124,6 +219,29 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
             )}
             <div ref={bottomRef} />
           </div>
+
+          {coachOptions.length > 0 && (
+            <div className="uw-ai-coach-select">
+              <label>
+                Choose a coach
+                <select
+                  value={selectedCoachId}
+                  onChange={(e) => {
+                    const coach = coachOptions.find((c) => c.id === e.target.value);
+                    if (coach) handleCoachSelect(coach);
+                  }}
+                >
+                  <option value="">Select a coach...</option>
+                  {coachOptions.map((coach) => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.name} - {coach.specialization} ({coach.experience} yrs)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
           <form
             className="uw-ai-form"
             onSubmit={(e) => {
@@ -170,3 +288,4 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
 };
 
 export default AIChatWidget;
+

@@ -111,6 +111,23 @@ const MainContent: React.FC<MainContentProps> = ({
     useState<Coach | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
+  const [quickStep, setQuickStep] = useState(1);
+  const [quickForm, setQuickForm] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    countryCode: "+254",
+    goals: "",
+    preferredDate: "",
+    preferredTime: "",
+    coachingType: "individual-executive",
+  });
+  const [quickSelectedCoachId, setQuickSelectedCoachId] = useState("");
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
+  const [quickRequestSent, setQuickRequestSent] = useState(false);
+  const [quickCoachMode, setQuickCoachMode] = useState<"auto" | "manual" | "">("");
+  const [assignedCoach, setAssignedCoach] = useState<Coach | null>(null);
+
   const getInitials = (name: string) =>
     name
       .split(" ")
@@ -505,6 +522,123 @@ const MainContent: React.FC<MainContentProps> = ({
     }));
   };
 
+  const resetQuickBooking = () => {
+    setQuickStep(1);
+    setQuickForm({
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      countryCode: "+254",
+      goals: "",
+      preferredDate: "",
+      preferredTime: "",
+      coachingType: "individual-executive",
+    });
+    setQuickSelectedCoachId("");
+    setQuickRequestSent(false);
+    setQuickCoachMode("");
+    setAssignedCoach(null);
+  };
+
+  const nextQuickStep = async () => {
+    if (quickStep === 3) {
+      const cleaned = quickForm.phoneNumber.replace(/[^\d]/g, "");
+      if (!quickForm.phoneNumber.trim() || cleaned.length < 5) {
+        showToast("Please enter a valid phone number", "error");
+        return;
+      }
+    }
+    if (quickStep === 7) {
+      if (quickCoachMode === "auto") {
+        setQuickSubmitting(true);
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/bookings/assign-coach`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              programName: quickForm.coachingType,
+              goals: quickForm.goals
+                .split(",")
+                .map((g) => g.trim())
+                .filter(Boolean),
+            }),
+          });
+          if (res.ok) {
+            const result = await res.json();
+            const coach = result.coach as Coach;
+            setAssignedCoach(coach);
+            setQuickSelectedCoachId(coach._id);
+            await submitQuickBooking(coach);
+          } else {
+            showToast("Could not assign a coach right now. Please try again or choose manually.", "error", 5000);
+          }
+        } catch {
+          showToast("Network error assigning coach. Please try again.", "error", 5000);
+        } finally {
+          setQuickSubmitting(false);
+        }
+        return;
+      }
+      if (quickCoachMode === "manual" && !quickSelectedCoachId) {
+        showToast("Please select a coach before continuing", "error");
+        return;
+      }
+      const selectedCoach = coaches.find((c) => c._id === quickSelectedCoachId);
+      if (selectedCoach) {
+        await submitQuickBooking(selectedCoach);
+      }
+      return;
+    }
+    setQuickStep((s) => s + 1);
+  };
+
+  const prevQuickStep = () => {
+    setQuickStep((s) => Math.max(1, s - 1));
+  };
+
+  const submitQuickBooking = async (coach: Coach) => {
+    const cleanedPhone = quickForm.phoneNumber.replace(/[^\d]/g, "");
+    const slotLabel = quickForm.preferredDate
+      ? `${new Date(quickForm.preferredDate).toLocaleDateString([], { month: "short", day: "numeric" })}${quickForm.preferredTime ? ` at ${quickForm.preferredTime}` : ""}`
+      : "Flexible timing";
+
+    setQuickSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/book-slot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: quickForm.fullName,
+          email: quickForm.email,
+          phoneNumber: `${quickForm.countryCode}${cleanedPhone}`,
+          programName: quickForm.coachingType,
+          coachId: coach._id,
+          coachName: coach.name,
+          coachEmail: coach.email,
+          coachPhone: coach.phone,
+          bookingTime: slotLabel,
+          goals: quickForm.goals
+            .split(",")
+            .map((goal) => goal.trim())
+            .filter(Boolean)
+            .slice(0, 3),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Could not submit booking");
+      }
+
+      setQuickRequestSent(true);
+      showToast("Discovery call booked. Confirmation sent by email.", "success", 5000);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not submit booking", "error", 6000);
+    } finally {
+      setQuickSubmitting(false);
+    }
+  };
+
   return (
     <>
       <section id="services" className="uw-section">
@@ -648,6 +782,350 @@ const MainContent: React.FC<MainContentProps> = ({
               );
             })}
           </div>
+        </div>
+      </section>
+
+      <section id="quick-book" className="uw-section uw-band">
+        <div className="uw-container">
+          <div className="uw-section-head">
+            <span className="uw-kicker">Book a discovery call</span>
+            <h2>Ready to get started?</h2>
+            <p>
+              Tell us a little about yourself and we will match you with the
+              right coach or let you choose your own.
+            </p>
+          </div>
+
+          {!quickRequestSent ? (
+            <div className="uw-booking-card">
+              {quickStep === 1 && (
+                <div className="uw-form-panel">
+                  <h3>Step 1: Your full name</h3>
+                  <p>What name should we use for the booking?</p>
+                  <label>
+                    Full Name
+                    <input
+                      value={quickForm.fullName}
+                      onChange={(e) =>
+                        setQuickForm({ ...quickForm, fullName: e.target.value })
+                      }
+                      placeholder="Enter your full name"
+                    />
+                  </label>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 2 && (
+                <div className="uw-form-panel">
+                  <h3>Step 2: Your email address</h3>
+                  <p>We will send confirmations and session details here.</p>
+                  <label>
+                    Email Address
+                    <input
+                      type="email"
+                      value={quickForm.email}
+                      onChange={(e) =>
+                        setQuickForm({ ...quickForm, email: e.target.value })
+                      }
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 3 && (
+                <div className="uw-form-panel">
+                  <h3>Step 3: Your phone number</h3>
+                  <p>So we can reach you about the booking.</p>
+                  <label>
+                    Phone Number
+                    <PhoneInput
+                      value={quickForm.phoneNumber}
+                      countryCode={quickForm.countryCode}
+                      onChange={(phoneNumber, countryCode) =>
+                        setQuickForm({ ...quickForm, phoneNumber, countryCode })
+                      }
+                    />
+                  </label>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 4 && (
+                <div className="uw-form-panel">
+                  <h3>Step 4: Choose the coaching service</h3>
+                  <p>Select whether you want an individual or group coaching session.</p>
+                  <div className="uw-choice-list">
+                    {programs.map((program) => (
+                      <button
+                        key={program.id}
+                        className={
+                          quickForm.coachingType === program.id
+                            ? "selected"
+                            : ""
+                        }
+                        onClick={() =>
+                          setQuickForm({
+                            ...quickForm,
+                            coachingType: program.id,
+                          })
+                        }
+                      >
+                        <strong>{program.title}</strong>
+                        <span>{program.duration || "Discovery call"}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 5 && (
+                <div className="uw-form-panel">
+                  <h3>Step 5: Pick your preferred time</h3>
+                  <p>Choose a date that works for you. Time is optional.</p>
+                  <label>
+                    Preferred Date
+                    <input
+                      type="date"
+                      value={quickForm.preferredDate}
+                      onChange={(e) =>
+                        setQuickForm({
+                          ...quickForm,
+                          preferredDate: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Optional Time
+                    <input
+                      type="time"
+                      value={quickForm.preferredTime}
+                      onChange={(e) =>
+                        setQuickForm({
+                          ...quickForm,
+                          preferredTime: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 6 && (
+                <div className="uw-form-panel">
+                  <h3>Step 6: Session goals</h3>
+                  <p>What would you like to focus on? (optional)</p>
+                  <label>
+                    Goals
+                    <textarea
+                      rows={3}
+                      value={quickForm.goals}
+                      onChange={(e) =>
+                        setQuickForm({ ...quickForm, goals: e.target.value })
+                      }
+                      placeholder="e.g. confidence, boundaries, leadership presence"
+                    />
+                  </label>
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quickStep === 7 && (
+                <div className="uw-form-panel">
+                  <h3>Step 7: Choose your coach</h3>
+                  <p>Would you like to choose a coach yourself, or should we assign the best available coach for you?</p>
+                  <div className="uw-choice-list">
+                    <button
+                      className={quickCoachMode === "auto" ? "selected" : ""}
+                      onClick={() => {
+                        setQuickCoachMode("auto");
+                        setQuickSelectedCoachId("");
+                      }}
+                    >
+                      <strong>Assign for me</strong>
+                      <span>We will pick the best coach based on availability</span>
+                    </button>
+                    <button
+                      className={quickCoachMode === "manual" ? "selected" : ""}
+                      onClick={() => setQuickCoachMode("manual")}
+                    >
+                      <strong>Choose my coach</strong>
+                      <span>Browse coaches and select one yourself</span>
+                    </button>
+                  </div>
+
+                  {quickCoachMode === "manual" && (
+                    <div style={{ marginTop: 18 }}>
+                      {(() => {
+                        const eligible = coaches.filter((coach) =>
+                          coachMatchesProgram(coach.specialization, quickForm.coachingType),
+                        );
+                        const selectedCoach = coaches.find((c) => c._id === quickSelectedCoachId);
+                        if (!eligible.length) {
+                          return (
+                            <p style={{ color: "var(--uw-muted)" }}>
+                              No coaches are currently available for this program. Please try auto-assign or another service.
+                            </p>
+                          );
+                        }
+                        return (
+                          <div style={{ display: "grid", gap: 12 }}>
+                            <label className="uw-field">
+                              <span>Choose a coach</span>
+                              <select
+                                value={quickSelectedCoachId}
+                                onChange={(e) => setQuickSelectedCoachId(e.target.value)}
+                              >
+                                <option value="">Select a coach...</option>
+                                {eligible.map((coach) => (
+                                  <option key={coach._id} value={coach._id}>
+                                    {coach.name} — {coach.experience || 10} years
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            {selectedCoach && (
+                              <div className="uw-booking-card" style={{ padding: 16, display: "grid", gap: 8 }}>
+                                <strong style={{ fontSize: "1rem" }}>{selectedCoach.name}</strong>
+                                <span style={{ color: "var(--uw-muted)", fontSize: "0.9rem" }}>
+                                  {selectedCoach.bio?.slice(0, 160) || "Executive coach"}
+                                </span>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  {(selectedCoach.expertise || ["Executive leadership"]).slice(0, 3).map((item) => (
+                                    <span key={item} className="uw-coach-tag">{item}</span>
+                                  ))}
+                                </div>
+                                <span style={{ fontSize: "0.85rem", color: "var(--uw-sage-dark)", fontWeight: 700 }}>
+                                  Languages: {(selectedCoach.languages || ["English"]).join(", ")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  <div className="uw-form-actions">
+                    <button
+                      className="uw-btn uw-btn-quiet"
+                      onClick={prevQuickStep}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="uw-btn uw-btn-primary"
+                      onClick={nextQuickStep}
+                      disabled={quickSubmitting || !quickCoachMode}
+                    >
+                      {quickSubmitting ? "Assigning coach..." : "Continue"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="uw-confirmation">
+              <span>Confirmed</span>
+              <h3>Your discovery call request has been received.</h3>
+              <p>
+                We will send booking confirmation, approval updates, and any
+                reschedule notices by email.
+              </p>
+              {assignedCoach && (
+                <div className="uw-request-details-panel">
+                  <div className="uw-request-detail-row">
+                    <span>Assigned Coach</span>
+                    <strong>{assignedCoach.name}</strong>
+                  </div>
+                  <div className="uw-request-detail-row">
+                    <span>Coach Email</span>
+                    <strong>{assignedCoach.email}</strong>
+                  </div>
+                </div>
+              )}
+              <button className="uw-btn uw-btn-primary" onClick={resetQuickBooking}>
+                Book another call
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
