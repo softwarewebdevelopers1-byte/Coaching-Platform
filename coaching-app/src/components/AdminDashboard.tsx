@@ -163,6 +163,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     status: "active" as Account["status"],
   });
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -320,18 +321,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
       fullName: "",
       email: "",
       phone: "",
-      password: DEFAULT_ACCOUNT_PASSWORD,
+      password: "",
       programName: "individual-executive",
       role: "coach",
       status: "active",
     });
     setEditingAccountId(null);
+    setGeneratedPassword("");
   };
 
   const saveAccount = async () => {
     const endpoint = editingAccountId
       ? `${API_BASE_URL}/api/accounts/${editingAccountId}`
       : `${API_BASE_URL}/api/accounts`;
+
+    let passwordToSend = accountForm.password;
+    if (!editingAccountId && !passwordToSend) {
+      passwordToSend = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+      setGeneratedPassword(passwordToSend);
+    }
 
     const payload: Record<string, unknown> = {
       fullName: accountForm.fullName,
@@ -342,8 +350,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
       programName: accountForm.programName,
     };
 
-    if (!editingAccountId || accountForm.password) {
-      payload.password = accountForm.password;
+    if (!editingAccountId || passwordToSend) {
+      payload.password = passwordToSend;
     }
 
     const res = await fetch(endpoint, {
@@ -633,7 +641,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                     />
                     <div className="password-input-wrapper">
                       <input
-                        placeholder={editingAccountId ? "New password (leave blank to keep current)" : "Password"
+                        placeholder={editingAccountId ? "New password (leave blank to keep current)" : "Password (leave blank to auto-generate)"
                         }
                         type={showAccountPassword ? "text" : "password"}
                         value={accountForm.password}
@@ -649,6 +657,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                         <PasswordVisibilityIcon hidden={showAccountPassword} />
                       </button>
                     </div>
+                    {generatedPassword ? (
+                      <p className="dashboard-field-note" style={{ color: "#198754" }}>
+                        Generated password: <strong>{generatedPassword}</strong> — please share this securely with the coach.
+                      </p>
+                    ) : null}
                     {editingAccountId ? (
                       <p className="dashboard-field-note">
                         Leave this blank to retain the existing password.
@@ -673,9 +686,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                         setAccountForm({
                           ...accountForm,
                           role: newRole,
-                          password: editingAccountId
-                            ? accountForm.password
-                            : accountForm.password || DEFAULT_ACCOUNT_PASSWORD,
                         });
                       }}
                     >
