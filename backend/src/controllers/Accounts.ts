@@ -393,8 +393,8 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   const account = await UserAccountsModel.findOne({ email });
   if (account) {
     const token = crypto.randomBytes(24).toString("hex");
-    account.resetPasswordToken = token;
-    account.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordToken = token;
+    (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
     await account.save();
 
     const baseUrl = req.body.baseUrl || "http://localhost:5173";
@@ -432,8 +432,8 @@ router.post("/reset-password", async (req, res): Promise<void> => {
   }
 
   account.password = await bcrypt.hash(password, 10);
-  delete account.resetPasswordToken;
-  delete account.resetPasswordExpires;
+  delete (account as { resetPasswordToken?: string }).resetPasswordToken;
+  delete (account as { resetPasswordExpires?: Date }).resetPasswordExpires;
   await account.save();
 
   res.status(200).json({ message: "Password has been reset successfully." });

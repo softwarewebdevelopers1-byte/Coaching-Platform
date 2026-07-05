@@ -702,6 +702,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
               <div className="dashboard-card">
                 <div className="dashboard-card-header">
                   <h2 className="dashboard-card-title">
+                    <span className="card-title-icon">🔗</span>
+                    Generate Coach Invite Link
+                  </h2>
+                </div>
+                <div className="dashboard-card-body">
+                  <div className="dashboard-form">
+                    <input
+                      placeholder="Coach email address"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className="dashboard-form-full"
+                    />
+                  </div>
+                  <button className="dashboard-btn dashboard-btn-primary" onClick={createInvite}>
+                    {Icons.link} Generate Invite Link
+                  </button>
+
+                  {inviteLink && (
+                    <div className="dashboard-alert dashboard-alert-success" style={{ marginTop: "20px", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <strong style={{ fontSize: "13px" }}>✓ Invite link generated</strong>
+                        <button
+                          className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                          onClick={copyInvite}
+                          style={{ padding: "5px 10px" }}
+                        >
+                          {Icons.copy} {copied ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                      <div className="invite-link-box">{inviteLink}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="dashboard-card">
+                <div className="dashboard-card-header">
+                  <h2 className="dashboard-card-title">
                     <span className="card-title-icon">👥</span>
                     All Accounts
                   </h2>

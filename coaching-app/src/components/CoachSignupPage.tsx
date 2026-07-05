@@ -155,91 +155,91 @@ const CoachSignupPage: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", padding: "80px 20px 40px", background: "var(--clr-bg)" }}>
-      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "32px", borderRadius: "24px", background: "white", boxShadow: "var(--shadow-sm)" }}>
-        <div style={{ marginBottom: "24px" }}>
-          <p style={{ textTransform: "uppercase", letterSpacing: "0.16em", color: "var(--clr-accent)", fontWeight: 700, marginBottom: "8px" }}>Coach onboarding</p>
-          <h2 style={{ margin: 0 }}>Complete your UnWantra coaching profile</h2>
-          <p style={{ color: "var(--clr-ink-soft)", marginTop: "8px" }}>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <span className="auth-kicker">Coach Onboarding</span>
+          <h1>Complete your UnWantra coaching profile</h1>
+          <p>
             Your invite is ready for {inviteEmail || "your email"}. Add your details below and become part of the UnWantra coaching network.
           </p>
         </div>
 
         {isLoading ? (
-          <p>Checking your invitation…</p>
+          <p style={{ textAlign: "center", color: "var(--uw-muted)" }}>Checking your invitation…</p>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "16px" }}>
-            {error ? <div style={{ padding: "12px", borderRadius: "12px", background: "#fff2f2", color: "#b42318" }}>{error}</div> : null}
-            {success ? <div style={{ padding: "12px", borderRadius: "12px", background: "#f4fff5", color: "#198754" }}>{success}</div> : null}
+          <form onSubmit={handleSubmit} className="auth-form">
+            {error ? <div className="auth-alert auth-alert-error" role="alert">{error}</div> : null}
+            {success ? <div className="auth-alert auth-alert-success" role="status">{success}</div> : null}
 
-            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <label style={{ display: "grid", gap: "6px" }}>
+            <div className="auth-grid">
+              <label className="auth-field">
                 <span>Full name</span>
-                <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required style={inputStyle} />
+                <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Phone number</span>
-                <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} style={inputStyle} />
+                <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Email</span>
-                <input value={inviteEmail} disabled style={{ ...inputStyle, background: "#f6f7fb" }} />
+                <input value={inviteEmail} disabled className="auth-field-input-disabled" />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Choose a password</span>
-                <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required style={inputStyle} />
+                <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Confirm password</span>
-                <input type="password" value={form.confirmPassword} onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })} required style={inputStyle} />
+                <input type="password" value={form.confirmPassword} onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })} required />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Primary program</span>
-                <select value={form.programName} onChange={(event) => setForm({ ...form, programName: event.target.value })} style={inputStyle}>
+                <select value={form.programName} onChange={(event) => setForm({ ...form, programName: event.target.value })}>
                   <option value="individual-executive">Individual Executive Coaching</option>
                   <option value="group-executive">Group Executive Coaching</option>
                 </select>
               </label>
             </div>
 
-            <label style={{ display: "grid", gap: "6px" }}>
+            <label className="auth-field">
               <span>Short bio</span>
-              <textarea value={form.bio} onChange={(event) => setForm({ ...form, bio: event.target.value })} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+              <textarea value={form.bio} onChange={(event) => setForm({ ...form, bio: event.target.value })} rows={4} />
             </label>
 
-            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <label style={{ display: "grid", gap: "6px" }}>
+            <div className="auth-grid">
+              <label className="auth-field">
                 <span>Years of experience</span>
-                <input type="number" min="0" value={form.experience} onChange={(event) => setForm({ ...form, experience: event.target.value })} style={inputStyle} />
+                <input type="number" min="0" value={form.experience} onChange={(event) => setForm({ ...form, experience: event.target.value })} />
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Languages</span>
-                <input value={form.languages} onChange={(event) => setForm({ ...form, languages: event.target.value })} placeholder="English, Kiswahili" style={inputStyle} />
+                <input value={form.languages} onChange={(event) => setForm({ ...form, languages: event.target.value })} placeholder="English, Kiswahili" />
               </label>
             </div>
 
-            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <label style={{ display: "grid", gap: "6px" }}>
+            <div className="auth-grid">
+              <label className="auth-field">
                 <span>Availability</span>
-                <select value={form.availabilityType} onChange={(event) => setForm({ ...form, availabilityType: event.target.value as "whole_week" | "selected_days" })} style={inputStyle}>
+                <select value={form.availabilityType} onChange={(event) => setForm({ ...form, availabilityType: event.target.value as "whole_week" | "selected_days" })}>
                   <option value="whole_week">Whole week</option>
                   <option value="selected_days">Selected days</option>
                 </select>
               </label>
-              <label style={{ display: "grid", gap: "6px" }}>
+              <label className="auth-field">
                 <span>Availability summary</span>
-                <input value={form.availabilitySummary} onChange={(event) => setForm({ ...form, availabilitySummary: event.target.value })} placeholder="e.g. Tue and Thu mornings" style={inputStyle} />
+                <input value={form.availabilitySummary} onChange={(event) => setForm({ ...form, availabilitySummary: event.target.value })} placeholder="e.g. Tue and Thu mornings" />
               </label>
             </div>
 
             {form.availabilityType === "selected_days" ? (
               <div>
-                <div style={{ marginBottom: "8px", fontWeight: 600 }}>Select available days</div>
+                <div style={{ marginBottom: "8px", fontWeight: 700, fontSize: "0.82rem", color: "var(--uw-sage-dark)", letterSpacing: "0.04em" }}>Select available days</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {WEEK_DAYS.map((day) => {
                     const checked = selectedDays.includes(day);
                     return (
-                      <label key={day} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 10px", borderRadius: "999px", background: checked ? "rgba(217, 169, 40, 0.16)" : "#f4f5f9" }}>
+                      <label key={day} className="auth-checkbox-label">
                         <input type="checkbox" checked={checked} onChange={() => setSelectedDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day])} />
                         <span>{day}</span>
                       </label>
@@ -249,44 +249,25 @@ const CoachSignupPage: React.FC = () => {
               </div>
             ) : null}
 
-            <label style={{ display: "grid", gap: "6px" }}>
+            <label className="auth-field auth-upload">
               <span>Profile photo</span>
               <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-              {uploadingPhoto ? <span style={{ color: "var(--clr-ink-soft)" }}>Uploading photo…</span> : null}
-              {form.photo ? <span style={{ color: "#198754", fontSize: "0.95rem" }}>Photo ready to save.</span> : null}
+              {uploadingPhoto ? <span style={{ color: "var(--uw-muted)", fontSize: "0.85rem" }}>Uploading photo…</span> : null}
+              {form.photo ? <span style={{ color: "#198754", fontSize: "0.9rem" }}>Photo ready to save.</span> : null}
             </label>
 
-            <button type="submit" disabled={isSubmitting || uploadingPhoto} style={{ ...buttonStyle, opacity: isSubmitting || uploadingPhoto ? 0.7 : 1 }}>
+            <button type="submit" disabled={isSubmitting || uploadingPhoto} className="auth-submit">
               {isSubmitting ? "Creating profile…" : "Create coach profile"}
             </button>
           </form>
         )}
 
-        <p style={{ marginTop: "16px", color: "var(--clr-ink-soft)" }}>
+        <div className="auth-footer">
           Already have an account? <Link to="/login">Go to login</Link>
-        </p>
+        </div>
       </div>
     </div>
   );
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: "12px",
-  border: "1px solid #dde2eb",
-  fontSize: "1rem",
-  boxSizing: "border-box",
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: 0,
-  borderRadius: "999px",
-  padding: "12px 18px",
-  background: "var(--clr-accent)",
-  color: "#1a1612",
-  fontWeight: 700,
-  cursor: "pointer",
 };
 
 export default CoachSignupPage;

@@ -341,7 +341,14 @@ export async function sendSlotRequestApprovedEmail(
         <p>Phone: <a href="tel:${escapeHtml(coachPhone)}">${escapeHtml(coachPhone)}</a></p>
       </div>
 
+      ${details.googleMeetingLink ? `
+      <div style="margin: 24px 0; text-align: center;">
+        <a href="${escapeHtml(details.googleMeetingLink)}" style="display: inline-block; padding: 14px 28px; background: #1a1612; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px;">Join Google Meeting</a>
+        <p style="margin-top: 10px; font-size: 13px; color: #6d6258;">Click the button above to join the meeting at the scheduled time.</p>
+      </div>
+      ` : `
       <p>Your coach may reach out to share a meeting link or any preparation notes before the session.</p>
+      `}
       <p>Thank you for choosing UnWantraCoaching!</p>
     </div>
     <div class="footer">
