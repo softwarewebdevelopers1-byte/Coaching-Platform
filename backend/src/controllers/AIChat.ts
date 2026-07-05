@@ -56,10 +56,11 @@ UNWANTRA COACHING PLATFORM CONTEXT:
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192",
+        model: "openai/gpt-oss-120b",
         messages,
-        max_tokens: 512,
+        max_tokens: 1024,
         temperature: 0.7,
+        top_p: 1,
       }),
     });
 
