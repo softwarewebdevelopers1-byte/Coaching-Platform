@@ -53,13 +53,9 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
           ? data.reply
           : "Thanks for your message. If you'd like, you can also browse our coaches or contact us at hello@unwantra.co.";
 
-      const navigateMatch = reply.match(/\[NAVIGATE:([^\]]+)\]/);
-      if (navigateMatch) {
-        const targetPath = navigateMatch[1].trim();
-        reply = reply.replace(/\[NAVIGATE:[^\]]+\]/, "").trim();
-        if (targetPath) {
-          window.location.href = targetPath;
-        }
+      const navigateTo = res.headers.get("X-Navigate-To");
+      if (navigateTo) {
+        window.location.href = navigateTo;
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);

@@ -760,26 +760,46 @@ const MainContent: React.FC<MainContentProps> = ({
                           discovery call.
                         </p>
                         <div className="uw-choice-list">
-                          {programs.map((program) => (
-                            <button
-                              key={program.id}
-                              className={
-                                selectedProgram === program.id ? "selected" : ""
-                              }
-                              onClick={() => {
-                                setSelectedProgram(program.id);
-                                setForm({
-                                  ...form,
-                                  coachingType: program.title,
-                                });
-                              }}
-                            >
-                              <strong>{program.title}</strong>
-                              <span>
-                                {program.duration || "Discovery call"}
-                              </span>
-                            </button>
-                          ))}
+                          {(() => {
+                            const coachProgramIds = selectedCoach
+                              ? getCoachProgramIds(selectedCoach.specialization)
+                              : [];
+                            const availablePrograms = coachProgramIds.length
+                              ? programs.filter((program) =>
+                                  coachProgramIds.includes(program.id),
+                                )
+                              : programs;
+                            if (!availablePrograms.length) {
+                              return (
+                                <p>
+                                  This coach does not have any available
+                                  programs at the moment.
+                                </p>
+                              );
+                            }
+                            return availablePrograms.map((program) => (
+                              <button
+                                key={program.id}
+                                className={
+                                  selectedProgram === program.id
+                                    ? "selected"
+                                    : ""
+                                }
+                                onClick={() => {
+                                  setSelectedProgram(program.id);
+                                  setForm({
+                                    ...form,
+                                    coachingType: program.title,
+                                  });
+                                }}
+                              >
+                                <strong>{program.title}</strong>
+                                <span>
+                                  {program.duration || "Discovery call"}
+                                </span>
+                              </button>
+                            ));
+                          })()}
                         </div>
                         <div className="uw-form-actions">
                           <button
