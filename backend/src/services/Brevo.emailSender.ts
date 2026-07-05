@@ -5,6 +5,34 @@ import type {
   BrevoErrorResponse,
 } from "../types/Brevo.sender.js";
 import DotEnvConfig from "../configs/DotEnv.js";
+import { PROGRAMS } from "../utils/programs.js";
+
+function formatReadableDate(value: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return trimmed;
+}
+
+function getProgramTitle(programName?: string): string {
+  if (!programName) return "Coaching Program";
+  const match = PROGRAMS.find(
+    (program) =>
+      program.id === programName ||
+      program.title.toLowerCase() === programName.toLowerCase(),
+  );
+  return match?.title || programName;
+}
 
 interface BookingConfirmationDetails {
   email: string;
@@ -103,7 +131,7 @@ export async function sendContactAcknowledgmentEmail(
       <div class="panel">
         <div class="row">
           <div class="label">Coaching interest</div>
-          <div class="value">${escapeHtml(details.interest)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(details.interest))}</div>
         </div>
       </div>
 
@@ -211,7 +239,7 @@ export async function sendSlotRequestReceivedEmail(
       <div class="panel">
         <div class="row">
           <div class="label">Program</div>
-          <div class="value">${escapeHtml(details.programName)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(details.programName))}</div>
         </div>
         <div class="row">
           <div class="label">Coach</div>
@@ -322,7 +350,7 @@ export async function sendSlotRequestApprovedEmail(
       <div class="panel">
         <div class="row">
           <div class="label">Program</div>
-          <div class="value">${escapeHtml(details.programName)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(details.programName))}</div>
         </div>
         <div class="row">
           <div class="label">Coach</div>
@@ -330,7 +358,7 @@ export async function sendSlotRequestApprovedEmail(
         </div>
         <div class="row">
           <div class="label">Scheduled Time</div>
-          <div class="value"><strong>${escapeHtml(details.scheduledTime)}</strong></div>
+          <div class="value"><strong>${escapeHtml(formatReadableDate(details.scheduledTime))}</strong></div>
         </div>
       </div>
 
@@ -438,7 +466,7 @@ export async function sendSlotRequestDeclinedEmail(
       <div class="panel">
         <div class="row">
           <div class="label">Program</div>
-          <div class="value">${escapeHtml(details.programName)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(details.programName))}</div>
         </div>
         <div class="row">
           <div class="label">Coach</div>
@@ -548,7 +576,7 @@ export async function sendSlotRequestCoachNotificationEmail(
         </div>
         <div class="row">
           <div class="label">Program</div>
-          <div class="value">${escapeHtml(details.programName)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(details.programName))}</div>
         </div>
       </div>
 
@@ -612,6 +640,11 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
     .coach-box h2 { margin: 0 0 10px; font-size: 18px; }
     .btn-container { text-align: center; margin: 28px 0; }
     .btn { display: inline-block; background: #1a1612; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-weight: 700; font-size: 15px; }
+    .meet-section { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 12px; padding: 24px 20px; margin: 28px 0; text-align: center; }
+    .meet-section h3 { margin: 0 0 8px; font-size: 17px; color: #1b5e20; }
+    .meet-section p { margin: 0 0 18px; font-size: 14px; color: #2e7d32; }
+    .meet-btn { display: inline-block; background: #00897b; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 16px; letter-spacing: 0.02em; }
+    .meet-fallback { margin-top: 14px; font-size: 12px; color: #555; word-break: break-all; }
     .footer { background: #faf8f4; padding: 22px 28px; color: #786f66; font-size: 13px; text-align: center; }
     a { color: #9b6a17; }
     @media (max-width: 560px) {
@@ -635,7 +668,7 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
       <div class="panel">
         <div class="row">
           <div class="label">Program</div>
-          <div class="value">${escapeHtml(booking.programName)}</div>
+          <div class="value">${escapeHtml(getProgramTitle(booking.programName))}</div>
         </div>
         <div class="row">
           <div class="label">Coach</div>
@@ -643,7 +676,7 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
         </div>
         <div class="row">
           <div class="label">Session Time</div>
-          <div class="value">${escapeHtml(booking.bookingTime)}</div>
+          <div class="value">${escapeHtml(formatReadableDate(booking.bookingTime))}</div>
         </div>
         <div class="row">
           <div class="label">Your Phone</div>
@@ -657,12 +690,15 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
         <p>Phone: <a href="tel:${escapeHtml(coachPhone)}">${escapeHtml(coachPhone)}</a></p>
       </div>
 
-      ${booking.googleMeetingLink ? `<div class="btn-container">
-        <a href="${booking.googleMeetingLink}" class="btn" target="_blank" rel="noopener noreferrer">Join Google Meeting</a>
-      </div>
-      <p>If the button doesn\'t open automatically, copy and paste the following link into your browser:</p>
-      <p><a href="${booking.googleMeetingLink}">${booking.googleMeetingLink}</a></p>
-      <p>You can open this link in the Google Meet app or browser to join your session.</p>` : `<p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>`}
+      ${booking.googleMeetingLink ? `
+      <div class="meet-section">
+        <h3>📹 Join Your Google Meet Session</h3>
+        <p>Click the button below at your scheduled session time to join the meeting.</p>
+        <a href="${booking.googleMeetingLink}" class="meet-btn" target="_blank" rel="noopener noreferrer">Join Google Meeting</a>
+        <div class="meet-fallback">
+          Or copy this link: <a href="${booking.googleMeetingLink}" style="color:#00897b;">${booking.googleMeetingLink}</a>
+        </div>
+      </div>` : `<p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>`}
       <p>Thank you for booking with UnWantraCoaching.</p>
     </div>
 
