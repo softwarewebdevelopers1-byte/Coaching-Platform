@@ -49,8 +49,10 @@ EMAIL BEHAVIOR:
 - Tell the user that a confirmation email has been sent and they will receive it shortly.
 
 NAVIGATION RULES:
-- If the user asks to go to a specific page or section, include a special marker at the very end of your response on its own line: [NAVIGATE:/path].
-- Available pages: / (home), /about (about page), /login (staff login), /coach-signup (coach onboarding).
+- If the user asks to go to a specific page or section, include a special marker at the very end of your response on its own line: [NAVIGATE:/path#hash].
+- Available pages: / (home), /about (about page), /login (staff login), /coach-signup (coach onboarding), /forgot-password (forgot password), /reset-password (reset password).
+- Available section anchors on the home page: #services (coaching services), #about (about preview), #testimonials (client stories).
+- Examples: if user says "take me to about page" -> reply normally then add [NAVIGATE:/about]. If user says "show me services" -> reply normally then add [NAVIGATE:/#services].
 
 FORMATTING RULES:
 - Do NOT use markdown formatting.

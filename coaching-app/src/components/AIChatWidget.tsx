@@ -55,7 +55,17 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
 
       const navigateTo = res.headers.get("X-Navigate-To");
       if (navigateTo) {
-        window.location.href = navigateTo;
+        if (navigateTo.startsWith("#")) {
+          const targetId = navigateTo.slice(1);
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else {
+            window.location.hash = targetId;
+          }
+        } else {
+          window.location.href = navigateTo;
+        }
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
