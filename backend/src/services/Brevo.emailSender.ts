@@ -624,7 +624,7 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
     </div>
   </div>
 </body>
-</html>\`;
+</html>`;
 }
 
 interface ResetPasswordDetails {
