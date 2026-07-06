@@ -126,7 +126,9 @@ const MainContent: React.FC<MainContentProps> = ({
   const [quickSelectedSlotId, setQuickSelectedSlotId] = useState("");
   const [quickSubmitting, setQuickSubmitting] = useState(false);
   const [quickRequestSent, setQuickRequestSent] = useState(false);
-  const [quickCoachMode, setQuickCoachMode] = useState<"auto" | "manual" | "">("");
+  const [quickCoachMode, setQuickCoachMode] = useState<"auto" | "manual" | "">(
+    "",
+  );
   const [assignedCoach, setAssignedCoach] = useState<Coach | null>(null);
   const [quickSlots, setQuickSlots] = useState<CoachSlot[]>([]);
 
@@ -423,7 +425,8 @@ const MainContent: React.FC<MainContentProps> = ({
           coachPhone: selectedCoach.phone,
           bookingTime: slotLabel,
           slotId: slots.find((slot) => slot.bookingDate === selectedSlot)?._id,
-          meetingLink: slots.find((slot) => slot.bookingDate === selectedSlot)?.meetingLink,
+          meetingLink: slots.find((slot) => slot.bookingDate === selectedSlot)
+            ?.meetingLink,
           goals: form.goals
             .split(",")
             .map((goal) => goal.trim())
@@ -558,7 +561,11 @@ const MainContent: React.FC<MainContentProps> = ({
         );
         if (!res.ok) return;
         const data = await res.json();
-        setQuickSlots((data.slots || []).filter((slot: CoachSlot) => slot.status === "open"));
+        setQuickSlots(
+          (data.slots || []).filter(
+            (slot: CoachSlot) => slot.status === "open",
+          ),
+        );
       } catch {
         setQuickSlots([]);
       }
@@ -604,10 +611,18 @@ const MainContent: React.FC<MainContentProps> = ({
             setQuickSelectedCoachId(coach._id);
             await submitQuickBooking(coach);
           } else {
-            showToast("Could not assign a coach right now. Please try again or choose manually.", "error", 5000);
+            showToast(
+              "Could not assign a coach right now. Please try again or choose manually.",
+              "error",
+              5000,
+            );
           }
         } catch {
-          showToast("Network error assigning coach. Please try again.", "error", 5000);
+          showToast(
+            "Network error assigning coach. Please try again.",
+            "error",
+            5000,
+          );
         } finally {
           setQuickSubmitting(false);
         }
@@ -639,7 +654,9 @@ const MainContent: React.FC<MainContentProps> = ({
 
     setQuickSubmitting(true);
     try {
-      const selectedSlot = quickSlots.find((slot) => slot._id === quickSelectedSlotId);
+      const selectedSlot = quickSlots.find(
+        (slot) => slot._id === quickSelectedSlotId,
+      );
       const shouldRequestSlot = !selectedSlot;
 
       if (shouldRequestSlot) {
@@ -667,7 +684,11 @@ const MainContent: React.FC<MainContentProps> = ({
 
         setAssignedCoach(coach);
         setQuickRequestSent(true);
-        showToast("Your slot request has been sent. The coach will review and confirm by email.", "success", 5000);
+        showToast(
+          "Your slot request has been sent. The coach will review and confirm by email.",
+          "success",
+          5000,
+        );
         return;
       }
 
@@ -701,9 +722,17 @@ const MainContent: React.FC<MainContentProps> = ({
 
       setAssignedCoach(coach);
       setQuickRequestSent(true);
-      showToast("Discovery call booked. Confirmation sent by email.", "success", 5000);
+      showToast(
+        "Discovery call booked. Confirmation sent by email.",
+        "success",
+        5000,
+      );
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Could not complete booking", "error", 6000);
+      showToast(
+        error instanceof Error ? error.message : "Could not complete booking",
+        "error",
+        6000,
+      );
     } finally {
       setQuickSubmitting(false);
     }
@@ -959,7 +988,10 @@ const MainContent: React.FC<MainContentProps> = ({
               {quickStep === 4 && (
                 <div className="uw-form-panel">
                   <h3>Step 4: Choose the coaching service</h3>
-                  <p>Select whether you want an individual or group coaching session.</p>
+                  <p>
+                    Select whether you want an individual or group coaching
+                    session.
+                  </p>
                   <div className="uw-choice-list">
                     {programs.map((program) => (
                       <button
@@ -1001,7 +1033,10 @@ const MainContent: React.FC<MainContentProps> = ({
               {quickStep === 5 && (
                 <div className="uw-form-panel">
                   <h3>Step 5: Choose your coach</h3>
-                  <p>Would you like to choose a coach yourself, or should we assign the best available coach for you?</p>
+                  <p>
+                    Would you like to choose a coach yourself, or should we
+                    assign the best available coach for you?
+                  </p>
                   <div className="uw-choice-list">
                     <button
                       className={quickCoachMode === "auto" ? "selected" : ""}
@@ -1011,7 +1046,9 @@ const MainContent: React.FC<MainContentProps> = ({
                       }}
                     >
                       <strong>Assign for me</strong>
-                      <span>We will pick the best coach based on availability</span>
+                      <span>
+                        We will pick the best coach based on availability
+                      </span>
                     </button>
                     <button
                       className={quickCoachMode === "manual" ? "selected" : ""}
@@ -1026,13 +1063,20 @@ const MainContent: React.FC<MainContentProps> = ({
                     <div style={{ marginTop: 18 }}>
                       {(() => {
                         const eligible = coaches.filter((coach) =>
-                          coachMatchesProgram(coach.specialization, quickForm.coachingType),
+                          coachMatchesProgram(
+                            coach.specialization,
+                            quickForm.coachingType,
+                          ),
                         );
-                        const selectedCoach = coaches.find((c) => c._id === quickSelectedCoachId);
+                        const selectedCoach = coaches.find(
+                          (c) => c._id === quickSelectedCoachId,
+                        );
                         if (!eligible.length) {
                           return (
                             <p style={{ color: "var(--uw-muted)" }}>
-                              No coaches are currently available for this program. Please try auto-assign or another service.
+                              No coaches are currently available for this
+                              program. Please try auto-assign or another
+                              service.
                             </p>
                           );
                         }
@@ -1042,29 +1086,66 @@ const MainContent: React.FC<MainContentProps> = ({
                               <span>Choose a coach</span>
                               <select
                                 value={quickSelectedCoachId}
-                                onChange={(e) => setQuickSelectedCoachId(e.target.value)}
+                                onChange={(e) =>
+                                  setQuickSelectedCoachId(e.target.value)
+                                }
                               >
                                 <option value="">Select a coach...</option>
                                 {eligible.map((coach) => (
                                   <option key={coach._id} value={coach._id}>
-                                    {coach.name} — {coach.experience || 10} years
+                                    {coach.name} — {coach.experience || 10}{" "}
+                                    years
                                   </option>
                                 ))}
                               </select>
                             </label>
                             {selectedCoach && (
-                              <div className="uw-booking-card" style={{ padding: 16, display: "grid", gap: 8 }}>
-                                <strong style={{ fontSize: "1rem" }}>{selectedCoach.name}</strong>
-                                <span style={{ color: "var(--uw-muted)", fontSize: "0.9rem" }}>
-                                  {selectedCoach.bio?.slice(0, 160) || "Executive coach"}
+                              <div
+                                className="uw-booking-card"
+                                style={{ padding: 16, display: "grid", gap: 8 }}
+                              >
+                                <strong style={{ fontSize: "1rem" }}>
+                                  {selectedCoach.name}
+                                </strong>
+                                <span
+                                  style={{
+                                    color: "var(--uw-muted)",
+                                    fontSize: "0.9rem",
+                                  }}
+                                >
+                                  {selectedCoach.bio?.slice(0, 160) ||
+                                    "Executive coach"}
                                 </span>
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                  {(selectedCoach.expertise || ["Executive leadership"]).slice(0, 3).map((item) => (
-                                    <span key={item} className="uw-coach-tag">{item}</span>
-                                  ))}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {(
+                                    selectedCoach.expertise || [
+                                      "Executive leadership",
+                                    ]
+                                  )
+                                    .slice(0, 3)
+                                    .map((item) => (
+                                      <span key={item} className="uw-coach-tag">
+                                        {item}
+                                      </span>
+                                    ))}
                                 </div>
-                                <span style={{ fontSize: "0.85rem", color: "var(--uw-sage-dark)", fontWeight: 700 }}>
-                                  Languages: {(selectedCoach.languages || ["English"]).join(", ")}
+                                <span
+                                  style={{
+                                    fontSize: "0.85rem",
+                                    color: "var(--uw-sage-dark)",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Languages:{" "}
+                                  {(
+                                    selectedCoach.languages || ["English"]
+                                  ).join(", ")}
                                 </span>
                               </div>
                             )}
@@ -1099,24 +1180,57 @@ const MainContent: React.FC<MainContentProps> = ({
 
                   {quickSlots.length > 0 ? (
                     <div>
-                      <strong style={{ fontSize: "0.85rem", color: "var(--uw-sage-dark)" }}>Available slots:</strong>
+                      <strong
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "var(--uw-sage-dark)",
+                        }}
+                      >
+                        Available slots:
+                      </strong>
                       <div className="uw-slot-grid" style={{ marginTop: 8 }}>
-                      {quickSlots.map((slot) => (
-                        <button
-                          key={slot._id}
-                          type="button"
-                          onClick={() => {
-                            const dateStr = new Date(slot.bookingDate).toISOString().split("T")[0];
-                            const timeStr = new Date(slot.bookingDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                            setQuickForm({ ...quickForm, preferredDate: dateStr, preferredTime: timeStr });
-                            setQuickSelectedSlotId(slot._id);
-                          }}
-                          className={quickSelectedSlotId === slot._id ? "selected" : ""}
-                        >
+                        {quickSlots.map((slot) => (
+                          <button
+                            key={slot._id}
+                            type="button"
+                            onClick={() => {
+                              const dateStr = new Date(slot.bookingDate)
+                                .toISOString()
+                                .split("T")[0];
+                              const timeStr = new Date(
+                                slot.bookingDate,
+                              ).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+                              setQuickForm({
+                                ...quickForm,
+                                preferredDate: dateStr,
+                                preferredTime: timeStr,
+                              });
+                              setQuickSelectedSlotId(slot._id);
+                            }}
+                            className={
+                              quickSelectedSlotId === slot._id ? "selected" : ""
+                            }
+                          >
                             <strong>
-                              {new Date(slot.bookingDate).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
+                              {new Date(slot.bookingDate).toLocaleDateString(
+                                [],
+                                {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
                             </strong>
-                            <span>at {new Date(slot.bookingDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>
+                              at{" "}
+                              {new Date(slot.bookingDate).toLocaleTimeString(
+                                [],
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -1124,12 +1238,18 @@ const MainContent: React.FC<MainContentProps> = ({
                   ) : (
                     <div>
                       <p style={{ color: "var(--uw-muted)", marginBottom: 8 }}>
-                        No open slots right now. Choose a preferred date based on the coach’s availability and we’ll send a request for approval.
+                        No open slots right now. Choose a preferred date based
+                        on the coach’s availability and we’ll send a request for
+                        approval.
                       </p>
                       {(() => {
-                        const selectedCoach = coaches.find((c) => c._id === quickSelectedCoachId);
+                        const selectedCoach = coaches.find(
+                          (c) => c._id === quickSelectedCoachId,
+                        );
                         if (!selectedCoach) return null;
-                        const normalizedDays = (selectedCoach.availableDays || [])
+                        const normalizedDays = (
+                          selectedCoach.availableDays || []
+                        )
                           .map((day) => day.trim().toLowerCase())
                           .filter(Boolean);
                         const dates: string[] = [];
@@ -1137,30 +1257,54 @@ const MainContent: React.FC<MainContentProps> = ({
                         for (let offset = 0; dates.length < 6; offset += 1) {
                           const candidate = new Date(today);
                           candidate.setDate(today.getDate() + offset);
-                          const dayName = candidate.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+                          const dayName = candidate
+                            .toLocaleDateString("en-US", { weekday: "long" })
+                            .toLowerCase();
                           const shortName = dayName.slice(0, 3);
                           const isAvailable =
                             selectedCoach.availabilityType === "whole_week" ||
-                            normalizedDays.some((day) => day === dayName || day.startsWith(shortName) || day === shortName);
+                            normalizedDays.some(
+                              (day) =>
+                                day === dayName ||
+                                day.startsWith(shortName) ||
+                                day === shortName,
+                            );
                           if (isAvailable) {
                             dates.push(candidate.toISOString().split("T")[0]);
                           }
                         }
-                        if (!dates.length) return <p style={{ color: "var(--uw-muted)" }}>This coach has not set specific availability days yet.</p>;
+                        if (!dates.length)
+                          return (
+                            <p style={{ color: "var(--uw-muted)" }}>
+                              This coach has not set specific availability days
+                              yet.
+                            </p>
+                          );
                         return (
                           <div className="uw-slot-grid">
                             {dates.map((date) => (
                               <button
                                 key={date}
                                 type="button"
-                                className={quickForm.preferredDate === date ? "selected" : ""}
+                                className={
+                                  quickForm.preferredDate === date
+                                    ? "selected"
+                                    : ""
+                                }
                                 onClick={() => {
-                                  setQuickForm({ ...quickForm, preferredDate: date });
+                                  setQuickForm({
+                                    ...quickForm,
+                                    preferredDate: date,
+                                  });
                                   setQuickSelectedSlotId("");
                                 }}
                               >
                                 <strong>
-                                  {new Date(date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
+                                  {new Date(date).toLocaleDateString([], {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
                                 </strong>
                               </button>
                             ))}
@@ -1266,7 +1410,10 @@ const MainContent: React.FC<MainContentProps> = ({
                   </div>
                 </div>
               )}
-              <button className="uw-btn uw-btn-primary" onClick={resetQuickBooking}>
+              <button
+                className="uw-btn uw-btn-primary"
+                onClick={resetQuickBooking}
+              >
                 Book another call
               </button>
             </div>
@@ -1368,7 +1515,10 @@ const MainContent: React.FC<MainContentProps> = ({
                           >
                             Back
                           </button>
-                          <button className="uw-btn uw-btn-primary" onClick={next}>
+                          <button
+                            className="uw-btn uw-btn-primary"
+                            onClick={next}
+                          >
                             Continue
                           </button>
                         </div>
@@ -1441,113 +1591,143 @@ const MainContent: React.FC<MainContentProps> = ({
                       </div>
                     )}
 
-                     {step === 5 && (
-                       <div className="uw-form-panel">
-                         <h3>Step 5: Pick your preferred time</h3>
-                         <p>
-                           {selectedCoach
-                             ? `We’ll check ${selectedCoach.name}'s availability first.`
-                             : "We’ll check the selected coach’s availability first."}
-                         </p>
-                         {selectedCoach && (
-                           <p className="uw-assigned">
-                             Coach: {selectedCoach.name}
-                           </p>
-                         )}
+                    {step === 5 && (
+                      <div className="uw-form-panel">
+                        <h3>Step 5: Pick your preferred time</h3>
+                        <p>
+                          {selectedCoach
+                            ? `We’ll check ${selectedCoach.name}'s availability first.`
+                            : "We’ll check the selected coach’s availability first."}
+                        </p>
+                        {selectedCoach && (
+                          <p className="uw-assigned">
+                            Coach: {selectedCoach.name}
+                          </p>
+                        )}
 
-                         <div style={{ display: "grid", gap: 18 }}>
-                           {slots.length > 0 && (
-                             <div>
-                               <strong style={{ fontSize: "0.85rem", color: "var(--uw-sage-dark)" }}>Book an existing slot:</strong>
-                               <div className="uw-slot-grid" style={{ marginTop: 8 }}>
-                                  {slotOptions.map((slot) => (
-                                    <button
-                                      key={slot.value}
-                                      className={
-                                        selectedSlot === slot.value ? "selected" : ""
-                                      }
-                                      onClick={() => {
-                                        setSelectedSlot(slot.value);
-                                        setForm({
-                                         ...form,
-                                         preferredDate:
-                                           slot.value.split("T")[0] || "",
-                                         preferredTime: slot.value.includes("T")
-                                           ? new Date(
-                                               slot.value,
-                                             ).toLocaleTimeString([], {
-                                               hour: "2-digit",
-                                               minute: "2-digit",
-                                             })
-                                           : "",
-                                       });
-                                     }}
-                                   >
-                                     {slot.label}
-                                   </button>
-                                 ))}
-                               </div>
-                             </div>
-                           )}
-
-                           <div>
-                             <strong style={{ fontSize: "0.85rem", color: "var(--uw-sage-dark)" }}>Or choose another available date:</strong>
-                             <div className="uw-slot-grid" style={{ marginTop: 8 }}>
-                               {suggestedAvailabilityDates
-                                 .filter((date) => !slots.some((slot) => slot.bookingDate?.startsWith?.(date)))
-                                 .map((date) => (
-                                   <button
-                                     key={date}
-                                     className={
-                                       form.preferredDate === date ? "selected" : ""
-                                     }
-                                      onClick={() => {
-                                        setForm({ ...form, preferredDate: date });
-                                        setSelectedSlot("");
-                                      }}
-                                   >
-                                     <strong>
-                                       {new Date(date).toLocaleDateString([], {
-                                         weekday: "short",
-                                         month: "short",
-                                         day: "numeric",
-                                       })}
-                                     </strong>
-                                   </button>
-                               ))}
-                             </div>
-                           </div>
-                         </div>
-
-                         <div className="uw-form-grid">
-                           <label>
-                             Preferred Date
-                              <input
-                                type="date"
-                                value={form.preferredDate}
-                                onChange={(e) => {
-                                  setForm({
-                                    ...form,
-                                    preferredDate: e.target.value,
-                                  });
-                                  setSelectedSlot("");
+                        <div style={{ display: "grid", gap: 18 }}>
+                          {slots.length > 0 && (
+                            <div>
+                              <strong
+                                style={{
+                                  fontSize: "0.85rem",
+                                  color: "var(--uw-sage-dark)",
                                 }}
-                              />
-                           </label>
-                           <label>
-                             Optional Time
-                             <input
-                               type="time"
-                               value={form.preferredTime}
-                               onChange={(e) =>
-                                 setForm({
-                                   ...form,
-                                   preferredTime: e.target.value,
-                                 })
-                               }
-                             />
-                           </label>
-                         </div>
+                              >
+                                Book an existing slot:
+                              </strong>
+                              <div
+                                className="uw-slot-grid"
+                                style={{ marginTop: 8 }}
+                              >
+                                {slotOptions.map((slot) => (
+                                  <button
+                                    key={slot.value}
+                                    className={
+                                      selectedSlot === slot.value
+                                        ? "selected"
+                                        : ""
+                                    }
+                                    onClick={() => {
+                                      setSelectedSlot(slot.value);
+                                      setForm({
+                                        ...form,
+                                        preferredDate:
+                                          slot.value.split("T")[0] || "",
+                                        preferredTime: slot.value.includes("T")
+                                          ? new Date(
+                                              slot.value,
+                                            ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })
+                                          : "",
+                                      });
+                                    }}
+                                  >
+                                    {slot.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <strong
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--uw-sage-dark)",
+                              }}
+                            >
+                              Or choose another available date:
+                            </strong>
+                            <div
+                              className="uw-slot-grid"
+                              style={{ marginTop: 8 }}
+                            >
+                              {suggestedAvailabilityDates
+                                .filter(
+                                  (date) =>
+                                    !slots.some((slot) =>
+                                      slot.bookingDate?.startsWith?.(date),
+                                    ),
+                                )
+                                .map((date) => (
+                                  <button
+                                    key={date}
+                                    className={
+                                      form.preferredDate === date
+                                        ? "selected"
+                                        : ""
+                                    }
+                                    onClick={() => {
+                                      setForm({ ...form, preferredDate: date });
+                                      setSelectedSlot("");
+                                    }}
+                                  >
+                                    <strong>
+                                      {new Date(date).toLocaleDateString([], {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                      })}
+                                    </strong>
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="uw-form-grid">
+                          <label>
+                            Preferred Date
+                            <input
+                              type="date"
+                              disabled
+                              value={form.preferredDate}
+                              onChange={(e) => {
+                                setForm({
+                                  ...form,
+                                  preferredDate: e.target.value,
+                                });
+                                setSelectedSlot("");
+                              }}
+                            />
+                          </label>
+                          <label>
+                            Optional Time
+                            <input
+                              type="time"
+                              value={form.preferredTime}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  preferredTime: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                        </div>
                         <label className="wide">
                           What would you like to focus on in the session?
                           (optional)
