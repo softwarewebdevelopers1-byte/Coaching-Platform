@@ -237,6 +237,7 @@ router.post("/book-slot", async (req, res): Promise<void> => {
   }
 
   // Mark the slot as booked if a slotId was provided
+  let meetingLink: string | undefined;
   if (slotId) {
     const slot = await BookingsCreatedModel.findById(slotId);
     if (!slot) {
@@ -257,6 +258,8 @@ router.post("/book-slot", async (req, res): Promise<void> => {
       res.status(400).json({ message: "Selected slot does not belong to this coach" });
       return;
     }
+    // Capture the meeting link before marking the slot as booked
+    meetingLink = slot.meetingLink || undefined;
     const updatedSlot = await BookingsCreatedModel.findOneAndUpdate(
       { _id: slotId, status: "open" },
       { status: "booked" },
@@ -319,8 +322,6 @@ router.post("/book-slot", async (req, res): Promise<void> => {
     payload: { bookingId: booking._id, programName: program, coachName, bookingTime },
   });
 
-  const slot = slotId ? await BookingsCreatedModel.findById(slotId) : null;
-  const meetingLink = slot?.meetingLink;
 
   sendBookingConfirmationEmail({
     email,
