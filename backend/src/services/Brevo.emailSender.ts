@@ -692,11 +692,16 @@ function generateBookingEmailTemplate(booking: BookingConfirmationDetails): stri
 
       ${booking.googleMeetingLink ? `
       <div class="meet-section">
-        <h3>📹 Join Your Google Meet Session</h3>
-        <p>Click the button below at your scheduled session time to join the meeting.</p>
-        <a href="${booking.googleMeetingLink}" class="meet-btn" target="_blank" rel="noopener noreferrer">Join Google Meeting</a>
+        <h3>
+          <img src="https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-64dp/logo_meet_2020q4_color_2x_web_64dp.png" alt="Google Meet" width="28" height="28" style="vertical-align:middle;margin-right:8px;border-radius:6px;" />
+          Join Your Google Meet Session
+        </h3>
+        <p>Your Google Meet link is ready. Click the button below at your scheduled session time to join.</p>
+        <a href="${escapeHtml(booking.googleMeetingLink)}" class="meet-btn" target="_blank" rel="noopener noreferrer">
+          ▶ Join Google Meeting
+        </a>
         <div class="meet-fallback">
-          Or copy this link: <a href="${booking.googleMeetingLink}" style="color:#00897b;">${booking.googleMeetingLink}</a>
+          Or copy this link: <a href="${escapeHtml(booking.googleMeetingLink)}" style="color:#00897b;">${escapeHtml(booking.googleMeetingLink)}</a>
         </div>
       </div>` : `<p>Your coach will reach out within 24 hours to confirm the session link and any preparation notes.</p>`}
       <p>Thank you for booking with UnWantraCoaching.</p>

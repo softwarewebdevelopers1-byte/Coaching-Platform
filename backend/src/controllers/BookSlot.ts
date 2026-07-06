@@ -114,6 +114,7 @@ router.post("/coach-slots", async (req, res): Promise<void> => {
     bookingDate,
     bookingEndDate,
     imageUrl,
+    meetingLink,
   } = req.body;
 
   if (!coachId || !coachName || !programName || !title || !bookingDate) {
@@ -153,6 +154,7 @@ router.post("/coach-slots", async (req, res): Promise<void> => {
     programName,
     title,
     imageUrl,
+    meetingLink: meetingLink || undefined,
     bookingDate: startDate,
     bookingEndDate: endDate,
     status: "open",
