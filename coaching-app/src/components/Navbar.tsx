@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import {  NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -161,7 +161,7 @@ const Navbar: React.FC = () => {
         )}
         <a
           className="uw-nav-cta"
-          href="#discovery-call"
+          href="#quick-book"
           onClick={(event) => {
             if (user) {
               event.preventDefault();
