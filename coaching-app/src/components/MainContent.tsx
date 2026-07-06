@@ -81,6 +81,45 @@ const fallbackSlots = [
   "2026-07-06T11:30",
 ];
 
+const getSuggestedAvailabilityDatesForCoach = (coach: Coach | null | undefined) => {
+  if (!coach) return [];
+
+  const normalizedDays = (coach.availableDays || [])
+    .map((day) => day.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!normalizedDays.length && coach.availabilityType !== "whole_week") {
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() + index);
+      return date.toISOString().split("T")[0];
+    });
+  }
+
+  const dates: string[] = [];
+  const today = new Date();
+
+  for (let offset = 0; dates.length < 6; offset += 1) {
+    const candidate = new Date(today);
+    candidate.setDate(today.getDate() + offset);
+    const dayName = candidate
+      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLowerCase();
+    const shortName = dayName.slice(0, 3);
+    const isAvailable =
+      coach.availabilityType === "whole_week" ||
+      normalizedDays.some(
+        (day) => day === dayName || day.startsWith(shortName) || day === shortName,
+      );
+
+    if (isAvailable) {
+      dates.push(candidate.toISOString().split("T")[0]);
+    }
+  }
+
+  return dates;
+};
+
 const MainContent: React.FC<MainContentProps> = ({
   programs,
   testimonials,
@@ -194,46 +233,7 @@ const MainContent: React.FC<MainContentProps> = ({
     coaches.find((coach) => coach._id === selectedCoachId) || null;
 
   const suggestedAvailabilityDates = useMemo(() => {
-    if (!selectedCoach) return [];
-
-    const normalizedDays = (selectedCoach.availableDays || [])
-      .map((day) => day.trim().toLowerCase())
-      .filter(Boolean);
-
-    if (
-      !normalizedDays.length &&
-      selectedCoach.availabilityType !== "whole_week"
-    ) {
-      return Array.from({ length: 6 }, (_, index) => {
-        const date = new Date();
-        date.setDate(date.getDate() + index);
-        return date.toISOString().split("T")[0];
-      });
-    }
-
-    const dates: string[] = [];
-    const today = new Date();
-
-    for (let offset = 0; dates.length < 6; offset += 1) {
-      const candidate = new Date(today);
-      candidate.setDate(today.getDate() + offset);
-      const dayName = candidate
-        .toLocaleDateString("en-US", { weekday: "long" })
-        .toLowerCase();
-      const shortName = dayName.slice(0, 3);
-      const isAvailable =
-        selectedCoach.availabilityType === "whole_week" ||
-        normalizedDays.some(
-          (day) =>
-            day === dayName || day.startsWith(shortName) || day === shortName,
-        );
-
-      if (isAvailable) {
-        dates.push(candidate.toISOString().split("T")[0]);
-      }
-    }
-
-    return dates;
+    return getSuggestedAvailabilityDatesForCoach(selectedCoach);
   }, [
     selectedCoach?._id,
     selectedCoach?.availabilityType,
@@ -1178,146 +1178,141 @@ const MainContent: React.FC<MainContentProps> = ({
                   <h3>Step 6: Pick your preferred date</h3>
                   <p>Date is required. Time is optional.</p>
 
-                  {quickSlots.length > 0 ? (
-                    <div>
-                      <strong
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "var(--uw-sage-dark)",
-                        }}
-                      >
-                        Available slots:
-                      </strong>
-                      <div className="uw-slot-grid" style={{ marginTop: 8 }}>
-                        {quickSlots.map((slot) => (
-                          <button
-                            key={slot._id}
-                            type="button"
-                            onClick={() => {
-                              const dateStr = new Date(slot.bookingDate)
-                                .toISOString()
-                                .split("T")[0];
-                              const timeStr = new Date(
-                                slot.bookingDate,
-                              ).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              });
-                              setQuickForm({
-                                ...quickForm,
-                                preferredDate: dateStr,
-                                preferredTime: timeStr,
-                              });
-                              setQuickSelectedSlotId(slot._id);
-                            }}
-                            className={
-                              quickSelectedSlotId === slot._id ? "selected" : ""
-                            }
-                          >
-                            <strong>
-                              {new Date(slot.bookingDate).toLocaleDateString(
-                                [],
-                                {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                },
-                              )}
+                  {(() => {
+                    const selectedCoach = coaches.find(
+                      (c) => c._id === quickSelectedCoachId,
+                    );
+                    const suggestedDates = getSuggestedAvailabilityDatesForCoach(
+                      selectedCoach,
+                    );
+                    const availableDates = suggestedDates.filter(
+                      (date) =>
+                        !quickSlots.some(
+                          (slot) =>
+                            new Date(slot.bookingDate)
+                              .toISOString()
+                              .split("T")[0] === date,
+                        ),
+                    );
+
+                    return (
+                      <div>
+                        {quickSlots.length > 0 ? (
+                          <div>
+                            <strong
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--uw-sage-dark)",
+                              }}
+                            >
+                              Available slots:
                             </strong>
-                            <span>
-                              at{" "}
-                              {new Date(slot.bookingDate).toLocaleTimeString(
-                                [],
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p style={{ color: "var(--uw-muted)", marginBottom: 8 }}>
-                        No open slots right now. Choose a preferred date based
-                        on the coach’s availability and we’ll send a request for
-                        approval.
-                      </p>
-                      {(() => {
-                        const selectedCoach = coaches.find(
-                          (c) => c._id === quickSelectedCoachId,
-                        );
-                        if (!selectedCoach) return null;
-                        const normalizedDays = (
-                          selectedCoach.availableDays || []
-                        )
-                          .map((day) => day.trim().toLowerCase())
-                          .filter(Boolean);
-                        const dates: string[] = [];
-                        const today = new Date();
-                        for (let offset = 0; dates.length < 6; offset += 1) {
-                          const candidate = new Date(today);
-                          candidate.setDate(today.getDate() + offset);
-                          const dayName = candidate
-                            .toLocaleDateString("en-US", { weekday: "long" })
-                            .toLowerCase();
-                          const shortName = dayName.slice(0, 3);
-                          const isAvailable =
-                            selectedCoach.availabilityType === "whole_week" ||
-                            normalizedDays.some(
-                              (day) =>
-                                day === dayName ||
-                                day.startsWith(shortName) ||
-                                day === shortName,
-                            );
-                          if (isAvailable) {
-                            dates.push(candidate.toISOString().split("T")[0]);
-                          }
-                        }
-                        if (!dates.length)
-                          return (
-                            <p style={{ color: "var(--uw-muted)" }}>
-                              This coach has not set specific availability days
-                              yet.
-                            </p>
-                          );
-                        return (
-                          <div className="uw-slot-grid">
-                            {dates.map((date) => (
-                              <button
-                                key={date}
-                                type="button"
-                                className={
-                                  quickForm.preferredDate === date
-                                    ? "selected"
-                                    : ""
-                                }
-                                onClick={() => {
-                                  setQuickForm({
-                                    ...quickForm,
-                                    preferredDate: date,
-                                  });
-                                  setQuickSelectedSlotId("");
-                                }}
-                              >
-                                <strong>
-                                  {new Date(date).toLocaleDateString([], {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </strong>
-                              </button>
-                            ))}
+                            <div className="uw-slot-grid" style={{ marginTop: 8 }}>
+                              {quickSlots.map((slot) => (
+                                <button
+                                  key={slot._id}
+                                  type="button"
+                                  onClick={() => {
+                                    const dateStr = new Date(slot.bookingDate)
+                                      .toISOString()
+                                      .split("T")[0];
+                                    const timeStr = new Date(
+                                      slot.bookingDate,
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    });
+                                    setQuickForm({
+                                      ...quickForm,
+                                      preferredDate: dateStr,
+                                      preferredTime: timeStr,
+                                    });
+                                    setQuickSelectedSlotId(slot._id);
+                                  }}
+                                  className={
+                                    quickSelectedSlotId === slot._id
+                                      ? "selected"
+                                      : ""
+                                  }
+                                >
+                                  <strong>
+                                    {new Date(slot.bookingDate).toLocaleDateString(
+                                      [],
+                                      {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                      },
+                                    )}
+                                  </strong>
+                                  <span>
+                                    at{" "}
+                                    {new Date(slot.bookingDate).toLocaleTimeString(
+                                      [],
+                                      { hour: "2-digit", minute: "2-digit" },
+                                    )}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                        ) : (
+                          <p style={{ color: "var(--uw-muted)", marginBottom: 8 }}>
+                            No open slots right now. Choose a preferred date based
+                            on the coach’s availability and we’ll send a request for
+                            approval.
+                          </p>
+                        )}
+
+                        {selectedCoach && availableDates.length > 0 ? (
+                          <div style={{ marginTop: 16 }}>
+                            <strong
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--uw-sage-dark)",
+                              }}
+                            >
+                              Other available days:
+                            </strong>
+                            <div className="uw-slot-grid" style={{ marginTop: 8 }}>
+                              {availableDates.map((date) => (
+                                <button
+                                  key={date}
+                                  type="button"
+                                  className={
+                                    quickForm.preferredDate === date
+                                      ? "selected"
+                                      : ""
+                                  }
+                                  onClick={() => {
+                                    setQuickForm({
+                                      ...quickForm,
+                                      preferredDate: date,
+                                    });
+                                    setQuickSelectedSlotId("");
+                                  }}
+                                >
+                                  <strong>
+                                    {new Date(date).toLocaleDateString([], {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </strong>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
 
                   <label>
                     Preferred Date
                     <input
                       type="date"
+                      disabled
                       value={quickForm.preferredDate}
                       onChange={(e) =>
                         setQuickForm({
