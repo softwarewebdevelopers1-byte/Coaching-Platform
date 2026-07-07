@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./App.css";
 import "./styles/Dashboard.css";
 import Navbar from "./components/Navbar";
@@ -88,6 +88,7 @@ function AppContent() {
   const [toast, setToast] = useState<{ message: string; type: string } | null>(
     null,
   );
+  const navigate = useNavigate();
 
   useEffect(() => {
     const saved = localStorage.getItem("unwantraBookings");
@@ -110,6 +111,10 @@ function AppContent() {
     },
     [bookings],
   );
+
+  const handleBookDiscovery = useCallback(() => {
+    navigate("/", { state: { scrollTo: "quick-book" } });
+  }, [navigate]);
 
   const toastMarkup = toast && (
     <div className="toast-container">
@@ -153,7 +158,7 @@ function AppContent() {
         element={
           <div className="app">
             <Navbar />
-            <AboutPage />
+            <AboutPage onBookCall={handleBookDiscovery} />
             <Footer />
           </div>
         }

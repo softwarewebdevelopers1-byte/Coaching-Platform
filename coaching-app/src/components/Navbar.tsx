@@ -115,6 +115,25 @@ const Navbar: React.FC = () => {
     navigate("/", { state: { scrollTo: targetId } });
   };
 
+  const handleDiscoveryCtaClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (user) {
+      event.preventDefault();
+      logout();
+      navigate("/");
+      closeMenu();
+      return;
+    }
+
+    if (location.pathname !== "/") {
+      event.preventDefault();
+      closeMenu();
+      navigate("/", { state: { scrollTo: "quick-book" } });
+      return;
+    }
+
+    closeMenu();
+  };
+
   return (
     <nav className={`uw-nav ${scrolled ? "is-scrolled" : ""}`}>
       <a className="uw-logo" href="#home" onClick={(event) => handleAnchorClick(event, "#home")}>
@@ -162,14 +181,7 @@ const Navbar: React.FC = () => {
         <a
           className="uw-nav-cta"
           href="#quick-book"
-          onClick={(event) => {
-            if (user) {
-              event.preventDefault();
-              logout();
-              navigate("/");
-            }
-            closeMenu();
-          }}
+          onClick={handleDiscoveryCtaClick}
         >
           {user ? `Logout ${user.fullName}` : "Book discovery call"}
         </a>
