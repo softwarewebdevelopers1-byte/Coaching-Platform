@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { Account, BookingSession, CoachSlot, ContactSubmission, PlatformAnalytics, AppNotification } from "../types";
+import { playNotificationSound } from "../utils/notifications";
 import "../styles/Dashboard.css";
 
 const API_BASE_URL =
@@ -192,6 +193,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const [copied, setCopied] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const prevNotificationsRef = useRef<AppNotification[]>([]);
 
   /* ── Admin settings ────────────────────────────────────── */
   const adminId = user?._id || "";
@@ -355,7 +357,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
       if (sessionsRes.ok) setSessions((await sessionsRes.json()).sessions || []);
       if (leadsRes.ok) setContactLeads((await leadsRes.json()).submissions || []);
       if (analyticsRes.ok) setAnalytics((await analyticsRes.json()).analytics || null);
-      if (notificationsRes.ok) setNotifications((await notificationsRes.json()).notifications || []);
+      if (notificationsRes.ok) {
+        const data = await notificationsRes.json();
+        const newNotifications = data.notifications || [];
+        const prev = prevNotificationsRef.current;
+        setNotifications(newNotifications);
+        if (prev.length > 0 && newNotifications.length > prev.length) {
+          playNotificationSound();
+        }
+        prevNotificationsRef.current = newNotifications;
+      }
     } catch {
       showToast("Error loading dashboard data", "error", 5000);
     }
