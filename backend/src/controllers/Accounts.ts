@@ -471,6 +471,14 @@ router.post("/upload", async (req, res): Promise<void> => {
     const bucketName = DotEnvConfig.SupabaseBucket || "coach-photos";
     const objectPath = `uploads/${filename}`;
 
+    // Ensure the bucket is public so the returned public URL is actually
+    // accessible from the browser (getPublicUrl only works for public buckets).
+    try {
+      await supabaseClient.storage.updateBucket(bucketName, { public: true });
+    } catch (bucketErr) {
+      console.warn("Could not mark Supabase bucket public (continuing):", bucketErr);
+    }
+
     const { error } = await supabaseClient.storage
       .from(bucketName)
       .upload(objectPath, buffer, {
