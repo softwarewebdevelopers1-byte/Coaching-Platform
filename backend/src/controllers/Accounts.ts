@@ -468,7 +468,7 @@ router.post("/upload", async (req, res): Promise<void> => {
     const contentType = mimeMatch?.[1] ?? "image/jpeg";
     const base64Image = photoData.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Image, "base64");
-    const bucketName = "coach-photos";
+    const bucketName = DotEnvConfig.SupabaseBucket || "coach-photos";
     const objectPath = `uploads/${filename}`;
 
     const { error } = await supabaseClient.storage
