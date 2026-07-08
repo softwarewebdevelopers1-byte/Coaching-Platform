@@ -9,6 +9,16 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
   "https://coaching-platform-38p5.onrender.com";
 
+const resolvePhotoUrl = (photo?: string): string => {
+  if (!photo) return "";
+  if (photo.startsWith("http://") || photo.startsWith("https://")) return photo;
+  const normalized = photo
+    .replace(/^\/public\//, "/")
+    .replace(/^public\//, "/")
+    .replace(/^uploads\//, "/uploads/");
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+};
+
 interface MainContentProps {
   programs: Program[];
   testimonials: Testimonial[];
@@ -245,6 +255,7 @@ const MainContent: React.FC<MainContentProps> = ({
       try {
         const res = await fetch(
           `${API_BASE_URL}/api/accounts?role=coach&status=active`,
+          { cache: "no-store" },
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -820,9 +831,12 @@ const MainContent: React.FC<MainContentProps> = ({
                     </span>
                   </div>
                   <img
-                    src={coach.photo || fallbackCoaches[0].photo}
+                    src={resolvePhotoUrl(coach.photo) || fallbackCoaches[0].photo || ""}
                     alt={coach.name}
                     className="uw-coach-media"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = fallbackCoaches[0].photo || "";
+                    }}
                   />
                   <div className="uw-coach-body">
                     <h3>{coach.name}</h3>

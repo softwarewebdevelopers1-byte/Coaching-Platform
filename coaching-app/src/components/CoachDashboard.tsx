@@ -645,10 +645,23 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       <main className="dashboard-main">
         {/* Topbar */}
         <div className="dashboard-topbar">
-          <div className="dashboard-topbar-left">
+        <div className="dashboard-topbar-left">
+          <button
+            className="dashboard-menu-toggle"
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          <div className="topbar-title-group">
             <h1 className="dashboard-topbar-title">{tabTitles[activeTab].title}</h1>
             <p className="dashboard-topbar-subtitle">{tabTitles[activeTab].subtitle}</p>
           </div>
+        </div>
           <div className="dashboard-topbar-right">
             <button className="topbar-icon-btn" onClick={loadDashboardData} title="Refresh data">
               {Icons.refresh}

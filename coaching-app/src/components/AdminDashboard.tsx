@@ -605,8 +605,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
         {/* Topbar */}
         <div className="dashboard-topbar">
           <div className="dashboard-topbar-left">
-            <h1 className="dashboard-topbar-title">{tabTitles[activeTab].title}</h1>
-            <p className="dashboard-topbar-subtitle">{tabTitles[activeTab].subtitle}</p>
+            <button
+              className="dashboard-menu-toggle"
+              type="button"
+              aria-label="Toggle navigation"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((value) => !value)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <div className="topbar-title-group">
+              <h1 className="dashboard-topbar-title">{tabTitles[activeTab].title}</h1>
+              <p className="dashboard-topbar-subtitle">{tabTitles[activeTab].subtitle}</p>
+            </div>
           </div>
           <div className="dashboard-topbar-right">
             <button className="topbar-icon-btn" onClick={loadDashboardData} title="Refresh data">
@@ -1246,19 +1259,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                         />
                                       </>
                                     )}
+                                    <div className="lead-actions">
+                                      <button
+                                        className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
+                                        onClick={() => scheduleLead(lead)}
+                                      >
+                                        Confirm scheduling
+                                      </button>
+                                      <button
+                                        className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
+                                        onClick={() => setSchedulingLeadId(null)}
+                                      >
+                                        Cancel
+                                      </button>
                                     </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
 
           {/* ── SETTINGS ────────────────────────────── */}
           {activeTab === "settings" && (
@@ -1420,33 +1447,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                     {isSavingSettings ? "Saving…" : "Save Settings"}
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
-                                    <div className="lead-actions">
-                                      <button
-                                        className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
-                                        onClick={() => scheduleLead(lead)}
-                                      >
-                                        Confirm scheduling
-                                      </button>
-                                      <button
-                                        className="dashboard-btn dashboard-btn-secondary dashboard-btn-small"
-                                        onClick={() => setSchedulingLeadId(null)}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
               </div>
             </div>
           )}
