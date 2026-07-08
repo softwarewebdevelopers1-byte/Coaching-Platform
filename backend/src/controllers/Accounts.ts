@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { Router } from "express";
-import fs from "fs";
 import path from "path";
+import { createClient } from "@supabase/supabase-js";
 import { CoachInviteModel, UserAccountsModel } from "../models/users.model.js";
 import { sendResetPasswordEmail } from "../services/Brevo.emailSender.js";
+import DotEnvConfig from "../configs/DotEnv.js";
 
 const router = Router();
 
@@ -439,6 +440,8 @@ router.post("/reset-password", async (req, res): Promise<void> => {
   res.status(200).json({ message: "Password has been reset successfully." });
 });
 
+const supabaseClient = createClient(DotEnvConfig.SupabaseUrl, DotEnvConfig.SupabaseServiceRoleKey);
+
 router.post("/upload", async (req, res): Promise<void> => {
   const { photoData, originalName } = req.body;
   if (!photoData || !originalName) {
@@ -448,25 +451,37 @@ router.post("/upload", async (req, res): Promise<void> => {
 
   try {
     const ext = path.extname(originalName) || ".jpg";
-    const filename = `coach_${Date.now()}${ext}`;
-    const frontendPublicPath = path.resolve(process.cwd(), "../coaching-app/public/uploads");
+    const safeExt = ext.toLowerCase().match(/^\.([a-z0-9]+)$/)?.[0] || ".jpg";
+    const filename = `coach_${Date.now()}_${crypto.randomBytes(6).toString("hex")}${safeExt}`;
+    const mimeMatch = /^data:(image\/[^;]+);base64,/.exec(photoData);
+    const contentType = mimeMatch ? mimeMatch[1] : "image/jpeg";
     const base64Image = photoData.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Image, "base64");
+    const bucketName = "coach-photos";
+    const objectPath = `uploads/${filename}`;
 
-    if (!fs.existsSync(frontendPublicPath)) {
-      fs.mkdirSync(frontendPublicPath, { recursive: true });
+    const { error } = await supabaseClient.storage
+      .from(bucketName)
+      .upload(objectPath, buffer, {
+        contentType,
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      res.status(500).json({ message: "An error occurred during file upload." });
+      return;
     }
 
-    const targetPath = path.join(frontendPublicPath, filename);
-    fs.writeFileSync(targetPath, buffer);
+    const { data: urlData } = supabaseClient.storage.from(bucketName).getPublicUrl(objectPath);
+    const photoUrl = urlData.publicUrl;
 
-    const savedPath = `/uploads/${filename}`;
-    console.log("Uploaded file saved to frontend public uploads:", targetPath);
-    res.status(200).json({ photoUrl: savedPath });
+    res.status(200).json({ photoUrl });
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ message: "An error occurred during file upload." });
   }
 });
+
 
 export default router;

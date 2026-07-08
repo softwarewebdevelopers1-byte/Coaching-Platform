@@ -15,15 +15,13 @@ let app = express();
 // Database connection function
 DatabaseConnection();
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://coaching-platform-rust.vercel.app"],
     methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
   }),
 );
-app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
-app.use("/uploads", express.static(path.resolve(process.cwd(), "../coaching-app/public/uploads")));
 app.use("/api/bookings", BookingSlot);
 app.use("/api/accounts", Accounts);
 app.use("/api/slot-requests", SlotRequests);
