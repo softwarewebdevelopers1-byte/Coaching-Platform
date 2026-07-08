@@ -12,7 +12,7 @@ interface AdminDashboardProps {
   showToast: (message: string, type: string, duration?: number) => void;
 }
 
-type AdminTab = "overview" | "accounts" | "coaches" | "bookings" | "leads";
+type AdminTab = "overview" | "accounts" | "coaches" | "bookings" | "leads" | "settings";
 
 const COACH_PROGRAMS = [
   { id: "individual-executive", title: "Individual Executive Coaching" },
@@ -101,6 +101,23 @@ const Icons = {
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
     </svg>
   ),
+  gear: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
+};
+
+/* ── Resolve photo URL ────────────────────────────────────── */
+const resolvePhotoUrl = (photo: string | undefined): string => {
+  if (!photo) return "";
+  if (photo.startsWith("http://") || photo.startsWith("https://")) return photo;
+  const normalized = photo
+    .replace(/^\/public\//, "/")
+    .replace(/^public\//, "/")
+    .replace(/^uploads\//, "/uploads/");
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
 };
 
 /* ── Status pill helper ──────────────────────────────────────── */
@@ -134,7 +151,7 @@ const PasswordVisibilityIcon = ({ hidden }: { hidden: boolean }) => (
 );
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
-  const { logout, user } = useAuth();
+  const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [navOpen, setNavOpen] = useState(false);
@@ -167,6 +184,104 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
+
+  /* ── Admin settings ────────────────────────────────────── */
+  const adminId = user?._id || "";
+  const [settingsForm, setSettingsForm] = useState({
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    photo: user?.photo || "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`${API_BASE_URL}/api/accounts/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoData: base64, originalName: file.name }),
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(result?.message || "Could not upload profile photo");
+      }
+      setSettingsForm((prev) => ({ ...prev, photo: result.photoUrl || "" }));
+      setPhotoPreview(URL.createObjectURL(file));
+      showToast("✓ Photo uploaded — click Save Settings to apply", "success", 4000);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not upload profile photo", "error", 5000);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const saveAdminSettings = async () => {
+    if (!adminId) return;
+
+    if (!settingsForm.email.trim()) {
+      showToast("Email is required", "error", 3000);
+      return;
+    }
+
+    if ((settingsForm.password || settingsForm.confirmPassword) && settingsForm.password !== settingsForm.confirmPassword) {
+      showToast("New passwords do not match", "error", 3000);
+      return;
+    }
+
+    setIsSavingSettings(true);
+    try {
+      const payload: Record<string, unknown> = {
+        fullName: settingsForm.fullName.trim(),
+        email: settingsForm.email.trim(),
+        phone: settingsForm.phone.trim(),
+        photo: settingsForm.photo,
+      };
+
+      if (settingsForm.password) {
+        payload.password = settingsForm.password;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/accounts/${adminId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(result?.message || "Could not update settings");
+      }
+
+      updateUser({
+        fullName: result.account.fullName,
+        email: result.account.email,
+        phone: result.account.phone,
+        photo: result.account.photo,
+      });
+      setPhotoPreview("");
+      setSettingsForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+      showToast("Settings updated successfully", "success", 4000);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Could not update settings", "error", 5000);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const totalCoaches = accounts.filter((a) => a.role === "coach").length;
   const activeAccounts = accounts.filter((a) => a.status === "active").length;
@@ -404,6 +519,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     { id: "accounts", label: "Accounts", icon: Icons.users },
     { id: "coaches", label: "Coaches", icon: Icons.coach },
     { id: "bookings", label: "Bookings", icon: Icons.calendar },
+    { id: "settings", label: "Settings", icon: Icons.gear },
   ];
 
   const tabTitles: Record<AdminTab, { title: string; subtitle: string }> = {
@@ -412,6 +528,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     accounts: { title: "Account Management", subtitle: "Create and manage platform accounts" },
     coaches: { title: "Coach Management", subtitle: "Invite coaches and view availability slots" },
     bookings: { title: "Booking Sessions", subtitle: "All user booking sessions across the platform" },
+    settings: { title: "Account Settings", subtitle: "Manage your profile and account security" },
   };
 
   return (
@@ -1129,6 +1246,183 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                                         />
                                       </>
                                     )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+          {/* ── SETTINGS ────────────────────────────── */}
+          {activeTab === "settings" && (
+            <div className="dashboard-card">
+              <div className="dashboard-card-header">
+                <h2 className="dashboard-card-title">
+                  <span className="card-title-icon">{Icons.gear}</span>
+                  Account Settings
+                </h2>
+                <p className="dashboard-card-subtitle">Manage your profile and account security</p>
+              </div>
+              <div className="dashboard-card-body settings-body">
+
+                {/* Profile photo */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">📷</span>
+                    <div>
+                      <h3 className="settings-section-title">Profile Photo</h3>
+                      <p className="settings-section-sub">Upload a photo to personalize your admin profile.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body">
+                    <div className="form-field settings-photo-field">
+                      {(photoPreview || settingsForm.photo) ? (
+                        <div className="settings-photo-preview">
+                          <img
+                            src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
+                            alt="Admin profile photo"
+                            className="settings-photo-img"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                          <div className="settings-photo-meta">
+                            {photoPreview ? (
+                              <p className="settings-photo-status settings-photo-status-new">
+                                ✓ New photo selected
+                              </p>
+                            ) : (
+                              <p className="settings-photo-status">Current photo</p>
+                            )}
+                            <p className="settings-photo-name">
+                              {settingsForm.photo || "No photo uploaded yet."}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="settings-photo-empty">
+                          No profile photo yet — upload one to personalize your admin profile.
+                        </p>
+                      )}
+                      <label
+                        htmlFor="admin-photo-upload"
+                        className="settings-photo-btn"
+                        style={{ opacity: isUploadingPhoto ? 0.6 : 1, pointerEvents: isUploadingPhoto ? "none" : "auto" }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
+                      </label>
+                      <input
+                        id="admin-photo-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploadingPhoto}
+                        style={{ display: "none" }}
+                      />
+                      {!settingsForm.photo && !photoPreview && (
+                        <p className="settings-photo-hint">
+                          JPG, PNG or WEBP — will be saved in the public uploads folder
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Personal information */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">👤</span>
+                    <div>
+                      <h3 className="settings-section-title">Personal Information</h3>
+                      <p className="settings-section-sub">Your basic contact details.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field">
+                      <label className="form-label">Full Name</label>
+                      <input
+                        type="text"
+                        value={settingsForm.fullName}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, fullName: e.target.value })}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Email</label>
+                      <input
+                        type="email"
+                        value={settingsForm.email}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={settingsForm.phone}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                        placeholder="+1 555 000 0000"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Security */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">🔒</span>
+                    <div>
+                      <h3 className="settings-section-title">Security</h3>
+                      <p className="settings-section-sub">Update your password. Leave blank to keep the current one.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field">
+                      <label className="form-label">New Password</label>
+                      <input
+                        type="password"
+                        value={settingsForm.password}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Confirm New Password</label>
+                      <input
+                        type="password"
+                        value={settingsForm.confirmPassword}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="settings-actions">
+                  <button
+                    className="dashboard-btn dashboard-btn-primary"
+                    onClick={saveAdminSettings}
+                    disabled={isSavingSettings || isUploadingPhoto}
+                  >
+                    {isSavingSettings ? "Saving…" : "Save Settings"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
                                     <div className="lead-actions">
                                       <button
                                         className="dashboard-btn dashboard-btn-primary dashboard-btn-small"
