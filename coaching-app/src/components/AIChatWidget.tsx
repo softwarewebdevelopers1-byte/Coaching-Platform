@@ -30,6 +30,7 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
   ]);
   const [sending, setSending] = useState(false);
   const [coachOptions, setCoachOptions] = useState<CoachOption[]>([]);
+  const [bookingMeta, setBookingMeta] = useState<any | null>(null);
   const [selectedCoachId, setSelectedCoachId] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,19 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       });
 
       const data = await res.json().catch(() => null);
+      const bookingHeader = res.headers.get("X-Booking-Meta");
+      let parsedBooking: any = null;
+      if (bookingHeader) {
+        try {
+          parsedBooking = JSON.parse(bookingHeader);
+          setBookingMeta(parsedBooking);
+        } catch {
+          parsedBooking = null;
+          setBookingMeta(null);
+        }
+      } else {
+        setBookingMeta(null);
+      }
       let reply =
         data && typeof data.reply === "string"
           ? data.reply
@@ -94,6 +108,10 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      // If booking metadata present, also add a structured assistant confirmation
+      if (parsedBooking) {
+        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -134,6 +152,19 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       });
 
       const data = await res.json().catch(() => null);
+      const bookingHeader = res.headers.get("X-Booking-Meta");
+      let parsedBooking: any = null;
+      if (bookingHeader) {
+        try {
+          parsedBooking = JSON.parse(bookingHeader);
+          setBookingMeta(parsedBooking);
+        } catch {
+          parsedBooking = null;
+          setBookingMeta(null);
+        }
+      } else {
+        setBookingMeta(null);
+      }
       let reply =
         data && typeof data.reply === "string"
           ? data.reply
@@ -155,6 +186,9 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (parsedBooking) {
+        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -219,6 +253,18 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
             )}
             <div ref={bottomRef} />
           </div>
+
+            {bookingMeta && (
+              <div className="uw-ai-booking-confirm">
+                <strong>Booking {bookingMeta.status === 'confirmed' ? 'Confirmed' : 'Requested'}</strong>
+                <div>{bookingMeta.programName} with {bookingMeta.coachName}</div>
+                <div>{bookingMeta.bookingTime || 'Time to be confirmed'}</div>
+                <div style={{ marginTop: 6 }}>
+                  <button onClick={() => { window.location.href = '/dashboard/bookings'; }} style={{ marginRight: 8 }}>View bookings</button>
+                  <button onClick={() => setBookingMeta(null)}>Dismiss</button>
+                </div>
+              </div>
+            )}
 
           {coachOptions.length > 0 && (
             <div className="uw-ai-coach-select">

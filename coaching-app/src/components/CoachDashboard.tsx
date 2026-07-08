@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { BookingSession, CoachSlot, Program, SlotRequest } from "../types";
+import type { BookingSession, CoachSlot, Program, SlotRequest, AppNotification } from "../types";
 import "../styles/Dashboard.css";
 
 const API_BASE_URL =
@@ -90,7 +90,13 @@ const Icons = {
   settings: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
+  bell: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
     </svg>
   ),
   x: (
@@ -165,6 +171,9 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   });
   const [decliningId, setDecliningId] = useState<string | null>(null);
 
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // The coach's identity comes directly from the logged-in user account
   const coachId = user?._id || "";
   const coachName = user?.fullName || "";
@@ -235,10 +244,11 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     if (!coachEmail) return;
     setIsLoading(true);
     try {
-      const [slotsRes, sessionsRes, requestsRes] = await Promise.all([
+      const [slotsRes, sessionsRes, requestsRes, notificationsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/bookings/coach-slots?coachEmail=${encodeURIComponent(coachEmail)}`),
         fetch(`${API_BASE_URL}/api/bookings/sessions`),
         fetch(`${API_BASE_URL}/api/slot-requests?coachEmail=${encodeURIComponent(coachEmail)}`),
+        fetch(`${API_BASE_URL}/api/platform/app-notifications?recipientId=${encodeURIComponent(coachId)}`),
       ]);
 
       if (slotsRes.ok) {
@@ -248,7 +258,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
       if (sessionsRes.ok) {
         const data = await sessionsRes.json();
-        // Filter sessions that belong to this coach
         const mySessions = (data.sessions || []).filter(
           (s: BookingSession) =>
             s.coachEmail === coachEmail || s.coachId === coachId,
@@ -260,6 +269,20 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         const data = await requestsRes.json();
         setSlotRequests(data.slotRequests || []);
       }
+
+      if (notificationsRes.ok) {
+        const data = await notificationsRes.json();
+        const newNotifications = data.notifications || [];
+        const prev = notificationsRef.current;
+        setNotifications(newNotifications);
+        if (prev.length > 0 && newNotifications.length > prev.length) {
+          const latest = newNotifications[0];
+          if (!latest.read) {
+            triggerBrowserNotification(latest.title, latest.message);
+          }
+        }
+        notificationsRef.current = newNotifications;
+      }
     } catch {
       showToast("Error loading dashboard data", "error", 5000);
     } finally {
@@ -267,9 +290,54 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     }
   };
 
+  const notificationsRef = useRef<AppNotification[]>([]);
+
+  const triggerBrowserNotification = (title: string, body: string) => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "granted") {
+      try { new Notification(title, { body, icon: "/favicon.ico" }); } catch {}
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          try { new Notification(title, { body, icon: "/favicon.ico" }); } catch {}
+        }
+      });
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/api/platform/app-notifications/${id}/read`, { method: "PATCH" });
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/platform/app-notifications/read-all`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: coachId }),
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   useEffect(() => {
     loadDashboardData();
   }, [coachEmail, coachId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
 
   /* ── Create slot ─────────────────────────────────────────── */
   const createCoachSlot = async () => {
@@ -670,11 +738,148 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
             <button className="topbar-icon-btn" onClick={loadDashboardData} title="Refresh data">
               {Icons.refresh}
             </button>
+            <button
+              className="topbar-icon-btn"
+              onClick={() => setShowNotifications((v) => !v)}
+              title="Notifications"
+              style={{ position: "relative" }}
+            >
+              {Icons.bell}
+              {unreadCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: "-6px",
+                  right: "-6px",
+                  background: "#ef4444",
+                  color: "#fff",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
             <span className="topbar-badge topbar-badge-coach">
               {Icons.award} Coach
             </span>
           </div>
         </div>
+
+        {showNotifications && (
+          <div style={{
+            position: "absolute",
+            top: "64px",
+            right: "40px",
+            width: "380px",
+            maxHeight: "480px",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-lg)",
+            zIndex: 200,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            <div style={{
+              padding: "14px 16px",
+              borderBottom: "1px solid var(--border-soft)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}>
+              <strong style={{ fontSize: "14px" }}>Notifications</strong>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllNotificationsAsRead}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#10b981",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {notifications.length === 0 ? (
+                <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--text-muted)" }}>
+                  <p style={{ margin: 0, fontSize: "13px" }}>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif._id}
+                    onClick={() => markNotificationAsRead(notif._id)}
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid var(--border-soft)",
+                      cursor: "pointer",
+                      background: notif.read ? "transparent" : "rgba(16, 185, 129, 0.04)",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = notif.read ? "transparent" : "rgba(16, 185, 129, 0.04)"; }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          margin: 0,
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "var(--text-primary)",
+                          lineHeight: 1.3,
+                        }}>
+                          {notif.title}
+                        </p>
+                        <p style={{
+                          margin: "4px 0 0",
+                          fontSize: "12px",
+                          color: "var(--text-secondary)",
+                          lineHeight: 1.4,
+                        }}>
+                          {notif.message}
+                        </p>
+                        {notif.createdAt && (
+                          <p style={{
+                            margin: "6px 0 0",
+                            fontSize: "11px",
+                            color: "var(--text-muted)",
+                          }}>
+                            {new Date(notif.createdAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      {!notif.read && (
+                        <span style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#10b981",
+                          flexShrink: 0,
+                          marginTop: "4px",
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="dashboard-content">
 

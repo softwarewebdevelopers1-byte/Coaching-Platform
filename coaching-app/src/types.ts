@@ -149,6 +149,16 @@ export interface ContactSubmission {
   updatedAt?: string;
 }
 
+export interface AppNotification {
+  _id: string;
+  recipientId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  type: "contact_submission" | "slot_request" | "slot_booking";
+  createdAt?: string;
+}
+
 export interface PlatformAnalytics {
   coaches: number;
   activeCoaches: number;

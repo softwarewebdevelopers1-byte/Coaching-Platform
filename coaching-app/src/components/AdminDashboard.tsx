@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { Account, BookingSession, CoachSlot, ContactSubmission, PlatformAnalytics } from "../types";
+import type { Account, BookingSession, CoachSlot, ContactSubmission, PlatformAnalytics, AppNotification } from "../types";
 import "../styles/Dashboard.css";
 
 const API_BASE_URL =
@@ -104,7 +104,13 @@ const Icons = {
   gear: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
+  bell: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
     </svg>
   ),
 };
@@ -184,6 +190,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   /* ── Admin settings ────────────────────────────────────── */
   const adminId = user?._id || "";
@@ -307,21 +315,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const newLeads = contactLeads.filter((lead) => lead.status === "new").length;
   const coachAccounts = accounts.filter((a) => a.role === "coach" && a.status === "active");
 
+  const loadNotifications = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/platform/app-notifications?recipientId=admin`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch {
+      // Silent fail for notifications
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/api/platform/app-notifications/${id}/read`, { method: "PATCH" });
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/platform/app-notifications/read-all`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: "admin" }),
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   const loadDashboardData = async () => {
     try {
       const leadQuery = leadStatusFilter ? `?status=${encodeURIComponent(leadStatusFilter)}` : "";
-      const [accountsRes, slotsRes, sessionsRes, leadsRes, analyticsRes] = await Promise.all([
+      const [accountsRes, slotsRes, sessionsRes, leadsRes, analyticsRes, notificationsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/accounts`),
         fetch(`${API_BASE_URL}/api/bookings/coach-slots`),
         fetch(`${API_BASE_URL}/api/bookings/sessions`),
         fetch(`${API_BASE_URL}/api/contact${leadQuery}`),
         fetch(`${API_BASE_URL}/api/platform/analytics`),
+        fetch(`${API_BASE_URL}/api/platform/app-notifications?recipientId=admin`),
       ]);
       if (accountsRes.ok) setAccounts((await accountsRes.json()).accounts || []);
       if (slotsRes.ok) setSlots((await slotsRes.json()).slots || []);
       if (sessionsRes.ok) setSessions((await sessionsRes.json()).sessions || []);
       if (leadsRes.ok) setContactLeads((await leadsRes.json()).submissions || []);
       if (analyticsRes.ok) setAnalytics((await analyticsRes.json()).analytics || null);
+      if (notificationsRes.ok) setNotifications((await notificationsRes.json()).notifications || []);
     } catch {
       showToast("Error loading dashboard data", "error", 5000);
     }
@@ -642,11 +688,148 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
             <button className="topbar-icon-btn" onClick={loadDashboardData} title="Refresh data">
               {Icons.refresh}
             </button>
+            <button
+              className="topbar-icon-btn"
+              onClick={() => setShowNotifications((v) => !v)}
+              title="Notifications"
+              style={{ position: "relative" }}
+            >
+              {Icons.bell}
+              {unreadCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: "-6px",
+                  right: "-6px",
+                  background: "#ef4444",
+                  color: "#fff",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
             <span className="topbar-badge topbar-badge-admin">
               {Icons.shield} Administrator
             </span>
           </div>
         </div>
+
+        {showNotifications && (
+          <div style={{
+            position: "absolute",
+            top: "64px",
+            right: "40px",
+            width: "380px",
+            maxHeight: "480px",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-lg)",
+            zIndex: 200,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            <div style={{
+              padding: "14px 16px",
+              borderBottom: "1px solid var(--border-soft)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}>
+              <strong style={{ fontSize: "14px" }}>Notifications</strong>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllNotificationsAsRead}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#6366f1",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {notifications.length === 0 ? (
+                <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--text-muted)" }}>
+                  <p style={{ margin: 0, fontSize: "13px" }}>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif._id}
+                    onClick={() => markNotificationAsRead(notif._id)}
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid var(--border-soft)",
+                      cursor: "pointer",
+                      background: notif.read ? "transparent" : "rgba(99, 102, 241, 0.04)",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = notif.read ? "transparent" : "rgba(99, 102, 241, 0.04)"; }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          margin: 0,
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "var(--text-primary)",
+                          lineHeight: 1.3,
+                        }}>
+                          {notif.title}
+                        </p>
+                        <p style={{
+                          margin: "4px 0 0",
+                          fontSize: "12px",
+                          color: "var(--text-secondary)",
+                          lineHeight: 1.4,
+                        }}>
+                          {notif.message}
+                        </p>
+                        {notif.createdAt && (
+                          <p style={{
+                            margin: "6px 0 0",
+                            fontSize: "11px",
+                            color: "var(--text-muted)",
+                          }}>
+                            {new Date(notif.createdAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      {!notif.read && (
+                        <span style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#6366f1",
+                          flexShrink: 0,
+                          marginTop: "4px",
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="dashboard-content">
