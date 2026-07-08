@@ -195,6 +195,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
     password: "",
     confirmPassword: "",
   });
+
+  // Ensure password fields are always empty when user changes (avoid leaking stored/hash)
+  useEffect(() => {
+    if (!user) return;
+    setSettingsForm((prev) => ({
+      ...prev,
+      fullName: user.fullName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      photo: user.photo || "",
+      password: "",
+      confirmPassword: "",
+    }));
+  }, [user]);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string>("");
@@ -1424,6 +1438,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                       <label className="form-label">New Password</label>
                       <input
                         type="password"
+                        autoComplete="new-password"
+                        name="new-password"
                         value={settingsForm.password}
                         onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
                         placeholder="Leave blank to keep current"
@@ -1433,6 +1449,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
                       <label className="form-label">Confirm New Password</label>
                       <input
                         type="password"
+                        autoComplete="new-password"
+                        name="confirm-new-password"
                         value={settingsForm.confirmPassword}
                         onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
                         placeholder="Confirm new password"
