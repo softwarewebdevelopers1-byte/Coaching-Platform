@@ -1183,6 +1183,84 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
               </div>
               <div className="dashboard-card-body">
                 <div className="dashboard-form">
+                  <div className="form-field dashboard-form-full">
+                    <label className="form-label">Profile Photo</label>
+                    {(photoPreview || settingsForm.photo) ? (
+                      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16 }}>
+                        <img
+                          src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
+                          alt="Coach profile photo"
+                          style={{
+                            width: 96,
+                            height: 96,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: "3px solid var(--accent, #6366f1)",
+                            boxShadow: "0 4px 16px rgba(99,102,241,0.25)",
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <div>
+                          {photoPreview ? (
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--accent, #6366f1)", fontWeight: 600 }}>
+                              ✓ New photo selected
+                            </p>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
+                              Current photo
+                            </p>
+                          )}
+                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                            {settingsForm.photo || "No photo uploaded yet."}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ marginBottom: 12, fontSize: 13, color: "var(--text-muted)" }}>
+                        No profile photo yet — upload one to personalize your coach profile.
+                      </p>
+                    )}
+                    <label
+                      htmlFor="coach-photo-upload"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 18px",
+                        borderRadius: 8,
+                        background: "var(--bg-card, #1e1e2e)",
+                        border: "1.5px solid var(--border, rgba(255,255,255,0.08))",
+                        cursor: isUploadingPhoto ? "not-allowed" : "pointer",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                        transition: "border-color 0.2s",
+                        opacity: isUploadingPhoto ? 0.6 : 1,
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
+                    </label>
+                    <input
+                      id="coach-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      disabled={isUploadingPhoto}
+                      style={{ display: "none" }}
+                    />
+                    {!settingsForm.photo && !photoPreview && (
+                      <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
+                        JPG, PNG or WEBP — will be saved in the public uploads folder
+                      </p>
+                    )}
+                  </div>
                   <div className="form-field">
                     <label className="form-label">Full Name</label>
                     <input
@@ -1276,85 +1354,6 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
                       placeholder="Confirm new password"
                     />
-                  </div>
-                  <div className="form-field dashboard-form-full">
-                    <label className="form-label">Profile Photo</label>
-
-                    {/* Current / preview photo */}
-                    {(photoPreview || settingsForm.photo) && (
-                      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16 }}>
-                        <img
-                          src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
-                          alt="Coach profile photo"
-                          style={{
-                            width: 96,
-                            height: 96,
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                            border: "3px solid var(--accent, #6366f1)",
-                            boxShadow: "0 4px 16px rgba(99,102,241,0.25)",
-                          }}
-                          onError={(e) => {
-                            // If the image can't load, hide it gracefully
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                        <div>
-                          {photoPreview ? (
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--accent, #6366f1)", fontWeight: 600 }}>
-                              ✓ New photo selected
-                            </p>
-                          ) : (
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
-                              Current photo
-                            </p>
-                          )}
-                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
-                            {settingsForm.photo || ""}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    <label
-                      htmlFor="coach-photo-upload"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "8px 18px",
-                        borderRadius: 8,
-                        background: "var(--bg-card, #1e1e2e)",
-                        border: "1.5px solid var(--border, rgba(255,255,255,0.08))",
-                        cursor: isUploadingPhoto ? "not-allowed" : "pointer",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "var(--text-primary)",
-                        transition: "border-color 0.2s",
-                        opacity: isUploadingPhoto ? 0.6 : 1,
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                      {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
-                    </label>
-                    <input
-                      id="coach-photo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      disabled={isUploadingPhoto}
-                      style={{ display: "none" }}
-                    />
-
-                    {!settingsForm.photo && !photoPreview && (
-                      <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
-                        JPG, PNG or WEBP — will be saved in the public uploads folder
-                      </p>
-                    )}
                   </div>
                   <div className="form-field dashboard-form-full">
                     <label className="form-label">Coaching Programs Offered</label>
