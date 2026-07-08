@@ -212,6 +212,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         languages: user.languages?.join(", ") || "",
         availabilityType: (user.availabilityType as "whole_week" | "selected_days") || "whole_week",
         photo: user.photo || "",
+        password: "",
+        confirmPassword: "",
       }));
       setSelectedDays(user.availableDays || []);
       setSlotForm((prev) => ({
@@ -1180,183 +1182,190 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   <span className="card-title-icon">⚙️</span>
                   Account Settings
                 </h2>
+                <p className="dashboard-card-subtitle">Update your contact details and coaching programs</p>
               </div>
-              <div className="dashboard-card-body">
-                <div className="dashboard-form">
-                  <div className="form-field dashboard-form-full">
-                    <label className="form-label">Profile Photo</label>
-                    {(photoPreview || settingsForm.photo) ? (
-                      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16 }}>
-                        <img
-                          src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
-                          alt="Coach profile photo"
-                          style={{
-                            width: 96,
-                            height: 96,
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                            border: "3px solid var(--accent, #6366f1)",
-                            boxShadow: "0 4px 16px rgba(99,102,241,0.25)",
-                          }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                        <div>
-                          {photoPreview ? (
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--accent, #6366f1)", fontWeight: 600 }}>
-                              ✓ New photo selected
+              <div className="dashboard-card-body settings-body">
+
+                {/* Profile photo */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">📷</span>
+                    <div>
+                      <h3 className="settings-section-title">Profile Photo</h3>
+                      <p className="settings-section-sub">Upload a photo to personalize your coach profile.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body">
+                    <div className="form-field settings-photo-field">
+                      {(photoPreview || settingsForm.photo) ? (
+                        <div className="settings-photo-preview">
+                          <img
+                            src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
+                            alt="Coach profile photo"
+                            className="settings-photo-img"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                          <div className="settings-photo-meta">
+                            {photoPreview ? (
+                              <p className="settings-photo-status settings-photo-status-new">
+                                ✓ New photo selected
+                              </p>
+                            ) : (
+                              <p className="settings-photo-status">Current photo</p>
+                            )}
+                            <p className="settings-photo-name">
+                              {settingsForm.photo || "No photo uploaded yet."}
                             </p>
-                          ) : (
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
-                              Current photo
-                            </p>
-                          )}
-                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
-                            {settingsForm.photo || "No photo uploaded yet."}
-                          </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="settings-photo-empty">
+                          No profile photo yet — upload one to personalize your coach profile.
+                        </p>
+                      )}
+                      <label
+                        htmlFor="coach-photo-upload"
+                        className="settings-photo-btn"
+                        style={{ opacity: isUploadingPhoto ? 0.6 : 1, pointerEvents: isUploadingPhoto ? "none" : "auto" }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
+                      </label>
+                      <input
+                        id="coach-photo-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploadingPhoto}
+                        style={{ display: "none" }}
+                      />
+                      {!settingsForm.photo && !photoPreview && (
+                        <p className="settings-photo-hint">
+                          JPG, PNG or WEBP — will be saved in the public uploads folder
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Personal information */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">👤</span>
+                    <div>
+                      <h3 className="settings-section-title">Personal Information</h3>
+                      <p className="settings-section-sub">Your basic contact and coaching details.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field">
+                      <label className="form-label">Full Name</label>
+                      <input
+                        type="text"
+                        value={settingsForm.fullName}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, fullName: e.target.value })}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Email</label>
+                      <input
+                        type="email"
+                        value={settingsForm.email}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={settingsForm.phone}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                        placeholder="+1 555 000 0000"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Languages</label>
+                      <input
+                        type="text"
+                        value={settingsForm.languages}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
+                        placeholder="English, Kiswahili"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Years of Experience</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settingsForm.experience}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, experience: e.target.value })}
+                        placeholder="8"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Availability */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">📅</span>
+                    <div>
+                      <h3 className="settings-section-title">Availability</h3>
+                      <p className="settings-section-sub">Let clients know when you are available.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field">
+                      <label className="form-label">Availability</label>
+                      <select
+                        value={settingsForm.availabilityType}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, availabilityType: e.target.value as "whole_week" | "selected_days" })}
+                      >
+                        <option value="whole_week">Whole week</option>
+                        <option value="selected_days">Selected days</option>
+                      </select>
+                    </div>
+                    {settingsForm.availabilityType === "selected_days" && (
+                      <div className="form-field dashboard-form-full">
+                        <label className="form-label">Available Days</label>
+                        <div className="program-checkbox-group">
+                          {WEEK_DAYS.map((day) => {
+                            const checked = selectedDays.includes(day);
+                            return (
+                              <label className="program-checkbox" key={day}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => setSelectedDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day])}
+                                />
+                                <span>{day}</span>
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
-                    ) : (
-                      <p style={{ marginBottom: 12, fontSize: 13, color: "var(--text-muted)" }}>
-                        No profile photo yet — upload one to personalize your coach profile.
-                      </p>
-                    )}
-                    <label
-                      htmlFor="coach-photo-upload"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "8px 18px",
-                        borderRadius: 8,
-                        background: "var(--bg-card, #1e1e2e)",
-                        border: "1.5px solid var(--border, rgba(255,255,255,0.08))",
-                        cursor: isUploadingPhoto ? "not-allowed" : "pointer",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "var(--text-primary)",
-                        transition: "border-color 0.2s",
-                        opacity: isUploadingPhoto ? 0.6 : 1,
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                      {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
-                    </label>
-                    <input
-                      id="coach-photo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      disabled={isUploadingPhoto}
-                      style={{ display: "none" }}
-                    />
-                    {!settingsForm.photo && !photoPreview && (
-                      <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
-                        JPG, PNG or WEBP — will be saved in the public uploads folder
-                      </p>
                     )}
                   </div>
-                  <div className="form-field">
-                    <label className="form-label">Full Name</label>
-                    <input
-                      type="text"
-                      value={settingsForm.fullName}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, fullName: e.target.value })}
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Email</label>
-                    <input
-                      type="email"
-                      value={settingsForm.email}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={settingsForm.phone}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                      placeholder="+1 555 000 0000"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Languages</label>
-                    <input
-                      type="text"
-                      value={settingsForm.languages}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, languages: e.target.value })}
-                      placeholder="English, Kiswahili"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Years of Experience</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={settingsForm.experience}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, experience: e.target.value })}
-                      placeholder="8"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Availability</label>
-                    <select
-                      value={settingsForm.availabilityType}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, availabilityType: e.target.value as "whole_week" | "selected_days" })}
-                    >
-                      <option value="whole_week">Whole week</option>
-                      <option value="selected_days">Selected days</option>
-                    </select>
-                  </div>
-                  {settingsForm.availabilityType === "selected_days" && (
-                    <div className="form-field dashboard-form-full">
-                      <label className="form-label">Available Days</label>
-                      <div className="program-checkbox-group">
-                        {WEEK_DAYS.map((day) => {
-                          const checked = selectedDays.includes(day);
-                          return (
-                            <label className="program-checkbox" key={day}>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => setSelectedDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day])}
-                              />
-                              <span>{day}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                </section>
+
+                {/* Coaching programs */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">🎯</span>
+                    <div>
+                      <h3 className="settings-section-title">Coaching Programs Offered</h3>
+                      <p className="settings-section-sub">Select the programs you coach.</p>
                     </div>
-                  )}
-                  <div className="form-field">
-                    <label className="form-label">New Password</label>
-                    <input
-                      type="password"
-                      value={settingsForm.password}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
-                      placeholder="Leave blank to keep current"
-                    />
                   </div>
-                  <div className="form-field">
-                    <label className="form-label">Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={settingsForm.confirmPassword}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                  <div className="form-field dashboard-form-full">
-                    <label className="form-label">Coaching Programs Offered</label>
+                  <div className="settings-section-body">
                     <div className="program-checkbox-group">
                       {programs.map((p) => (
                         <label className="program-checkbox" key={p.id}>
@@ -1370,15 +1379,50 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                       ))}
                     </div>
                   </div>
+                </section>
+
+                {/* Security */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">🔒</span>
+                    <div>
+                      <h3 className="settings-section-title">Security</h3>
+                      <p className="settings-section-sub">Update your password. Leave blank to keep the current one.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field">
+                      <label className="form-label">New Password</label>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={settingsForm.password}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, password: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Confirm New Password</label>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={settingsForm.confirmPassword}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="settings-actions">
+                  <button
+                    className="dashboard-btn dashboard-btn-primary"
+                    onClick={saveSettings}
+                    disabled={isSavingSettings || isUploadingPhoto}
+                  >
+                    {isSavingSettings ? "Saving…" : "Save Settings"}
+                  </button>
                 </div>
-                <button
-                  className="dashboard-btn dashboard-btn-primary"
-                  onClick={saveSettings}
-                  disabled={isSavingSettings || isUploadingPhoto}
-                  style={{ marginTop: 8 }}
-                >
-                  {isSavingSettings ? "Saving…" : "Save Settings"}
-                </button>
               </div>
             </div>
           )}
