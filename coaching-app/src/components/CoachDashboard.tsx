@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { BookingSession, CoachSlot, Program, SlotRequest, AppNotification } from "../types";
+import { playNotificationSound } from "../utils/notifications";
 import "../styles/Dashboard.css";
 
 const API_BASE_URL =
@@ -278,6 +279,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         if (prev.length > 0 && newNotifications.length > prev.length) {
           const latest = newNotifications[0];
           if (!latest.read) {
+            playNotificationSound();
             triggerBrowserNotification(latest.title, latest.message);
           }
         }
