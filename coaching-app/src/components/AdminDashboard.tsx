@@ -315,18 +315,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
   const newLeads = contactLeads.filter((lead) => lead.status === "new").length;
   const coachAccounts = accounts.filter((a) => a.role === "coach" && a.status === "active");
 
-  const loadNotifications = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/platform/app-notifications?recipientId=admin`);
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications || []);
-      }
-    } catch {
-      // Silent fail for notifications
-    }
-  };
-
   const markNotificationAsRead = async (id: string) => {
     try {
       await fetch(`${API_BASE_URL}/api/platform/app-notifications/${id}/read`, { method: "PATCH" });
