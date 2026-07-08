@@ -440,8 +440,6 @@ router.post("/reset-password", async (req, res): Promise<void> => {
   res.status(200).json({ message: "Password has been reset successfully." });
 });
 
-const supabaseClient = createClient(DotEnvConfig.SupabaseUrl, DotEnvConfig.SupabaseServiceRoleKey);
-
 router.post("/upload", async (req, res): Promise<void> => {
   const { photoData, originalName } = req.body;
   if (!photoData || !originalName) {
@@ -449,7 +447,20 @@ router.post("/upload", async (req, res): Promise<void> => {
     return;
   }
 
+  if (!DotEnvConfig.SupabaseUrl || !DotEnvConfig.SupabaseServiceRoleKey) {
+    console.error("Supabase environment variables are not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).");
+    res.status(500).json({ message: "Image storage is not configured. Contact an administrator." });
+    return;
+  }
+
   try {
+    const supabaseUrl = DotEnvConfig.SupabaseUrl.startsWith("http")
+      ? DotEnvConfig.SupabaseUrl
+      : `https://${DotEnvConfig.SupabaseUrl}`;
+    const supabaseClient = createClient(supabaseUrl, DotEnvConfig.SupabaseServiceRoleKey, {
+      auth: { persistSession: false },
+    });
+
     const ext = path.extname(originalName) || ".jpg";
     const safeExt = ext.toLowerCase().match(/^\.([a-z0-9]+)$/)?.[0] || ".jpg";
     const filename = `coach_${Date.now()}_${crypto.randomBytes(6).toString("hex")}${safeExt}`;
@@ -474,9 +485,7 @@ router.post("/upload", async (req, res): Promise<void> => {
     }
 
     const { data: urlData } = supabaseClient.storage.from(bucketName).getPublicUrl(objectPath);
-    const photoUrl = urlData.publicUrl;
-
-    res.status(200).json({ photoUrl });
+    res.status(200).json({ photoUrl: urlData.publicUrl });
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ message: "An error occurred during file upload." });
