@@ -214,13 +214,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ showToast }) => {
       const res = await fetch(`${API_BASE_URL}/api/accounts/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoData: base64, originalName: file.name }),
+        body: JSON.stringify({ photoData: base64, originalName: file.name, accountId: adminId }),
       });
       const result = await res.json().catch(() => null);
       if (!res.ok) {
         throw new Error(result?.message || "Could not upload profile photo");
       }
       setSettingsForm((prev) => ({ ...prev, photo: result.photoUrl || "" }));
+      if (result?.account) {
+        updateUser({ photo: result.account.photo });
+      }
       setPhotoPreview(URL.createObjectURL(file));
       showToast("✓ Photo uploaded — click Save Settings to apply", "success", 4000);
     } catch (error) {

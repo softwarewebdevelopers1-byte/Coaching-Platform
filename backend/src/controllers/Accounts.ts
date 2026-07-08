@@ -304,7 +304,7 @@ router.post("/coach-invites", async (req, res): Promise<void> => {
   res.status(201).json({
     message: "Coach invite created",
     invite,
-    link: `${inviteBaseUrl}/signup?token=${token}`,
+    link: `${inviteBaseUrl}/coach-signup?token=${token}`,
   });
 });
 
@@ -392,23 +392,26 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   }
 
   const account = await UserAccountsModel.findOne({ email });
-  if (account) {
-    const token = crypto.randomBytes(24).toString("hex");
-    (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordToken = token;
-    (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
-    await account.save();
-
-    const baseUrl = req.body.baseUrl || "http://localhost:5173";
-    const resetLink = `${baseUrl}/reset-password?token=${token}`;
-
-    sendResetPasswordEmail({
-      email: account.email,
-      fullName: account.fullName,
-      resetLink,
-    }).catch((err) => {
-      console.error("Error sending reset password email:", err);
-    });
+  if (!account) {
+    res.status(404).json({ message: "No account found with this email address." });
+    return;
   }
+
+  const token = crypto.randomBytes(24).toString("hex");
+  (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordToken = token;
+  (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+  await account.save();
+
+  const baseUrl = req.body.baseUrl || "http://localhost:5173";
+  const resetLink = `${baseUrl}/reset-password?token=${token}`;
+
+  sendResetPasswordEmail({
+    email: account.email,
+    fullName: account.fullName,
+    resetLink,
+  }).catch((err) => {
+    console.error("Error sending reset password email:", err);
+  });
 
   res.status(200).json({
     message: "If the account exists, a reset link has been sent to the email.",
@@ -466,7 +469,7 @@ router.post("/upload", async (req, res): Promise<void> => {
     const filename = `coach_${Date.now()}_${crypto.randomBytes(6).toString("hex")}${safeExt}`;
     const mimeMatch = /^data:(image\/[^;]+);base64,/.exec(photoData);
     const contentType = mimeMatch?.[1] ?? "image/jpeg";
-    const base64Image = photoData.replace(/^data:image\/\w+;base64,/, "");
+    const base64Image = photoData.replace(/^data:image\/[^;]+;base64,/, "");
     const buffer = Buffer.from(base64Image, "base64");
     const bucketName = DotEnvConfig.SupabaseBucket || "coach-photos";
     const objectPath = `uploads/${filename}`;
@@ -493,7 +496,66 @@ router.post("/upload", async (req, res): Promise<void> => {
     }
 
     const { data: urlData } = supabaseClient.storage.from(bucketName).getPublicUrl(objectPath);
-    res.status(200).json({ photoUrl: urlData.publicUrl });
+    const photoUrl = urlData.publicUrl;
+
+    // Helper to extract object path from stored photo value
+    const getObjectPathFromPhoto = (photoValue?: string | null) => {
+      if (!photoValue) return null;
+      // If it's a full URL from Supabase public bucket, try to find the /uploads/ segment
+      try {
+        const idx = photoValue.indexOf("/uploads/");
+        if (idx !== -1) {
+          // remove leading slash if present
+          const pathPart = photoValue.substring(idx + 1).split("?")[0];
+          return pathPart;
+        }
+      } catch (e) {
+        // ignore
+      }
+      // Otherwise accept values already stored as uploads/filename or /uploads/filename
+      return photoValue.replace(/^\//, "");
+    };
+
+    // If an accountId is provided, update the user's photo field in the database
+    const accountId = (req.body as any).accountId;
+    if (accountId) {
+      try {
+        // Load existing account to determine if we should delete an old file
+        const existing = await UserAccountsModel.findById(accountId).select("photo");
+        if (existing && existing.photo) {
+          const oldObjectPath = getObjectPathFromPhoto(existing.photo as string);
+          if (oldObjectPath) {
+            try {
+              const { error: delErr } = await supabaseClient.storage.from(bucketName).remove([oldObjectPath]);
+              if (delErr) {
+                console.warn("Could not delete old photo from Supabase:", delErr);
+              }
+            } catch (err) {
+              console.warn("Error while attempting to delete old Supabase object:", err);
+            }
+          }
+        }
+
+        const account = await UserAccountsModel.findByIdAndUpdate(
+          accountId,
+          { photo: photoUrl },
+          { new: true },
+        ).select("-password");
+
+        if (!account) {
+          res.status(404).json({ message: "Account not found", photoUrl });
+          return;
+        }
+
+        res.status(200).json({ photoUrl, account });
+        return;
+      } catch (dbErr) {
+        console.error("Error updating account photo:", dbErr);
+        // fallthrough to return the photoUrl even if DB update fails
+      }
+    }
+
+    res.status(200).json({ photoUrl });
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ message: "An error occurred during file upload." });

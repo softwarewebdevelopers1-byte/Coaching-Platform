@@ -461,7 +461,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
       const res = await fetch(`${API_BASE_URL}/api/accounts/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoData: base64, originalName: file.name }),
+        body: JSON.stringify({ photoData: base64, originalName: file.name, accountId: coachId }),
       });
 
       const result = await res.json().catch(() => null);
@@ -474,6 +474,10 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
       // Save the server-returned URL (e.g. "/uploads/coach_xxx.jpg") in the form
       setSettingsForm((prev) => ({ ...prev, photo: result.photoUrl || "" }));
+      // If server returned updated account, update global auth user immediately
+      if (result?.account) {
+        updateUser({ photo: result.account.photo });
+      }
       showToast("✓ Photo uploaded — click Save Settings to apply", "success", 4000);
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not upload profile photo", "error", 5000);

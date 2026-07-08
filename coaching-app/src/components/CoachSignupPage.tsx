@@ -80,7 +80,7 @@ const CoachSignupPage: React.FC = () => {
         const response = await fetch(`${API_BASE_URL}/api/accounts/upload`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ photoData: base64, originalName: file.name }),
+          body: JSON.stringify({ photoData: base64, originalName: file.name, accountId: undefined }),
         });
         const result = await response.json().catch(() => null);
         if (!response.ok) {
