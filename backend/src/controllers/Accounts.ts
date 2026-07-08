@@ -449,44 +449,19 @@ router.post("/upload", async (req, res): Promise<void> => {
   try {
     const ext = path.extname(originalName) || ".jpg";
     const filename = `coach_${Date.now()}${ext}`;
-
     const frontendPublicPath = path.resolve(process.cwd(), "../coaching-app/public/uploads");
     const base64Image = photoData.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64Image, 'base64');
+    const buffer = Buffer.from(base64Image, "base64");
 
-    let savedPath = "";
-    let wroteFile = false;
-
-    try {
-      if (!fs.existsSync(frontendPublicPath)) {
-        fs.mkdirSync(frontendPublicPath, { recursive: true });
-      }
-      fs.writeFileSync(path.join(frontendPublicPath, filename), buffer);
-      savedPath = `/uploads/${filename}`;
-      wroteFile = true;
-      console.log("Uploaded file saved to frontend public uploads:", savedPath);
-    } catch (e) {
-      console.log("Could not write to frontend public uploads, falling back...", e);
+    if (!fs.existsSync(frontendPublicPath)) {
+      fs.mkdirSync(frontendPublicPath, { recursive: true });
     }
 
-    const backendPublicPath = path.resolve(process.cwd(), "public/uploads");
-    try {
-      if (!fs.existsSync(backendPublicPath)) {
-        fs.mkdirSync(backendPublicPath, { recursive: true });
-      }
-      fs.writeFileSync(path.join(backendPublicPath, filename), buffer);
-      if (!wroteFile) {
-        savedPath = `/uploads/${filename}`;
-      }
-      console.log("Uploaded file saved to backend public uploads:", path.join(backendPublicPath, filename));
-    } catch (err) {
-      console.error("Failed to write fallback to backend uploads folder:", err);
-      if (!wroteFile) {
-        res.status(500).json({ message: "Failed to save uploaded file." });
-        return;
-      }
-    }
+    const targetPath = path.join(frontendPublicPath, filename);
+    fs.writeFileSync(targetPath, buffer);
 
+    const savedPath = `/uploads/${filename}`;
+    console.log("Uploaded file saved to frontend public uploads:", targetPath);
     res.status(200).json({ photoUrl: savedPath });
   } catch (err) {
     console.error("Upload error:", err);

@@ -107,6 +107,20 @@ const StatusPill = ({ status }: { status: string }) => (
   </span>
 );
 
+/* ── Resolve photo URL ────────────────────────────────────── */
+const resolvePhotoUrl = (photo: string | undefined): string => {
+  if (!photo) return "";
+  if (photo.startsWith("http://") || photo.startsWith("https://")) return photo;
+
+  // Normalize public image paths to the frontend-hosted uploads folder.
+  const normalized = photo
+    .replace(/^\/public\//, "/")
+    .replace(/^public\//, "/")
+    .replace(/^uploads\//, "/uploads/");
+
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+};
+
 const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) => {
   const { logout, user, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -138,6 +152,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
   const [selectedDays, setSelectedDays] = useState<string[]>(user?.availableDays || []);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  // Local object URL for previewing a newly selected image before it's uploaded/saved
+  const [photoPreview, setPhotoPreview] = useState<string>("");
 
   // Slot requests state
   const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
@@ -424,6 +440,13 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Reset the input so the same file can be selected again if needed.
+    event.target.value = "";
+
+    // Show a local preview immediately before upload completes
+    const localPreview = URL.createObjectURL(file);
+    setPhotoPreview(localPreview);
+
     setIsUploadingPhoto(true);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -441,11 +464,15 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
 
       const result = await res.json().catch(() => null);
       if (!res.ok) {
+        // Revoke preview on failure
+        URL.revokeObjectURL(localPreview);
+        setPhotoPreview("");
         throw new Error(result?.message || "Could not upload profile photo");
       }
 
+      // Save the server-returned URL (e.g. "/uploads/coach_xxx.jpg") in the form
       setSettingsForm((prev) => ({ ...prev, photo: result.photoUrl || "" }));
-      showToast("Profile photo uploaded", "success", 3000);
+      showToast("✓ Photo uploaded — click Save Settings to apply", "success", 4000);
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not upload profile photo", "error", 5000);
     } finally {
@@ -516,6 +543,7 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         availabilityType: result.account.availabilityType,
         availableDays: result.account.availableDays || [],
       });
+      setPhotoPreview("");
 
       setSettingsForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
       showToast("Settings updated successfully", "success", 4000);
@@ -1251,9 +1279,82 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                   </div>
                   <div className="form-field dashboard-form-full">
                     <label className="form-label">Profile Photo</label>
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-                    {isUploadingPhoto ? <p style={{ marginTop: 8, color: "var(--text-secondary)" }}>Uploading photo…</p> : null}
-                    {settingsForm.photo ? <p style={{ marginTop: 8, color: "#198754" }}>Photo ready to save.</p> : null}
+
+                    {/* Current / preview photo */}
+                    {(photoPreview || settingsForm.photo) && (
+                      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16 }}>
+                        <img
+                          src={photoPreview || resolvePhotoUrl(settingsForm.photo)}
+                          alt="Coach profile photo"
+                          style={{
+                            width: 96,
+                            height: 96,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: "3px solid var(--accent, #6366f1)",
+                            boxShadow: "0 4px 16px rgba(99,102,241,0.25)",
+                          }}
+                          onError={(e) => {
+                            // If the image can't load, hide it gracefully
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <div>
+                          {photoPreview ? (
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--accent, #6366f1)", fontWeight: 600 }}>
+                              ✓ New photo selected
+                            </p>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
+                              Current photo
+                            </p>
+                          )}
+                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                            {settingsForm.photo || ""}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <label
+                      htmlFor="coach-photo-upload"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 18px",
+                        borderRadius: 8,
+                        background: "var(--bg-card, #1e1e2e)",
+                        border: "1.5px solid var(--border, rgba(255,255,255,0.08))",
+                        cursor: isUploadingPhoto ? "not-allowed" : "pointer",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                        transition: "border-color 0.2s",
+                        opacity: isUploadingPhoto ? 0.6 : 1,
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      {isUploadingPhoto ? "Uploading…" : (settingsForm.photo ? "Change Photo" : "Upload Photo")}
+                    </label>
+                    <input
+                      id="coach-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      disabled={isUploadingPhoto}
+                      style={{ display: "none" }}
+                    />
+
+                    {!settingsForm.photo && !photoPreview && (
+                      <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
+                        JPG, PNG or WEBP — will be saved in the public uploads folder
+                      </p>
+                    )}
                   </div>
                   <div className="form-field dashboard-form-full">
                     <label className="form-label">Coaching Programs Offered</label>
