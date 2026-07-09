@@ -155,6 +155,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
     photo: user?.photo || "",
     password: "",
     confirmPassword: "",
+    bio: user?.bio || "",
+    expertise: user?.expertise?.join(", ") || "",
   });
   const [selectedDays, setSelectedDays] = useState<string[]>(user?.availableDays || []);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -224,6 +226,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         photo: user.photo || "",
         password: "",
         confirmPassword: "",
+        bio: user.bio || "",
+        expertise: user.expertise?.join(", ") || "",
       }));
       setSelectedDays(user.availableDays || []);
       setSlotForm((prev) => ({
@@ -589,6 +593,11 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
           : selectedDays.length
             ? selectedDays.join(", ")
             : "By discovery call",
+        bio: settingsForm.bio.trim(),
+        expertise: settingsForm.expertise
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
       };
 
       if (settingsForm.password) {
@@ -618,6 +627,8 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
         availabilitySummary: result.account.availabilitySummary,
         availabilityType: result.account.availabilityType,
         availableDays: result.account.availableDays || [],
+        bio: result.account.bio || "",
+        expertise: result.account.expertise || [],
       });
       setPhotoPreview("");
 
@@ -1533,6 +1544,38 @@ const CoachDashboard: React.FC<CoachDashboardProps> = ({ programs, showToast }) 
                         onChange={(e) => setSettingsForm({ ...settingsForm, experience: e.target.value })}
                         placeholder="8"
                       />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Bio & Expertise */}
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <span className="settings-section-icon">✨</span>
+                    <div>
+                      <h3 className="settings-section-title">Bio & Expertise</h3>
+                      <p className="settings-section-sub">Share your background and coaching specialties.</p>
+                    </div>
+                  </div>
+                  <div className="settings-section-body settings-grid">
+                    <div className="form-field dashboard-form-full">
+                      <label className="form-label">Bio</label>
+                      <textarea
+                        value={settingsForm.bio}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, bio: e.target.value })}
+                        placeholder="Tell clients about your coaching background and approach..."
+                        rows={4}
+                      />
+                    </div>
+                    <div className="form-field dashboard-form-full">
+                      <label className="form-label">Expertise</label>
+                      <input
+                        type="text"
+                        value={settingsForm.expertise}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, expertise: e.target.value })}
+                        placeholder="Career transition, Executive presence, Leadership"
+                      />
+                      <p className="settings-photo-hint">Separate multiple specialties with commas.</p>
                     </div>
                   </div>
                 </section>

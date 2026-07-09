@@ -261,6 +261,23 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
           justPickedCoachRef.current = false;
         }
       }
+
+      const availableDaysHeader = res.headers.get("X-Available-Days");
+      if (availableDaysHeader) {
+        try {
+          const parsed = JSON.parse(availableDaysHeader);
+          if (Array.isArray(parsed.days)) {
+            setAvailableDays(parsed.days);
+            setAvailableCoachName(parsed.coachName || "");
+            setCoachOptions([]);
+          }
+        } catch {
+          // ignore parse error
+        }
+      } else {
+        setAvailableDays([]);
+        setAvailableCoachName("");
+      }
     } catch {
       setMessages((prev) => [
         ...prev,

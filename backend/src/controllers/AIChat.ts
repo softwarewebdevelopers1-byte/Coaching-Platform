@@ -259,7 +259,7 @@ OTHER RULES:
       }
     }
 
-    const showAvailableDaysMatch = reply.match(/\[SHOW_AVAILABLE_DAYS:\s*(\{.*?\})\s*\]/s);
+    const showAvailableDaysMatch = reply.match(/\[SHOW_AVAILABLE_DAYS\s*:\s*(\{[\s\S]*?\})\s*\]/);
     if (showAvailableDaysMatch) {
       try {
         const meta = JSON.parse(showAvailableDaysMatch[1] as string);
@@ -297,7 +297,7 @@ OTHER RULES:
           availableDays = await getCoachAvailableDays(coachId);
         }
 
-        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS:\s*\{.*?\}\s*\]/gs, "").trim();
+        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS\s*:\s*\{[\s\S]*?\}\s*\]/g, "").trim();
         if (!reply) {
           reply = `Here are the available days for ${coachLabel || "your selected coach"}.`;
         }
@@ -307,7 +307,7 @@ OTHER RULES:
           JSON.stringify({ coachId, coachName: coachLabel, programName, days: availableDays }),
         );
       } catch {
-        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS:\s*\{.*?\}\s*\]/gs, "").trim();
+        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS\s*:\s*\{[\s\S]*?\}\s*\]/g, "").trim();
       }
     }
 
