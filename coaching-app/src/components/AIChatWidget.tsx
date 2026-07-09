@@ -189,33 +189,6 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       if (parsedBooking) {
         setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
       }
-
-      const navigateTo = res.headers.get("X-Navigate-To");
-      if (navigateTo) {
-        if (navigateTo.startsWith("#")) {
-          const targetId = navigateTo.slice(1);
-          const target = document.getElementById(targetId);
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-          } else {
-            window.location.hash = targetId;
-          }
-        } else {
-          window.location.href = navigateTo;
-        }
-      }
-
-      const coachSelectionHeader = res.headers.get("X-Coach-Selection");
-      if (coachSelectionHeader) {
-        try {
-          const parsed = JSON.parse(coachSelectionHeader);
-          if (Array.isArray(parsed.coaches)) {
-            setCoachOptions(parsed.coaches);
-          }
-        } catch {
-          // ignore parse error
-        }
-      }
     } catch {
       setMessages((prev) => [
         ...prev,
