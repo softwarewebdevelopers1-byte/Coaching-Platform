@@ -585,6 +585,24 @@ const MainContent: React.FC<MainContentProps> = ({
   }, [quickSelectedCoachId, coaches, API_BASE_URL]);
 
   const nextQuickStep = async () => {
+    if (quickStep === 1) {
+      if (!quickForm.fullName.trim()) {
+        showToast("Please enter your full name", "error");
+        return;
+      }
+    }
+
+    if (quickStep === 2) {
+      if (!quickForm.email.trim()) {
+        showToast("Please enter your email address", "error");
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quickForm.email)) {
+        showToast("Please enter a valid email address", "error");
+        return;
+      }
+    }
+
     if (quickStep === 3) {
       const cleaned = quickForm.phoneNumber.replace(/[^\d]/g, "");
       if (!quickForm.phoneNumber.trim() || cleaned.length < 5) {

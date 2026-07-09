@@ -32,6 +32,7 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
   const [coachOptions, setCoachOptions] = useState<CoachOption[]>([]);
   const [bookingMeta, setBookingMeta] = useState<any | null>(null);
   const [selectedCoachId, setSelectedCoachId] = useState("");
+  const justPickedCoachRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,26 +129,30 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
 
   const handleCoachSelect = (coach: CoachOption) => {
     setSelectedCoachId(coach.id);
+    justPickedCoachRef.current = true;
     const text = `I choose ${coach.name}`;
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    const userMessage: Message = { role: "user", content: text };
+    const newMessages: Message[] = [...messages, userMessage];
+    setMessages(newMessages);
     setInput(text);
     setCoachOptions([]);
     setTimeout(() => {
-      sendMessageDirect(text);
+      sendMessageDirect(text, newMessages);
     }, 300);
   };
 
-  const sendMessageDirect = async (text: string) => {
+  const sendMessageDirect = async (text: string, historyOverride?: Message[]) => {
     setSending(true);
     setInput("");
 
     try {
+      const historyToSend = (historyOverride || messages).map((m) => ({ role: m.role, content: m.content }));
       const res = await fetch(`${baseUrl}/api/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
+          history: historyToSend,
         }),
       });
 
@@ -188,6 +193,37 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (parsedBooking) {
         setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
+      }
+
+      const coachSelectionHeader = res.headers.get("X-Coach-Selection");
+      if (coachSelectionHeader) {
+        try {
+          const parsed = JSON.parse(coachSelectionHeader);
+          if (Array.isArray(parsed.coaches)) {
+            const justPickedCoach = justPickedCoachRef.current;
+            if (!justPickedCoach) {
+              setCoachOptions(parsed.coaches);
+            } else {
+              const picked = parsed.coaches.find((c: { id: string }) => c.id === selectedCoachId);
+              if (picked) {
+                const followUp = `I have selected ${picked.name}. Please proceed with booking ${picked.name}.`;
+                setMessages((prev) => [...prev, { role: "user", content: followUp }]);
+                setInput(followUp);
+                setSelectedCoachId("");
+                setCoachOptions([]);
+                setTimeout(() => {
+                  sendMessageDirect(followUp);
+                }, 300);
+              } else {
+                setCoachOptions(parsed.coaches);
+              }
+            }
+          }
+        } catch {
+          // ignore parse error
+        } finally {
+          justPickedCoachRef.current = false;
+        }
       }
     } catch {
       setMessages((prev) => [
