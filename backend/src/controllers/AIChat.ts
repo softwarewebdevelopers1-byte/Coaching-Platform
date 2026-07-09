@@ -94,6 +94,8 @@ const REALISTIC_HOURS = [
   "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM",
 ];
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 async function getCoachAvailableDays(coachId: string): Promise<string[]> {
   const coach = await UserAccountsModel.findById(coachId).select("availabilityType availableDays");
   if (!coach) return ALL_DAYS.slice(0, 5);
@@ -254,6 +256,58 @@ OTHER RULES:
         res.setHeader("X-Coach-Selection", JSON.stringify({ coaches: coachesPayload, programName }));
       } catch {
         reply = reply.replace(/\[SHOW_COACH_SELECTION:\s*\{.*?\}\s*\]/gs, "").trim();
+      }
+    }
+
+    const showAvailableDaysMatch = reply.match(/\[SHOW_AVAILABLE_DAYS:\s*(\{.*?\})\s*\]/s);
+    if (showAvailableDaysMatch) {
+      try {
+        const meta = JSON.parse(showAvailableDaysMatch[1] as string);
+        const programName = String(meta.programName || "");
+        const coachMode = String(meta.coachMode || "");
+        const coachName = String(meta.coachName || "").trim();
+        let coachId: string | null = null;
+        let coachLabel = coachName;
+
+        if (coachMode === "manual" && coachName) {
+          const exact = await UserAccountsModel.findOne({ fullName: { $regex: `^${escapeRegex(coachName)}$`, $options: "i" }, role: "coach", status: "active" }).select("-password");
+          if (exact) {
+            coachId = String(exact._id);
+            coachLabel = exact.fullName;
+          } else {
+            const partial = await UserAccountsModel.findOne({ fullName: { $regex: escapeRegex(coachName), $options: "i" }, role: "coach", status: "active" }).select("-password");
+            if (partial) {
+              coachId = String(partial._id);
+              coachLabel = partial.fullName;
+            }
+          }
+        }
+
+        if (coachMode === "auto" || !coachId) {
+          const eligible = programName ? await getEligibleCoaches(programName) : [];
+          const best = eligible[0];
+          if (best) {
+            coachId = best._id;
+            coachLabel = best.name;
+          }
+        }
+
+        let availableDays: string[] = [];
+        if (coachId) {
+          availableDays = await getCoachAvailableDays(coachId);
+        }
+
+        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS:\s*\{.*?\}\s*\]/gs, "").trim();
+        if (!reply) {
+          reply = `Here are the available days for ${coachLabel || "your selected coach"}.`;
+        }
+
+        res.setHeader(
+          "X-Available-Days",
+          JSON.stringify({ coachId, coachName: coachLabel, programName, days: availableDays }),
+        );
+      } catch {
+        reply = reply.replace(/\[SHOW_AVAILABLE_DAYS:\s*\{.*?\}\s*\]/gs, "").trim();
       }
     }
 

@@ -48,6 +48,8 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
   const [sending, setSending] = useState(false);
   const [coachOptions, setCoachOptions] = useState<CoachOption[]>([]);
   const [bookingMeta, setBookingMeta] = useState<any | null>(null);
+  const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [availableCoachName, setAvailableCoachName] = useState("");
   const [selectedCoachId, setSelectedCoachId] = useState("");
   const justPickedCoachRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -123,6 +125,23 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
         } catch {
           // ignore parse error
         }
+      }
+
+      const availableDaysHeader = res.headers.get("X-Available-Days");
+      if (availableDaysHeader) {
+        try {
+          const parsed = JSON.parse(availableDaysHeader);
+          if (Array.isArray(parsed.days)) {
+            setAvailableDays(parsed.days);
+            setAvailableCoachName(parsed.coachName || "");
+            setCoachOptions([]);
+          }
+        } catch {
+          // ignore parse error
+        }
+      } else {
+        setAvailableDays([]);
+        setAvailableCoachName("");
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
@@ -318,6 +337,29 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
                 </div>
               </div>
             )}
+
+          {availableDays.length > 0 && (
+            <div className="uw-ai-available-days">
+              <strong>Available days for {availableCoachName || 'the selected coach'}:</strong>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                {availableDays.map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    className="uw-btn uw-btn-quiet"
+                    onClick={() => {
+                      setInput(`I choose ${day}`);
+                      setMessages((prev) => [...prev, { role: 'user', content: `I choose ${day}` }]);
+                      setAvailableDays([]);
+                      sendMessageDirect(`I choose ${day}`);
+                    }}
+                  >
+                    {day.charAt(0).toUpperCase() + day.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {coachOptions.length > 0 && (
             <div className="uw-ai-coach-select">
