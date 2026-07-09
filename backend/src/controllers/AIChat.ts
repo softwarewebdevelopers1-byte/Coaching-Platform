@@ -135,7 +135,7 @@ Step 7: Ask ONLY: "Would you like to choose a specific coach yourself, or should
 Step 8: IF user says auto-assign: Tell them you will assign the best available coach for their program. THEN ask: "Are you comfortable with us choosing the best available coach for you?"
 Step 9: IF user says YES to auto-assign: End your response with exactly [BOOKING_COMPLETE:{"email":"user@example.com","fullName":"User Name","phoneNumber":"+254700000000","programName":"individual-executive","bookingTime":"Mon, Jul 5 at 10:00 AM","goals":"Career coaching","coachMode":"auto"}] on its own line. Do NOT fill in coach data - the system will use real coach data automatically.
 Step 10: IF user says NO to auto-assign: End your response with exactly [SHOW_COACH_SELECTION:{"programName":"individual-executive"}] on its own line. The system will show available coaches for the user to choose from. Wait for the user to select a coach.
-Step 11: After the user selects a coach, the system will send you the coach name. You should then confirm the booking by ending your response with [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"...","goals":"...","coachMode":"manual","coachName":"Selected Coach Name"}] on its own line. The system will look up the real coach data and complete the booking.
+Step 11: When the user selects a coach from the dropdown, the system will send you a message like "I choose {coach name}". You MUST immediately confirm the booking. End your response with exactly [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"...","goals":"...","coachMode":"manual","coachName":"Exact Selected Coach Name"}] on its own line. Use the exact coach name from the user's selection. Do NOT show the coach list again. Do NOT ask more questions.
 
 EMAIL BEHAVIOR:
 - The system will automatically send a confirmation email after [BOOKING_COMPLETE:...].
@@ -241,7 +241,10 @@ OTHER RULES:
         let coachPhone = bookingData.coachPhone || "";
         let slotId = bookingData.slotId;
 
-        if (bookingData.coachMode === "auto" || !coachId) {
+        // If auto mode requested, choose the best coach. If manual mode but no coachId
+        // was provided, try to resolve the coach by name. Only fall back to auto-assign
+        // when no explicit coach can be resolved.
+        if (bookingData.coachMode === "auto") {
           const eligible = await getEligibleCoaches(bookingData.programName, bookingData.goals || []);
           const best = eligible[0];
           if (!best) {
@@ -253,6 +256,69 @@ OTHER RULES:
           coachName = best.name;
           coachEmail = best.email;
           coachPhone = best.phone;
+
+          const preferredDate: string = bookingData.bookingTime ? (new Date(bookingData.bookingTime).toISOString().split("T")[0] || "") : "";
+          const existingSlot = preferredDate ? await findOpenSlotForCoach(coachId, preferredDate) : null;
+
+          if (existingSlot) {
+            slotId = String(existingSlot._id);
+            await BookingsCreatedModel.findByIdAndUpdate(existingSlot._id, { status: "booked" });
+          } else {
+            await SlotRequestModel.create({
+              fullName: bookingData.fullName,
+              email: bookingData.email,
+              phoneNumber: bookingData.phoneNumber,
+              programName: bookingData.programName,
+              coachId,
+              coachName,
+              coachEmail,
+              message: Array.isArray(bookingData.goals) ? bookingData.goals.join(", ") : String(bookingData.goals || ""),
+              requestedDate: preferredDate,
+              requestedTime: "",
+              status: "pending",
+            });
+            await AppNotificationModel.create({
+              recipientId: coachId,
+              title: "New slot request",
+              message: `${bookingData.fullName} requested a coaching slot for ${bookingData.programName}.`,
+              type: "slot_request",
+              read: false,
+            });
+          }
+        } else {
+          // manual mode: if coachId not provided, try to resolve by name
+          if (!coachId && coachName) {
+            const trimmedName = String(coachName).trim();
+            const found = await UserAccountsModel.findOne({ fullName: { $regex: `^${trimmedName}$`, $options: "i" }, role: "coach", status: "active" }).select("-password");
+            if (found) {
+              coachId = String(found._id);
+              coachName = found.fullName;
+              coachEmail = found.email;
+              coachPhone = found.phone;
+            } else {
+              const found2 = await UserAccountsModel.findOne({ fullName: { $regex: trimmedName, $options: "i" }, role: "coach", status: "active" }).select("-password");
+              if (found2) {
+                coachId = String(found2._id);
+                coachName = found2.fullName;
+                coachEmail = found2.email;
+                coachPhone = found2.phone;
+              }
+            }
+          }
+
+          if (!coachId) {
+            const eligible = await getEligibleCoaches(bookingData.programName, bookingData.goals || []);
+            const best = eligible[0];
+            if (!best) {
+              reply = "I am sorry, we do not have any coaches available for this program right now. Please try another service or contact hello@unwantra.co for assistance.";
+              res.status(200).json({ reply, history: [...messages.slice(1), { role: "assistant", content: reply }] });
+              return;
+            }
+            coachId = best._id;
+            coachName = best.name;
+            coachEmail = best.email;
+            coachPhone = best.phone;
+          }
 
           const preferredDate: string = bookingData.bookingTime ? (new Date(bookingData.bookingTime).toISOString().split("T")[0] || "") : "";
           const existingSlot = preferredDate ? await findOpenSlotForCoach(coachId, preferredDate) : null;
