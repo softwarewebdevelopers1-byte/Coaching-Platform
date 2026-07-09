@@ -87,6 +87,28 @@ async function findOpenSlotForCoach(coachId: string, preferredDate: string) {
   });
 }
 
+const ALL_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+const REALISTIC_HOURS = [
+  "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
+  "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM",
+];
+
+async function getCoachAvailableDays(coachId: string): Promise<string[]> {
+  const coach = await UserAccountsModel.findById(coachId).select("availabilityType availableDays");
+  if (!coach) return ALL_DAYS.slice(0, 5);
+
+  if (coach.availabilityType === "selected_days" && Array.isArray(coach.availableDays) && coach.availableDays.length > 0) {
+    return coach.availableDays.map((day) => String(day).toLowerCase());
+  }
+
+  return ALL_DAYS.slice(0, 5);
+}
+
+function getRealisticTimeSlots(): string[] {
+  return [...REALISTIC_HOURS];
+}
+
 const router = Router();
 
 router.post("/chat", async (req: Request, res: Response): Promise<void> => {
@@ -129,13 +151,17 @@ Step 1: Ask ONLY for full name. Wait for answer.
 Step 2: Ask ONLY for email address. Wait for answer.
 Step 3: Ask ONLY for phone number with country code. Wait for answer.
 Step 4: Ask ONLY for which coaching service (individual or group). Wait for answer.
-Step 5: Ask ONLY for preferred date and optional time. Wait for answer.
-Step 6: Ask ONLY for session goals. Wait for answer.
-Step 7: Ask ONLY: "Would you like to choose a specific coach yourself, or should the system assign one automatically based on availability?"
-Step 8: IF user says auto-assign: Tell them you will assign the best available coach for their program. THEN ask: "Are you comfortable with us choosing the best available coach for you?"
-Step 9: IF user says YES to auto-assign: End your response with exactly [BOOKING_COMPLETE:{"email":"user@example.com","fullName":"User Name","phoneNumber":"+254700000000","programName":"individual-executive","bookingTime":"Mon, Jul 5 at 10:00 AM","goals":"Career coaching","coachMode":"auto"}] on its own line. Do NOT fill in coach data - the system will use real coach data automatically.
-Step 10: IF user says NO to auto-assign: End your response with exactly [SHOW_COACH_SELECTION:{"programName":"individual-executive"}] on its own line. The system will show available coaches for the user to choose from. Wait for the user to select a coach.
-Step 11: When the user selects a coach from the dropdown, the system will send you a message like "I choose {coach name}". You MUST immediately confirm the booking. End your response with exactly [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"...","goals":"...","coachMode":"manual","coachName":"Exact Selected Coach Name"}] on its own line. Use the exact coach name from the user's selection. Do NOT show the coach list again. Do NOT ask more questions.
+Step 5: Ask ONLY for session goals. Wait for answer.
+Step 6: Ask ONLY: "Would you like to choose a specific coach yourself, or should the system assign one automatically based on availability?"
+Step 7: IF user says auto-assign: Tell them you will assign the best available coach for their program. THEN ask: "Are you comfortable with us choosing the best available coach for you?"
+Step 8: IF user says YES to auto-assign: End your response with exactly [SHOW_AVAILABLE_DAYS:{"programName":"individual-executive","coachMode":"auto"}] on its own line. The system will automatically pick the best coach and show their available days.
+Step 9: IF user says NO to auto-assign: End your response with exactly [SHOW_COACH_SELECTION:{"programName":"individual-executive"}] on its own line. The system will show available coaches for the user to choose from. Wait for the user to select a coach.
+Step 10: When the user selects a coach from the dropdown, the system will send you the coach name. You MUST then show available days for that coach. End your response with exactly [SHOW_AVAILABLE_DAYS:{"programName":"individual-executive","coachMode":"manual","coachName":"Exact Selected Coach Name"}] on its own line.
+Step 11: The system will show available days for the selected coach. Wait for the user to select a day.
+Step 12: After the user selects a day, ask ONLY: "Would you like to set a specific time for your session, or should we suggest a time for you?"
+Step 13: IF user wants a specific time: Show realistic time options (8:00 AM to 7:00 PM). Wait for their choice.
+Step 14: IF user says no or skips time: Use a default time of 10:00 AM.
+Step 15: After you have the date and time, confirm the booking by ending your response with [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"2026-07-05T10:00:00","goals":"...","coachMode":"auto"}] or [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"2026-07-05T10:00:00","goals":"...","coachMode":"manual","coachName":"Exact Selected Coach Name"}] on its own line. Use the ISO format YYYY-MM-DDTHH:MM:SS for bookingTime.
 
 EMAIL BEHAVIOR:
 - The system will automatically send a confirmation email after [BOOKING_COMPLETE:...].

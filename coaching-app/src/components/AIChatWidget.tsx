@@ -18,6 +18,23 @@ interface AIChatWidgetProps {
   apiBaseUrl?: string;
 }
 
+function formatReadableDate(value: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return trimmed;
+}
+
 const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -111,7 +128,7 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       // If booking metadata present, also add a structured assistant confirmation
       if (parsedBooking) {
-        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${formatReadableDate(parsedBooking.bookingTime)}` }]);
       }
     } catch {
       setMessages((prev) => [
@@ -192,7 +209,7 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       if (parsedBooking) {
-        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${parsedBooking.bookingTime}` }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: `Booking confirmed: ${parsedBooking.coachName} — ${formatReadableDate(parsedBooking.bookingTime)}` }]);
       }
 
       const coachSelectionHeader = res.headers.get("X-Coach-Selection");
@@ -294,7 +311,7 @@ const AIChatWidget: React.FC<AIChatWidgetProps> = ({ apiBaseUrl }) => {
               <div className="uw-ai-booking-confirm">
                 <strong>Booking {bookingMeta.status === 'confirmed' ? 'Confirmed' : 'Requested'}</strong>
                 <div>{bookingMeta.programName} with {bookingMeta.coachName}</div>
-                <div>{bookingMeta.bookingTime || 'Time to be confirmed'}</div>
+                <div>{bookingMeta.bookingTime ? formatReadableDate(bookingMeta.bookingTime) : 'Time to be confirmed'}</div>
                 <div style={{ marginTop: 6 }}>
                   <button onClick={() => { window.location.href = '/dashboard/bookings'; }} style={{ marginRight: 8 }}>View bookings</button>
                   <button onClick={() => setBookingMeta(null)}>Dismiss</button>
