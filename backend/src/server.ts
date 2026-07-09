@@ -20,6 +20,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "https://coaching-platform-rust.vercel.app"],
     methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
+    exposedHeaders: ["X-Coach-Selection", "X-Navigate-To", "X-Booking-Meta"],
   }),
 );
 app.use("/api/bookings", BookingSlot);

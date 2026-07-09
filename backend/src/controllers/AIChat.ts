@@ -207,7 +207,7 @@ OTHER RULES:
       }
     }
 
-    const showCoachMatch = reply.match(/\[SHOW_COACH_SELECTION:(\{.*\})\]/s);
+    const showCoachMatch = reply.match(/\[SHOW_COACH_SELECTION:\s*(\{.*?\})\s*\]/s);
     if (showCoachMatch) {
       try {
         const meta = JSON.parse(showCoachMatch[1] as string);
@@ -221,17 +221,17 @@ OTHER RULES:
           specialization: coach.specialization,
           experience: coach.experience,
         }));
-        reply = reply.replace(/\[SHOW_COACH_SELECTION:\{.*\}\]/s, "").trim();
+        reply = reply.replace(/\[SHOW_COACH_SELECTION:\s*\{.*?\}\s*\]/gs, "").trim();
         if (!reply) {
           reply = "Here are the available coaches for your program. Please select one from the list below.";
         }
         res.setHeader("X-Coach-Selection", JSON.stringify({ coaches: coachesPayload, programName }));
       } catch {
-        reply = reply.replace(/\[SHOW_COACH_SELECTION:\{.*\}\]/s, "").trim();
+        reply = reply.replace(/\[SHOW_COACH_SELECTION:\s*\{.*?\}\s*\]/gs, "").trim();
       }
     }
 
-    const bookingMatch = reply.match(/\[BOOKING_COMPLETE:(\{.*\})\]/s);
+    const bookingMatch = reply.match(/\[BOOKING_COMPLETE:\s*(\{.*?\})\s*\]/s);
     if (bookingMatch) {
       try {
         const bookingData = JSON.parse(bookingMatch[1] as string);
@@ -344,13 +344,13 @@ OTHER RULES:
           bookingTime: bookingData.bookingTime,
         });
 
-        reply = reply.replace(/\[BOOKING_COMPLETE:\{.*\}\]/s, "").trim();
+        reply = reply.replace(/\[BOOKING_COMPLETE:\s*\{.*?\}\s*\]/gs, "").trim();
         if (!reply) {
           reply = `Your discovery call has been confirmed with ${coachName}. A confirmation email has been sent to ${bookingData.email}. Please check your inbox for the full details.`;
         }
       } catch (bookingError) {
         console.error("Booking completion error:", bookingError);
-        reply = reply.replace(/\[BOOKING_COMPLETE:\{.*\}]/s, "").trim();
+        reply = reply.replace(/\[BOOKING_COMPLETE:\s*\{.*?\}\s*\]/gs, "").trim();
         if (!reply) {
           reply = "Your discovery call details have been saved. There was a small issue finishing the booking, but our team will follow up with you shortly.";
         }
