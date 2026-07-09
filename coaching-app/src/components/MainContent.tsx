@@ -1179,7 +1179,11 @@ const MainContent: React.FC<MainContentProps> = ({
                     <button
                       className="uw-btn uw-btn-primary"
                       onClick={nextQuickStep}
-                      disabled={quickSubmitting || !quickCoachMode}
+                      disabled={
+                        quickSubmitting ||
+                        !quickCoachMode ||
+                        (quickCoachMode === "manual" && !quickSelectedCoachId)
+                      }
                     >
                       {quickSubmitting ? "Assigning coach..." : "Continue"}
                     </button>
