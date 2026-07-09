@@ -18,7 +18,7 @@ DatabaseConnection();
 app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://coaching-platform-rust.vercel.app"],
+    origin: ["http://localhost:5173", "https://coaching-platform-rust.vercel.app","https://unwantra-coaching-platform.vercel.app"],
     methods: ["POST", "GET", "DELETE", "PUT", "PATCH"],
     exposedHeaders: ["X-Coach-Selection", "X-Navigate-To", "X-Booking-Meta"],
   }),
