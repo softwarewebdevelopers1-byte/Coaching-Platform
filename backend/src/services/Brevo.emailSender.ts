@@ -10,7 +10,14 @@ import { PROGRAMS } from "../utils/programs.js";
 function formatReadableDate(value: string): string {
   if (!value) return "";
   const trimmed = value.trim();
-  const parsed = new Date(trimmed);
+  let parsed = new Date(trimmed);
+  const currentYear = new Date().getFullYear();
+
+  if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() < 2000 || parsed.getFullYear() > 2100) {
+    const withYear = `${trimmed} ${currentYear}`;
+    parsed = new Date(withYear);
+  }
+
   if (!Number.isNaN(parsed.getTime())) {
     return parsed.toLocaleString("en-US", {
       weekday: "long",

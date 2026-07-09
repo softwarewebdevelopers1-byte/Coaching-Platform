@@ -73,11 +73,54 @@ async function getEligibleCoaches(programName: string, goals: string[] = []): Pr
   return scored.map((item) => item.coach);
 }
 
+function normalizeBookingTime(value: string): string {
+  if (!value) return value;
+  const trimmed = value.trim();
+  let parsed = new Date(trimmed);
+  const currentYear = new Date().getFullYear();
+
+  if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() < 2000 || parsed.getFullYear() > 2100) {
+    const withYear = `${trimmed} ${currentYear}`;
+    parsed = new Date(withYear);
+  }
+
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return trimmed;
+}
+
+function extractIsoDate(value: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  let parsed = new Date(trimmed);
+  const currentYear = new Date().getFullYear();
+
+  if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() < 2000 || parsed.getFullYear() > 2100) {
+    const withYear = `${trimmed} ${currentYear}`;
+    parsed = new Date(withYear);
+  }
+
+  if (!Number.isNaN(parsed.getTime())) {
+    const iso = parsed.toISOString();
+    return iso.split("T")[0] ?? "";
+  }
+  return "";
+}
+
 async function findOpenSlotForCoach(coachId: string, preferredDate: string) {
   if (!preferredDate) return null;
   const start = new Date(preferredDate);
+  if (Number.isNaN(start.getTime())) return null;
   start.setHours(0, 0, 0, 0);
-  const end = new Date(preferredDate);
+  const end = new Date(start);
   end.setHours(23, 59, 59, 999);
 
   return BookingsCreatedModel.findOne({
@@ -109,7 +152,8 @@ router.post("/chat", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const systemPrompt = `You are the Unwantra Coaching Platform assistant. You help visitors understand our coaching services and book discovery calls.
+    const currentYear = new Date().getFullYear();
+    const systemPrompt = `You are the Unwantra Coaching Platform assistant. You help visitors understand our coaching services and book discovery calls. Today's year is ${currentYear}. Always include the current year when formatting dates.
 
 UNWANTRA COACHING PLATFORM CONTEXT:
 - Platform name: Unwantra Coaching Platform
@@ -133,7 +177,7 @@ Step 5: Ask ONLY for preferred date and optional time. Wait for answer.
 Step 6: Ask ONLY for session goals. Wait for answer.
 Step 7: Ask ONLY: "Would you like to choose a specific coach yourself, or should the system assign one automatically based on availability?"
 Step 8: IF user says auto-assign: Tell them you will assign the best available coach for their program. THEN ask: "Are you comfortable with us choosing the best available coach for you?"
-Step 9: IF user says YES to auto-assign: End your response with exactly [BOOKING_COMPLETE:{"email":"user@example.com","fullName":"User Name","phoneNumber":"+254700000000","programName":"individual-executive","bookingTime":"Mon, Jul 5 at 10:00 AM","goals":"Career coaching","coachMode":"auto"}] on its own line. Do NOT fill in coach data - the system will use real coach data automatically.
+Step 9: IF user says YES to auto-assign: End your response with exactly [BOOKING_COMPLETE:{"email":"user@example.com","fullName":"User Name","phoneNumber":"+254700000000","programName":"individual-executive","bookingTime":"2026-07-05T10:00:00","goals":"Career coaching","coachMode":"auto"}] on its own line. Do NOT fill in coach data - the system will use real coach data automatically.
 Step 10: IF user says NO to auto-assign: End your response with exactly [SHOW_COACH_SELECTION:{"programName":"individual-executive"}] on its own line. The system will show available coaches for the user to choose from. Wait for the user to select a coach.
 Step 11: When the user selects a coach from the dropdown, the system will send you a message like "I choose {coach name}". You MUST immediately confirm the booking. End your response with exactly [BOOKING_COMPLETE:{"email":"...","fullName":"...","phoneNumber":"...","programName":"...","bookingTime":"...","goals":"...","coachMode":"manual","coachName":"Exact Selected Coach Name"}] on its own line. Use the exact coach name from the user's selection. Do NOT show the coach list again. Do NOT ask more questions.
 
@@ -151,6 +195,7 @@ FORMATTING RULES:
 - Do NOT use markdown. No asterisks, bold, or italics.
 - Plain text only. Use dashes or colons for lists.
 - Example: "Your details: Name - Carlos, Email - carlos@example.com, Phone - +254751433064, Service - Individual Executive Coaching."
+- ALWAYS include the current year (${currentYear}) when writing dates in [BOOKING_COMPLETE:...] tokens.
 
 OTHER RULES:
 - Be helpful and realistic.
@@ -235,6 +280,9 @@ OTHER RULES:
     if (bookingMatch) {
       try {
         const bookingData = JSON.parse(bookingMatch[1] as string);
+        if (bookingData.bookingTime) {
+          bookingData.bookingTime = normalizeBookingTime(bookingData.bookingTime);
+        }
         let coachId = bookingData.coachId;
         let coachName = bookingData.coachName || "";
         let coachEmail = bookingData.coachEmail || "";
@@ -257,7 +305,7 @@ OTHER RULES:
           coachEmail = best.email;
           coachPhone = best.phone;
 
-          const preferredDate: string = bookingData.bookingTime ? (new Date(bookingData.bookingTime).toISOString().split("T")[0] || "") : "";
+          const preferredDate: string = bookingData.bookingTime ? extractIsoDate(bookingData.bookingTime) : "";
           const existingSlot = preferredDate ? await findOpenSlotForCoach(coachId, preferredDate) : null;
 
           if (existingSlot) {
@@ -320,7 +368,7 @@ OTHER RULES:
             coachPhone = best.phone;
           }
 
-          const preferredDate: string = bookingData.bookingTime ? (new Date(bookingData.bookingTime).toISOString().split("T")[0] || "") : "";
+          const preferredDate: string = bookingData.bookingTime ? extractIsoDate(bookingData.bookingTime) : "";
           const existingSlot = preferredDate ? await findOpenSlotForCoach(coachId, preferredDate) : null;
 
           if (existingSlot) {
