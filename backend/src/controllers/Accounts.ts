@@ -443,10 +443,7 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
 });
 
 router.post("/reset-password", async (req, res): Promise<void> => {
-  const token = req.query.token?.toString();
-  console.log(token);
-
-  const { password } = req.body;
+  const { token, password } = req.body;
   if (!token || !password) {
     res.status(400).json({ message: "Token and password are required" });
     return;
