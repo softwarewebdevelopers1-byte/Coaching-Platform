@@ -19,7 +19,7 @@ interface UserAccountInterface {
   currentWorkload?: number;
   maxWorkload?: number;
   resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
+  resetPasswordExpires?: Date | null;
 }
 
 interface CoachInviteInterface {
@@ -83,7 +83,4 @@ const CoachInviteModel =
   mongoose.model<CoachInviteInterface>("coach_invites", CoachInviteSchema);
 
 export type { UserAccountInterface, CoachInviteInterface };
-export {
-  UserAccountModel as UserAccountsModel,
-  CoachInviteModel,
-};
+export { UserAccountModel as UserAccountsModel, CoachInviteModel };

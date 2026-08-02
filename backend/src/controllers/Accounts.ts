@@ -307,7 +307,8 @@ router.post("/coach-invites", async (req, res): Promise<void> => {
     used: false,
     expiresAt: new Date(Date.now() + 60 * 60 * 1000),
   });
-  const inviteBaseUrl = baseUrl || "http://localhost:5173";
+  const inviteBaseUrl =
+    baseUrl || "https://unwantra-coaching-platform.vercel.app";
 
   res.status(201).json({
     message: "Coach invite created",
@@ -413,6 +414,7 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
       .json({ message: "No account found with this email address." });
     return;
   }
+  account.resetPasswordToken = "";
 
   const token = crypto.randomBytes(24).toString("hex");
   (
@@ -423,7 +425,8 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   ).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
   await account.save();
 
-  const baseUrl = req.body.baseUrl || "https://unwantra-coaching-platform.vercel.app";
+  const baseUrl =
+    req.body.baseUrl || "https://unwantra-coaching-platform.vercel.app";
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   sendResetPasswordEmail({
@@ -441,6 +444,8 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
 
 router.post("/reset-password", async (req, res): Promise<void> => {
   const token = req.query.token?.toString();
+  console.log(token);
+
   const { password } = req.body;
   if (!token || !password) {
     res.status(400).json({ message: "Token and password are required" });
@@ -460,6 +465,8 @@ router.post("/reset-password", async (req, res): Promise<void> => {
   account.password = await bcrypt.hash(password, 10);
   delete (account as { resetPasswordToken?: string }).resetPasswordToken;
   delete (account as { resetPasswordExpires?: Date }).resetPasswordExpires;
+  account.resetPasswordExpires = null;
+  account.resetPasswordToken = "";
   await account.save();
 
   res.status(200).json({ message: "Password has been reset successfully." });
