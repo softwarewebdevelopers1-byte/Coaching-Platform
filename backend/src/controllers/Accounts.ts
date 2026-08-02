@@ -30,7 +30,8 @@ router.post("/login", async (req, res): Promise<void> => {
 
   if (account.role === "user") {
     res.status(403).json({
-      message: "Users cannot login. Please contact support if you need assistance.",
+      message:
+        "Users cannot login. Please contact support if you need assistance.",
     });
     return;
   }
@@ -44,7 +45,8 @@ router.post("/login", async (req, res): Promise<void> => {
 
   if (!account.password) {
     res.status(401).json({
-      message: "Account has no password set. Please use the invite link to register.",
+      message:
+        "Account has no password set. Please use the invite link to register.",
     });
     return;
   }
@@ -166,14 +168,18 @@ router.post("/", async (req, res): Promise<void> => {
   } = req.body;
 
   if (!fullName || !email || !role) {
-    res.status(400).json({ message: "Full name, email, and role are required" });
+    res
+      .status(400)
+      .json({ message: "Full name, email, and role are required" });
     return;
   }
 
   const existingAccount = await UserAccountsModel.findOne({ email });
 
   if (!existingAccount && role !== "user" && !password) {
-    res.status(400).json({ message: "Password is required for coach and admin accounts" });
+    res
+      .status(400)
+      .json({ message: "Password is required for coach and admin accounts" });
     return;
   }
 
@@ -238,8 +244,10 @@ router.put("/:id", async (req, res): Promise<void> => {
   if (languages !== undefined) update.languages = languages;
   if (expertise !== undefined) update.expertise = expertise;
   if (photo !== undefined) update.photo = photo;
-  if (availabilitySummary !== undefined) update.availabilitySummary = availabilitySummary;
-  if (availabilityType !== undefined) update.availabilityType = availabilityType;
+  if (availabilitySummary !== undefined)
+    update.availabilitySummary = availabilitySummary;
+  if (availabilityType !== undefined)
+    update.availabilityType = availabilityType;
   if (availableDays !== undefined) update.availableDays = availableDays;
   if (maxWorkload !== undefined) update.maxWorkload = maxWorkload;
 
@@ -319,70 +327,77 @@ router.get("/coach-invites/:token", async (req, res): Promise<void> => {
   res.status(200).json({ invite });
 });
 
-router.post("/coach-invites/:token/register", async (req, res): Promise<void> => {
-  const invite = await CoachInviteModel.findOne({ token: req.params.token });
+router.post(
+  "/coach-invites/:token/register",
+  async (req, res): Promise<void> => {
+    const invite = await CoachInviteModel.findOne({ token: req.params.token });
 
-  if (!invite || invite.used || invite.expiresAt < new Date()) {
-    res.status(404).json({ message: "Invite link is invalid or expired" });
-    return;
-  }
+    if (!invite || invite.used || invite.expiresAt < new Date()) {
+      res.status(404).json({ message: "Invite link is invalid or expired" });
+      return;
+    }
 
-  const {
-    fullName,
-    phone,
-    programName,
-    password,
-    bio,
-    experience,
-    languages,
-    expertise,
-    photo,
-    availabilitySummary,
-    maxWorkload,
-    availabilityType,
-    availableDays,
-  } = req.body;
-  if (!fullName) {
-    res.status(400).json({ message: "Full name is required" });
-    return;
-  }
-
-  const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
-  
-  const derivedAvailabilitySummary = availabilitySummary || (
-    availabilityType === "whole_week" 
-      ? "Whole week" 
-      : (availableDays && availableDays.length > 0 ? availableDays.join(", ") : "By discovery call")
-  );
-
-  const account = await UserAccountsModel.findOneAndUpdate(
-    { email: invite.email },
-    {
+    const {
       fullName,
-      email: invite.email,
       phone,
       programName,
+      password,
       bio,
       experience,
       languages,
       expertise,
       photo,
-      availabilitySummary: derivedAvailabilitySummary,
+      availabilitySummary,
       maxWorkload,
-      password: hashedPassword,
-      role: "coach",
-      status: "active",
-      availabilityType: availabilityType || "whole_week",
-      availableDays: availableDays || [],
-    },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
-  );
+      availabilityType,
+      availableDays,
+    } = req.body;
+    if (!fullName) {
+      res.status(400).json({ message: "Full name is required" });
+      return;
+    }
 
-  invite.used = true;
-  await invite.save();
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
 
-  res.status(201).json({ message: "Coach account created", account });
-});
+    const derivedAvailabilitySummary =
+      availabilitySummary ||
+      (availabilityType === "whole_week"
+        ? "Whole week"
+        : availableDays && availableDays.length > 0
+          ? availableDays.join(", ")
+          : "By discovery call");
+
+    const account = await UserAccountsModel.findOneAndUpdate(
+      { email: invite.email },
+      {
+        fullName,
+        email: invite.email,
+        phone,
+        programName,
+        bio,
+        experience,
+        languages,
+        expertise,
+        photo,
+        availabilitySummary: derivedAvailabilitySummary,
+        maxWorkload,
+        password: hashedPassword,
+        role: "coach",
+        status: "active",
+        availabilityType: availabilityType || "whole_week",
+        availableDays: availableDays || [],
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+
+    invite.used = true;
+    await invite.save();
+
+    res.status(201).json({ message: "Coach account created", account });
+  },
+);
 
 router.post("/forgot-password", async (req, res): Promise<void> => {
   const { email } = req.body;
@@ -393,16 +408,23 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
 
   const account = await UserAccountsModel.findOne({ email });
   if (!account) {
-    res.status(404).json({ message: "No account found with this email address." });
+    res
+      .status(404)
+      .json({ message: "No account found with this email address." });
     return;
   }
 
   const token = crypto.randomBytes(24).toString("hex");
-  (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordToken = token;
-  (account as { resetPasswordToken?: string; resetPasswordExpires?: Date }).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+  (
+    account as { resetPasswordToken?: string; resetPasswordExpires?: Date }
+  ).resetPasswordToken = token;
+  (
+    account as { resetPasswordToken?: string; resetPasswordExpires?: Date }
+  ).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
   await account.save();
 
-  const baseUrl = req.body.baseUrl || "http://localhost:5173";
+  const baseUrl =
+    req.body.baseUrl || "https://unwantra-coaching-platform.vercel.app";
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   sendResetPasswordEmail({
@@ -419,7 +441,8 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
 });
 
 router.post("/reset-password", async (req, res): Promise<void> => {
-  const { token, password } = req.body;
+  const token = req.query.token?.toString();
+  const { password } = req.body;
   if (!token || !password) {
     res.status(400).json({ message: "Token and password are required" });
     return;
@@ -446,13 +469,19 @@ router.post("/reset-password", async (req, res): Promise<void> => {
 router.post("/upload", async (req, res): Promise<void> => {
   const { photoData, originalName } = req.body;
   if (!photoData || !originalName) {
-    res.status(400).json({ message: "Photo data and original name are required." });
+    res
+      .status(400)
+      .json({ message: "Photo data and original name are required." });
     return;
   }
 
   if (!DotEnvConfig.SupabaseUrl || !DotEnvConfig.SupabaseServiceRoleKey) {
-    console.error("Supabase environment variables are not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).");
-    res.status(500).json({ message: "Image storage is not configured. Contact an administrator." });
+    console.error(
+      "Supabase environment variables are not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).",
+    );
+    res.status(500).json({
+      message: "Image storage is not configured. Contact an administrator.",
+    });
     return;
   }
 
@@ -460,9 +489,13 @@ router.post("/upload", async (req, res): Promise<void> => {
     const supabaseUrl = DotEnvConfig.SupabaseUrl.startsWith("http")
       ? DotEnvConfig.SupabaseUrl
       : `https://${DotEnvConfig.SupabaseUrl}`;
-    const supabaseClient = createClient(supabaseUrl, DotEnvConfig.SupabaseServiceRoleKey, {
-      auth: { persistSession: false },
-    });
+    const supabaseClient = createClient(
+      supabaseUrl,
+      DotEnvConfig.SupabaseServiceRoleKey,
+      {
+        auth: { persistSession: false },
+      },
+    );
 
     const ext = path.extname(originalName) || ".jpg";
     const safeExt = ext.toLowerCase().match(/^\.([a-z0-9]+)$/)?.[0] || ".jpg";
@@ -479,7 +512,10 @@ router.post("/upload", async (req, res): Promise<void> => {
     try {
       await supabaseClient.storage.updateBucket(bucketName, { public: true });
     } catch (bucketErr) {
-      console.warn("Could not mark Supabase bucket public (continuing):", bucketErr);
+      console.warn(
+        "Could not mark Supabase bucket public (continuing):",
+        bucketErr,
+      );
     }
 
     const { error } = await supabaseClient.storage
@@ -491,11 +527,15 @@ router.post("/upload", async (req, res): Promise<void> => {
 
     if (error) {
       console.error("Supabase upload error:", error);
-      res.status(500).json({ message: "An error occurred during file upload." });
+      res
+        .status(500)
+        .json({ message: "An error occurred during file upload." });
       return;
     }
 
-    const { data: urlData } = supabaseClient.storage.from(bucketName).getPublicUrl(objectPath);
+    const { data: urlData } = supabaseClient.storage
+      .from(bucketName)
+      .getPublicUrl(objectPath);
     const photoUrl = urlData.publicUrl;
 
     // Helper to extract object path from stored photo value
@@ -521,17 +561,28 @@ router.post("/upload", async (req, res): Promise<void> => {
     if (accountId) {
       try {
         // Load existing account to determine if we should delete an old file
-        const existing = await UserAccountsModel.findById(accountId).select("photo");
+        const existing =
+          await UserAccountsModel.findById(accountId).select("photo");
         if (existing && existing.photo) {
-          const oldObjectPath = getObjectPathFromPhoto(existing.photo as string);
+          const oldObjectPath = getObjectPathFromPhoto(
+            existing.photo as string,
+          );
           if (oldObjectPath) {
             try {
-              const { error: delErr } = await supabaseClient.storage.from(bucketName).remove([oldObjectPath]);
+              const { error: delErr } = await supabaseClient.storage
+                .from(bucketName)
+                .remove([oldObjectPath]);
               if (delErr) {
-                console.warn("Could not delete old photo from Supabase:", delErr);
+                console.warn(
+                  "Could not delete old photo from Supabase:",
+                  delErr,
+                );
               }
             } catch (err) {
-              console.warn("Error while attempting to delete old Supabase object:", err);
+              console.warn(
+                "Error while attempting to delete old Supabase object:",
+                err,
+              );
             }
           }
         }
@@ -561,6 +612,5 @@ router.post("/upload", async (req, res): Promise<void> => {
     res.status(500).json({ message: "An error occurred during file upload." });
   }
 });
-
 
 export default router;
