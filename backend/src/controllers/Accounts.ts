@@ -423,8 +423,7 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   ).resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
   await account.save();
 
-  const baseUrl =
-    req.body.baseUrl || "https://unwantra-coaching-platform.vercel.app";
+  const baseUrl = req.body.baseUrl || "https://unwantra-coaching-platform.vercel.app";
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   sendResetPasswordEmail({
