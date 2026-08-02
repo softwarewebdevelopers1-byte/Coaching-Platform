@@ -443,8 +443,8 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
 });
 
 router.post("/reset-password", async (req, res): Promise<void> => {
-  const { token, password } = req.body;
-  if (!token || !password) {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
     res.status(400).json({ message: "Token and password are required" });
     return;
   }
@@ -459,7 +459,7 @@ router.post("/reset-password", async (req, res): Promise<void> => {
     return;
   }
 
-  account.password = await bcrypt.hash(password, 10);
+  account.password = await bcrypt.hash(newPassword, 10);
   delete (account as { resetPasswordToken?: string }).resetPasswordToken;
   delete (account as { resetPasswordExpires?: Date }).resetPasswordExpires;
   account.resetPasswordExpires = null;
