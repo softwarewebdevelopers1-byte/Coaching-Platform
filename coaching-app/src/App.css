@@ -799,9 +799,10 @@ img {
   .uw-coach-card {
     border-radius: 14px;
   }
-  .uw-coach-media {
-    height: 200px;
-  }
+
+  /* .uw-coach-media {
+    height: 400px;
+  } */
 }
 
 /* ── Slot-request flow styles ──────────────────────────────────────────────── */
