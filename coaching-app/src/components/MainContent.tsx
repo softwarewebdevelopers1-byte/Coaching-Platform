@@ -91,7 +91,9 @@ const fallbackSlots = [
   "2026-07-06T11:30",
 ];
 
-const getSuggestedAvailabilityDatesForCoach = (coach: Coach | null | undefined) => {
+const getSuggestedAvailabilityDatesForCoach = (
+  coach: Coach | null | undefined,
+) => {
   if (!coach) return [];
 
   const normalizedDays = (coach.availableDays || [])
@@ -119,7 +121,8 @@ const getSuggestedAvailabilityDatesForCoach = (coach: Coach | null | undefined) 
     const isAvailable =
       coach.availabilityType === "whole_week" ||
       normalizedDays.some(
-        (day) => day === dayName || day.startsWith(shortName) || day === shortName,
+        (day) =>
+          day === dayName || day.startsWith(shortName) || day === shortName,
       );
 
     if (isAvailable) {
@@ -849,11 +852,16 @@ const MainContent: React.FC<MainContentProps> = ({
                     </span>
                   </div>
                   <img
-                    src={resolvePhotoUrl(coach.photo) || fallbackCoaches[0].photo || ""}
+                    src={
+                      resolvePhotoUrl(coach.photo) ||
+                      fallbackCoaches[0].photo ||
+                      ""
+                    }
                     alt={coach.name}
                     className="uw-coach-media"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = fallbackCoaches[0].photo || "";
+                      (e.target as HTMLImageElement).src =
+                        fallbackCoaches[0].photo || "";
                     }}
                   />
                   <div className="uw-coach-body">
@@ -900,7 +908,7 @@ const MainContent: React.FC<MainContentProps> = ({
                       style={{ color: "var(--uw-sage-dark)" }}
                       onClick={() => openProfileModal(coach)}
                     >
-                      Full View Profile
+                      View Full Profile
                     </button>
                     <button
                       className="uw-btn uw-btn-secondary"
@@ -1218,9 +1226,8 @@ const MainContent: React.FC<MainContentProps> = ({
                     const selectedCoach = coaches.find(
                       (c) => c._id === quickSelectedCoachId,
                     );
-                    const suggestedDates = getSuggestedAvailabilityDatesForCoach(
-                      selectedCoach,
-                    );
+                    const suggestedDates =
+                      getSuggestedAvailabilityDatesForCoach(selectedCoach);
                     const availableDates = suggestedDates.filter(
                       (date) =>
                         !quickSlots.some(
@@ -1243,7 +1250,10 @@ const MainContent: React.FC<MainContentProps> = ({
                             >
                               Available slots:
                             </strong>
-                            <div className="uw-slot-grid" style={{ marginTop: 8 }}>
+                            <div
+                              className="uw-slot-grid"
+                              style={{ marginTop: 8 }}
+                            >
                               {quickSlots.map((slot) => (
                                 <button
                                   key={slot._id}
@@ -1272,31 +1282,37 @@ const MainContent: React.FC<MainContentProps> = ({
                                   }
                                 >
                                   <strong>
-                                    {new Date(slot.bookingDate).toLocaleDateString(
-                                      [],
-                                      {
-                                        weekday: "short",
-                                        month: "short",
-                                        day: "numeric",
-                                      },
-                                    )}
+                                    {new Date(
+                                      slot.bookingDate,
+                                    ).toLocaleDateString([], {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
                                   </strong>
                                   <span>
                                     at{" "}
-                                    {new Date(slot.bookingDate).toLocaleTimeString(
-                                      [],
-                                      { hour: "2-digit", minute: "2-digit" },
-                                    )}
+                                    {new Date(
+                                      slot.bookingDate,
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
                                   </span>
                                 </button>
                               ))}
                             </div>
                           </div>
                         ) : (
-                          <p style={{ color: "var(--uw-muted)", marginBottom: 8 }}>
-                            No open slots right now. Choose a preferred date based
-                            on the coach’s availability and we’ll send a request for
-                            approval.
+                          <p
+                            style={{
+                              color: "var(--uw-muted)",
+                              marginBottom: 8,
+                            }}
+                          >
+                            No open slots right now. Choose a preferred date
+                            based on the coach’s availability and we’ll send a
+                            request for approval.
                           </p>
                         )}
 
@@ -1310,7 +1326,10 @@ const MainContent: React.FC<MainContentProps> = ({
                             >
                               Other available days:
                             </strong>
-                            <div className="uw-slot-grid" style={{ marginTop: 8 }}>
+                            <div
+                              className="uw-slot-grid"
+                              style={{ marginTop: 8 }}
+                            >
                               {availableDates.map((date) => (
                                 <button
                                   key={date}
