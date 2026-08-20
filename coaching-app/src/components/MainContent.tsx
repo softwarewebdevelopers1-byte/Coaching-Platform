@@ -853,7 +853,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   </div>
                   <img
                     src={
-                      resolvePhotoUrl(coach.photo) ||
+                      resolvePhotoUrl(coach.photo) ||`/${coach.name}.png`||
                       fallbackCoaches[0].photo ||
                       ""
                     }
