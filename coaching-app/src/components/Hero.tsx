@@ -11,7 +11,7 @@ const Hero: React.FC = () => (
         <p>
           We help leaders own their voice, lead with integrity, and live with
           intention through transformational coaching that strengthens
-          confidence, boundaries, influence and values-based leadersip.{" "}
+          confidence, boundaries, influence and values-based leadership.{" "}
         </p>
         <div className="uw-hero-actions">
           <a className="uw-btn uw-btn-primary" href="#discovery-call">
