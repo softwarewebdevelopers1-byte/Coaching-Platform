@@ -36,6 +36,9 @@ router.get("/testimonials", async (req, res): Promise<void> => {
   const testimonials = await TestimonialModel.find(filter).sort({ createdAt: -1 });
   res.status(200).json({ testimonials });
 });
+router.get("/health-check", async (req, res) => {
+  res.status(200).json({ message:"ok" });
+});
 
 router.post("/testimonials", async (req, res): Promise<void> => {
   const testimonial = await TestimonialModel.create(req.body);
