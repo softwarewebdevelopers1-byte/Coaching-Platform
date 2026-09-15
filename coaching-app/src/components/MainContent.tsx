@@ -620,43 +620,80 @@ const MainContent: React.FC<MainContentProps> = ({
 
     if (quickStep === 7) {
       if (quickCoachMode === "auto") {
-        setQuickSubmitting(true);
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/bookings/assign-coach`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              programName: quickForm.coachingType,
-              goals: quickForm.goals
-                .split(",")
-                .map((g) => g.trim())
-                .filter(Boolean),
-            }),
-          });
-          if (res.ok) {
-            const result = await res.json();
-            const coach = result.coach as Coach;
-            setAssignedCoach(coach);
-            setQuickSelectedCoachId(coach._id);
-            await submitQuickBooking(coach);
-          } else {
-            showToast(
-              "Could not assign a coach right now. Please try again or choose manually.",
-              "error",
-              5000,
-            );
-          }
-        } catch {
-          showToast(
-            "Network error assigning coach. Please try again.",
-            "error",
-            5000,
-          );
-        } finally {
-          setQuickSubmitting(false);
-        }
-        return;
-      }
+  setQuickSubmitting(true);
+  try {
+    // Find eligible coaches for the selected program
+    const eligible = coaches.filter((coach) =>
+      coachMatchesProgram(coach.specialization, quickForm.coachingType),
+    );
+
+    if (!eligible.length) {
+      showToast(
+        "No coaches are currently available for this program. Please choose another service.",
+        "error",
+        5000,
+      );
+      setQuickSubmitting(false);
+      return;
+    }
+
+    // Pick the coach with the most years of experience
+    const coach = eligible.reduce((best, current) =>
+      (current.experience || 0) > (best.experience || 0) ? current : best,
+    );
+
+    setAssignedCoach(coach);
+    setQuickSelectedCoachId(coach._id);
+    await submitQuickBooking(coach);
+  } catch {
+    showToast(
+      "Network error assigning coach. Please try again.",
+      "error",
+      5000,
+    );
+  } finally {
+    setQuickSubmitting(false);
+  }
+  return;
+}
+      // if (quickCoachMode === "auto") {
+      //   setQuickSubmitting(true);
+      //   try {
+      //     const res = await fetch(`${API_BASE_URL}/api/bookings/assign-coach`, {
+      //       method: "POST",
+      //       headers: { "Content-Type": "application/json" },
+      //       body: JSON.stringify({
+      //         programName: quickForm.coachingType,
+      //         goals: quickForm.goals
+      //           .split(",")
+      //           .map((g) => g.trim())
+      //           .filter(Boolean),
+      //       }),
+      //     });
+      //     if (res.ok) {
+      //       const result = await res.json();
+      //       const coach = result.coach as Coach;
+      //       setAssignedCoach(coach);
+      //       setQuickSelectedCoachId(coach._id);
+      //       await submitQuickBooking(coach);
+      //     } else {
+      //       showToast(
+      //         "Could not assign a coach right now. Please try again or choose manually.",
+      //         "error",
+      //         5000,
+      //       );
+      //     }
+      //   } catch {
+      //     showToast(
+      //       "Network error assigning coach. Please try again.",
+      //       "error",
+      //       5000,
+      //     );
+      //   } finally {
+      //     setQuickSubmitting(false);
+      //   }
+      //   return;
+      // }
       if (quickCoachMode === "manual" && !quickSelectedCoachId) {
         showToast("Please select a coach before continuing", "error");
         return;
