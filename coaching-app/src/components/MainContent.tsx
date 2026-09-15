@@ -837,12 +837,23 @@ const MainContent: React.FC<MainContentProps> = ({
                   </ul>
                   <button
                     className="uw-btn uw-btn-primary"
-                    onClick={() => {
+                    {/* onClick={() => {
                       setSelectedProgram(program.id);
                       document
                         .getElementById("discovery-call")
                         ?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    }} */}
+                  onClick={() => {
+  setSelectedProgram(program.id);
+  setQuickStep(1);
+  setQuickForm((current) => ({
+    ...current,
+    coachingType: program.id,
+  }));
+  document
+    .getElementById("quick-book")
+    ?.scrollIntoView({ behavior: "smooth" });
+}}
                   >
                     Start with this service
                   </button>
