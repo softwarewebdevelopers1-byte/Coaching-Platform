@@ -14,7 +14,7 @@ const Hero: React.FC = () => (
           confidence, boundaries, influence and values-based leadership.{" "}
         </p>
         <div className="uw-hero-actions">
-          <a className="uw-btn uw-btn-primary" href="#discovery-call">
+          <a className="uw-btn uw-btn-primary" href="#quick-book">
             Book a discovery call
           </a>
           <a className="uw-btn uw-btn-quiet" href="#services">
