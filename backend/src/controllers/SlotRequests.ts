@@ -29,10 +29,10 @@ router.post("/", async (req, res): Promise<void> => {
     requestedTime,
   } = req.body;
 
-  // if (!fullName || !email || !phoneNumber || !programName || !coachId || !coachName || !coachEmail) {
-  //   res.status(400).json({ message: "Missing required fields" });
-  //   return;
-  // }
+  if (!fullName || !email || !phoneNumber || !programName || !coachId || !coachName || !coachEmail) {
+    res.status(400).json({ message: "Could not assign a coach for you. Please choose a specific coach." });
+    return;
+  }
 
   const coachAccount = await UserAccountsModel.findById(coachId);
   if (!coachAccount || coachAccount.role !== "coach") {
