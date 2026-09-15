@@ -1348,7 +1348,6 @@ const MainContent: React.FC<MainContentProps> = ({
                     Preferred Date
                     <input
                       type="date"
-                      disabled
                       value={quickForm.preferredDate}
                       onChange={(e) =>
                         setQuickForm({
