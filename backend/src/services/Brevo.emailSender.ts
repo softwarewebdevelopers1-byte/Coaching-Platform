@@ -34,6 +34,13 @@ function getProgramTitle(programName?: string): string {
   return match?.title || programName;
 }
 
+function getSender() {
+  return {
+    name: DotEnvConfig.BrevoSenderName,
+    email: DotEnvConfig.BrevoSenderEmail,
+  };
+}
+
 function buildStyledEmailHtml({
   title,
   preheader,
@@ -104,10 +111,7 @@ export async function sendBookingConfirmationEmail(
   const apiKey = DotEnvConfig.BrevoApiKey.trim();
 
   const payload: BrevoEmailPayload = {
-    sender: {
-      name: "UnWantraCoaching",
-      email: "softwarewebdevelopers1@gmail.com",
-    },
+    sender: getSender(),
     to: [{ email: booking.email, name: booking.fullName }],
     subject: "Your UnWantraCoaching session is booked",
     htmlContent: generateBookingEmailTemplate(booking),
@@ -169,10 +173,7 @@ export async function sendContactAcknowledgmentEmail(
   });
 
   const payload: BrevoEmailPayload = {
-    sender: {
-      name: "Unwantra Coaching",
-      email: "softwarewebdevelopers1@gmail.com",
-    },
+    sender: getSender(),
     to: [{ email: details.email, name: details.name }],
     subject: "We received your coaching enquiry — Unwantra",
     htmlContent,
@@ -259,7 +260,7 @@ export async function sendSlotRequestReceivedEmail(
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: getSender(),
     to: [{ email: details.email, name: details.fullName }],
     subject: "Your session request has been received — UnWantraCoaching",
     htmlContent,
@@ -370,7 +371,7 @@ export async function sendSlotRequestApprovedEmail(
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: getSender(),
     to: [{ email: details.email, name: details.fullName }],
     subject: "Your coaching session is scheduled — UnWantraCoaching",
     htmlContent,
@@ -451,7 +452,7 @@ export async function sendSlotRequestDeclinedEmail(
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: getSender(),
     to: [{ email: details.email, name: details.fullName }],
     subject: "Your session request was declined — UnWantraCoaching",
     htmlContent,
@@ -537,7 +538,7 @@ export async function sendSlotRequestCoachNotificationEmail(
 </html>`;
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: getSender(),
     to: [{ email: details.coachEmail, name: details.coachName }],
     subject: "New session request — UnWantraCoaching",
     htmlContent,
@@ -656,7 +657,7 @@ export async function sendResetPasswordEmail(
   });
 
   const payload: BrevoEmailPayload = {
-    sender: { name: "UnWantraCoaching", email: "softwarewebdevelopers1@gmail.com" },
+    sender: getSender(),
     to: [{ email: details.email, name: details.fullName }],
     subject: "Reset your UnWantraCoaching password",
     htmlContent,
@@ -707,4 +708,10 @@ function handleEmailError(error: AxiosError<BrevoErrorResponse>): void {
   } else {
     console.error("Error setting up email request:", error.message);
   }
+
+  throw new Error(
+    `Brevo email delivery failed: ${
+      error.response?.data?.message || error.message
+    }`,
+  );
 }
